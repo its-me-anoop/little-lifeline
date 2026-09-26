@@ -75,7 +75,7 @@ namespace IdleClinic.Tests
                 var room=ui.Simulation.State.Room(kind);room.Tier=5;room.EquipmentLevel=10;
                 var dock=ui.RoomDock(kind);
                 var expand=dock.Q<Button>("expand-room");Assert.That(expand,Is.Not.Null);
-                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Room 6 · 162m"),Is.True);
+                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Room 6 · 4h"),Is.True);
                 Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment").tooltip,Does.Contain("Requires room 6"));
                 room.Tier=6;
                 Assert.That(ui.RoomDock(kind).Q<Button>("expand-room"),Is.Null);
@@ -109,7 +109,7 @@ namespace IdleClinic.Tests
                 Assert.That(ui.RoomDock(ClinicRoom.Consultation).Q<Button>("add-consultation-room"),Is.Not.Null);
                 state.ConsultationStations.Add(new TreatmentStationState{Id=1});state.Room(ClinicRoom.Consultation).StationCount=2;
                 var hire=ui.RoomDock(ClinicRoom.Consultation).Q<Button>("hire-doctor");
-                Assert.That(hire,Is.Not.Null);Assert.That(hire.tooltip,Does.Contain("2,700 coins"));
+                Assert.That(hire,Is.Not.Null);Assert.That(hire.tooltip,Does.Contain(ClinicRules.HireCost(state,ClinicStaffRole.Doctor).ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins"));
             }
         }
         [Test]

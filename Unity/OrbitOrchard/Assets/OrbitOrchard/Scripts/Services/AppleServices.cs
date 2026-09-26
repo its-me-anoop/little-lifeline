@@ -16,6 +16,15 @@ namespace OrbitOrchard.Services
         public bool isConsumable;
     }
 
+    /// <summary>A verified consumable the game must record before calling <see cref="AppleServices.FinishTransaction"/>.</summary>
+    [Serializable, Preserve]
+    public sealed class AppleGemTransaction
+    {
+        public string transactionId;
+        public string productId;
+        public bool revoked;
+    }
+
     /// <summary>Native Apple APIs behind a Unity-owned game and interface.</summary>
     [Preserve]
     public sealed class AppleServices : MonoBehaviour
@@ -24,12 +33,24 @@ namespace OrbitOrchard.Services
         public const string SmallTipProductId = "com.flutterly.gravitile.tip.small";
         public const string MediumTipProductId = "com.flutterly.gravitile.tip.medium";
         public const string LargeTipProductId = "com.flutterly.gravitile.tip.large";
+        public const string SmallGemsProductId = "com.flutterly.gravitile.gems.small";
+        public const string MediumGemsProductId = "com.flutterly.gravitile.gems.medium";
+        public const string LargeGemsProductId = "com.flutterly.gravitile.gems.large";
+        public const string ExtraLargeGemsProductId = "com.flutterly.gravitile.gems.xl";
         public const string ClassicLeaderboardId = "grv3.orchard.classic";
         public const string WeeklyLeaderboardId = "grv3.lifeline.weekly.v1";
         public const string DailyLeaderboardId = "grv3.orchard.daily";
 
         public static AppleServices Instance { get; private set; }
         public event Action StateChanged;
+        private readonly Queue<AppleGemTransaction> undelivered = new Queue<AppleGemTransaction>();
+        private Action<AppleGemTransaction> gemTransactionReceived;
+        /// <summary>Transactions that arrive before a subscriber exists are held and replayed on subscription.</summary>
+        public event Action<AppleGemTransaction> GemTransactionReceived
+        {
+            add { gemTransactionReceived += value; while (undelivered.Count > 0) value?.Invoke(undelivered.Dequeue()); }
+            remove { gemTransactionReceived -= value; }
+        }
 
         public bool IsPassOwned { get; private set; }
         public bool IsReduceMotionEnabled { get; private set; }
@@ -47,6 +68,9 @@ namespace OrbitOrchard.Services
         public string GameCenterState { get; private set; } = "signedOut";
         public string DailyAvailability { get; private set; } = "";
         public IReadOnlyList<AppleProduct> Products => products;
+        /// <summary>Verified, unrevoked permanent unlocks currently owned through the App Store.</summary>
+        public bool Owns(string productId) => Array.IndexOf(ownedProducts, productId) >= 0;
+        private string[] ownedProducts = Array.Empty<string>();
         public bool IsAuthenticating => GameCenterState == "authenticating";
         /// <summary>-1 unsupported; iOS 0 nominal, 1 fair, 2 serious, 3 critical.</summary>
         public int ThermalState
@@ -125,6 +149,15 @@ namespace OrbitOrchard.Services
             OO_Purchase(productId);
 #else
             SetStatus(StoreStatus);
+#endif
+        }
+
+        /// <summary>Call only after the transaction's grant or refund is durably saved.</summary>
+        public void FinishTransaction(string transactionId)
+        {
+            if (string.IsNullOrEmpty(transactionId)) return;
+#if UNITY_IOS && !UNITY_EDITOR
+            OO_FinishTransaction(transactionId);
 #endif
         }
 
@@ -221,6 +254,16 @@ namespace OrbitOrchard.Services
         [Preserve]
         public void OnNativeMessage(string json)
         {
+            if (json != null && json.Contains("\"type\":\"gems\""))
+            {
+                AppleGemTransaction gems;
+                try { gems = JsonUtility.FromJson<AppleGemTransaction>(json); }
+                catch (ArgumentException) { Debug.LogError("Apple services returned an invalid gem transaction."); return; }
+                if (gems == null || string.IsNullOrEmpty(gems.transactionId) || string.IsNullOrEmpty(gems.productId)) return;
+                if (gemTransactionReceived == null) undelivered.Enqueue(gems);
+                else gemTransactionReceived(gems);
+                return;
+            }
             NativeState state;
             try { state = JsonUtility.FromJson<NativeState>(json); }
             catch (ArgumentException)
@@ -244,6 +287,7 @@ namespace OrbitOrchard.Services
             GameCenterStatus = state.gameCenterStatus ?? "";
             DailyAvailability = state.dailyAvailability ?? "";
             products = state.products ?? Array.Empty<AppleProduct>();
+            ownedProducts = state.ownedProducts ?? Array.Empty<string>();
             SetStatus(state.status ?? "");
         }
 
@@ -273,6 +317,7 @@ namespace OrbitOrchard.Services
             public string dailyAvailability;
             public string status;
             public AppleProduct[] products;
+            public string[] ownedProducts;
         }
 
 #if UNITY_IOS && !UNITY_EDITOR
@@ -281,6 +326,7 @@ namespace OrbitOrchard.Services
         [DllImport("__Internal")] private static extern void OO_Initialize();
         [DllImport("__Internal")] private static extern void OO_LoadProducts();
         [DllImport("__Internal")] private static extern void OO_Purchase(string productID);
+        [DllImport("__Internal")] private static extern void OO_FinishTransaction(string transactionID);
         [DllImport("__Internal")] private static extern void OO_RestorePurchases();
         [DllImport("__Internal")] private static extern void OO_AuthenticateGameCenter();
         [DllImport("__Internal")] private static extern void OO_ShowLeaderboard(int daily);

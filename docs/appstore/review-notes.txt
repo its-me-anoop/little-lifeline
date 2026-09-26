@@ -1,20 +1,15 @@
-Little Lifeline 3.3 is a miniature 3D clinic management game. This submission replaces the previously rejected merge-puzzle experience under the same app record and bundle ID. Please assess the submitted clinic build with its new listing and screenshots.
+Little Lifeline 4.0 is a miniature 3D clinic management game. No account, password, external hardware or payment is needed, and the simulation works offline. The game is fictional and provides no medical advice.
 
-No account, password, external hardware or payment is needed. The core simulation works offline. Privacy policy and Support links are in Settings and open externally. The game is fictional; it provides no medical advice and uses no real patient information.
+What's new for review: in-app purchases. This version adds four consumable gem packs (com.flutterly.gravitile.gems.small, .medium, .large, .xl) and one non-consumable, the Second Builder (com.flutterly.gravitile.builder). All five are attached to this version.
 
-Opening route:
-1. Launch and wait for the first patient to reach reception and pay 50 game coins.
-2. Tap the cash marker at the reception counter. The coins move to the wallet at the top of the screen.
-3. Select the highlighted first-aid room and choose Hire first nurse for 50 coins.
-4. Watch the nurse and patient walk to the treatment station. The progress indicator shows the care time; the patient leaves visibly bandaged. Regular arrivals then begin.
-5. Tap a room for equipment, facilities, decorations and renovation. Tap an individual desk or treatment station for its equipment and staff-training controls. The waiting-room option unlocks once two paid patients are waiting.
+How to find them:
+1. Launch and wait for the first patient to pay at reception, then tap the cash marker to collect it.
+2. Tap the gem counter next to the coin wallet at the top. This opens Gems & goals with three tabs: Today (daily goals and login streak), Goals (milestones) and Shop.
+3. The Shop tab lists the four gem packs with App Store prices, then items bought with gems: coin top-ups, double collections for 1 or 4 hours, longer offline earnings, and the Second Builder, which can be bought with money or unlocked with 400 gems earned in play.
+4. To see gems spent in play: tap a room, choose Renovate, then Finish beside the construction timer.
 
-Drag to pan and pinch to zoom. Home returns to reception. Settings has separate Music and Effects switches, Haptics and Less motion. Counter cash must be collected before it can be spent; patient payments and optional vending tips are game currency, not real-money transactions. Existing services keep operating during timed renovations. Offline staff earnings are capped at eight hours; earnings wait at reception for collection.
+Gems are awarded free for milestones, daily goals and the login streak, so every item can be reached without paying. Every room, upgrade and clinic can also be earned with game coins alone. There are no random rewards, loot boxes, advertisements or subscriptions.
 
-Larger clinic progression:
-Open Locations to see the completion checklist. Fully upgrade every starter room, component, workstation, staff-training level and amenity, hire/install all starter staff and stations, and finish construction. With 100,000 collected coins, choose Open doctors clinic. There is no review-only shortcut. The doctors clinic begins with one receptionist, doctor, nurse and pharmacist, so it operates even if the unlock spends the entire wallet. It can grow to four receptionists, four doctors, four nurses and two pharmacists, with six room tiers, a pharmacy, twelve parking bays and a taxi stand. Each location keeps its own patients, upgrades and uncollected cash; collected money follows the player.
+Purchases: a gem transaction is finished only after its gems are saved on the device, so an interrupted purchase is delivered on the next launch. Refunded purchases remove the unspent gems. Restore Purchases re-applies the Second Builder. Gems are consumable and stored on the device; the shop says so.
 
-Apple services:
-There are no new in-app purchases, advertisements, subscriptions or clinic leaderboards in this release. Earlier Plus/tip records belong to previous versions and are not submitted as new products. Restore purchases synchronises previously verified ownership through Apple; it does not unlock a paid clinic feature. The current game is fully playable without it. Existing saved progress is preserved when updating.
-
-The 3D clinic, physical patient/transport flow, individual staff/station progression and two connected locations are the current gameplay offered for review. The earlier merge-puzzle instructions and screenshots do not describe this version.
+Existing players keep their saved clinic. Milestones they reached before updating can be collected as gems.

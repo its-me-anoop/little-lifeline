@@ -21,9 +21,14 @@ namespace IdleClinic.Core
         public int DecorationFeePercent { get; }
         public int ConsultationFacilitiesFeePercent { get; }
         public int PharmacyFacilitiesFeePercent { get; }
+        /// <summary>Rules 1–3: added to the reception payment of a patient who parked.</summary>
         public long ParkingFeePerLevel { get; }
+        /// <summary>Rules 4: paid at the barrier as the car leaves, into the car park's own cash box.</summary>
+        public long ParkingExitFeePerLevel { get; }
         public long VendingTipPerLevel { get; }
         public long ToiletTipPerLevel { get; }
+        /// <summary>Offline coin limit, in visit fees; zero means unlimited.</summary>
+        public int OfflineCapVisits { get; }
 
         public long WaitingRoomCost { get; }
         public int WaitingRoomBuildSeconds { get; }
@@ -51,6 +56,8 @@ namespace IdleClinic.Core
         public ClinicGrowth RenovationGrowth { get; }
         public int RenovationBaseSeconds { get; }
         public ClinicGrowth RenovationTimeGrowth { get; }
+        /// <summary>Longest single construction; later tiers stop growing at this wait.</summary>
+        public int MaximumConstructionSeconds { get; }
 
         // Indexed by ClinicAmenity.
         public long[] AmenityBase { get; }
@@ -65,6 +72,7 @@ namespace IdleClinic.Core
             ConsultationFacilitiesFeePercent = 10;
             PharmacyFacilitiesFeePercent = 10;
             ParkingFeePerLevel = 5;
+            ParkingExitFeePerLevel = 0;
             VendingTipPerLevel = 5;
             ToiletTipPerLevel = 2;
             WaitingRoomCost = ClinicRules.WaitingRoomCost;
@@ -96,19 +104,50 @@ namespace IdleClinic.Core
             RenovationGrowth = new ClinicGrowth(5, 2);
             RenovationBaseSeconds = 60;
             RenovationTimeGrowth = new ClinicGrowth(3, 1);
+            MaximumConstructionSeconds = int.MaxValue;
             AmenityBase = new long[] { 220, 140, 180, 260 };
             AmenityGrowth = new ClinicGrowth(2, 1);
+            if (rulesVersion < 4) return;
+            // 4.0 pacing: a brisk first hour (cheaper first purchases, 30-second renovations, an
+            // affordable second nurse) that still climbs steeply, so later tiers are a real goal.
+            // Income and service speed are unchanged, so no clinic earns less.
+            HireGrowth = new ClinicGrowth(4, 1);
+            AddStationBase = new long[] { 0, 120, 160, 130 };
+            StationUpgradeBase = new long[] { 54, 66, 90, 72 };
+            TrainingBase = new long[] { 48, 60, 84, 66 };
+            UpgradeBase = new long[,]
+            {
+                { 36, 30, 24 },   // Reception
+                { 48, 36, 24 },   // First aid
+                { 21, 27, 24 },   // Waiting
+                { 66, 54, 24 },   // Consultation
+                { 57, 45, 24 }    // Pharmacy
+            };
+            UpgradeGrowth = new ClinicGrowth(17, 10);
+            RenovationBase = new long[] { 108, 150, 72, 180, 132 };
+            RenovationGrowth = new ClinicGrowth(3, 1);
+            RenovationBaseSeconds = 30;
+            RenovationTimeGrowth = new ClinicGrowth(4, 1);
+            MaximumConstructionSeconds = 4 * 60 * 60;
+            AmenityBase = new long[] { 130, 85, 110, 160 };
+            ParkingFeePerLevel = 0;
+            ParkingExitFeePerLevel = 10;
+            OfflineCapVisits = 250;
         }
 
         /// <summary>Rules 1–3 share these values; earlier saves are migrated before they are priced.</summary>
         public static readonly ClinicBalanceTable V3 = new ClinicBalanceTable(3);
+        public static readonly ClinicBalanceTable V4 = new ClinicBalanceTable(4);
     }
 
     public static class ClinicBalance
     {
+        public const int CurrentRulesVersion = 4;
+
         public static ClinicBalanceTable For(int rulesVersion)
         {
             if (rulesVersion >= 1 && rulesVersion <= 3) return ClinicBalanceTable.V3;
+            if (rulesVersion == 4) return ClinicBalanceTable.V4;
             throw new ArgumentOutOfRangeException(nameof(rulesVersion), rulesVersion, "No balance table exists for these rules.");
         }
 

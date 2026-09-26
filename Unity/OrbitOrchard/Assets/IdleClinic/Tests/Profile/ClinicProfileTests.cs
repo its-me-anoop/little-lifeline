@@ -108,11 +108,13 @@ namespace IdleClinic.Tests
             Assert.That(sim.Renovate(ClinicRoom.FirstAid).Success, Is.True);
             Assert.That(store.Save(store.Profile, now), Is.True);
             var expected = Clone(store.Profile.state);
-            new ClinicSimulation(expected).AdvanceOffline(3 * 24 * 3600);
+            var expectedReport = new ClinicSimulation(expected).AdvanceOffline(3 * 24 * 3600, ClinicRules.MaximumOfflineSeconds, ClinicRules.OfflineCoinCap(expected, 1));
             var beforeWallet = store.Profile.state.Wallet;
             var report = store.ApplyOffline(now.AddDays(3));
             Assert.That(report.wasCapped, Is.True);
-            Assert.That(report.earningsSeconds, Is.EqualTo(8 * 3600));
+            // Earning stops at eight hours, or sooner once the tills reach the offline coin limit.
+            Assert.That(report.earningsSeconds, Is.EqualTo(expectedReport.EarningsSeconds));
+            Assert.That(report.earningsSeconds, Is.LessThanOrEqualTo(8 * 3600));
             Assert.That(report.constructionSeconds, Is.EqualTo(3 * 24 * 3600));
             Assert.That(store.Profile.state.Construction, Is.Empty);
             Assert.That(store.Profile.state.Room(ClinicRoom.FirstAid).Tier, Is.EqualTo(2));
@@ -141,12 +143,14 @@ namespace IdleClinic.Tests
             var store=OpenClinic(out var now);var elapsed=ClinicRules.MaximumOfflineSeconds+24;
             var report=store.ApplyOffline(now.AddSeconds(elapsed));
             Assert.That(report.applied,Is.True);Assert.That(report.wasCapped,Is.True);
-            Assert.That(store.Profile.state.PausedTrafficTicks,Is.EqualTo(240));
+            var paused=store.Profile.state.PausedTrafficTicks;
+            Assert.That(paused,Is.EqualTo((long)Math.Round((elapsed-report.earningsSeconds)*ClinicRules.TicksPerSecond)));
+            Assert.That(paused,Is.GreaterThanOrEqualTo(240));
             var expected=JsonUtility.ToJson(store.Profile.state);
             var reopened=new ClinicProfileStore(directory);var loaded=reopened.LoadClinic(now.AddSeconds(elapsed));
             Assert.That(JsonUtility.ToJson(loaded.state),Is.EqualTo(expected));
             Assert.That(reopened.ApplyOffline(now.AddSeconds(elapsed)).applied,Is.False);
-            Assert.That(loaded.state.PausedTrafficTicks,Is.EqualTo(240));
+            Assert.That(loaded.state.PausedTrafficTicks,Is.EqualTo(paused));
             Assert.That(ClinicSimulation.IsValidState(loaded.state),Is.True);
         }
 

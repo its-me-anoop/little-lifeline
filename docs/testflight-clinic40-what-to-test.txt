@@ -1,0 +1,15 @@
+Little Lifeline 4.0 — Goals, gems and a more lifelike neighbourhood
+
+Your existing clinic, coins and upgrades carry over. Please update over 3.3 rather than reinstalling, so the save upgrade is tested too.
+
+Please try:
+• Tap the gem counter next to your coins. Collect the goals you have already reached, then check the next goals and the gem shop.
+• Start a room renovation and use Finish to complete it with gems. It is free in the last minute.
+• Renovations now take longer at higher tiers (up to eight hours) and later room upgrades cost more. Income is unchanged.
+• Park and leave: cars now pay at the exit barrier. Collect the coins from the pay machine marker or the car park panel.
+• Watch patients leave on foot: they should walk away down the street or across the crossing, not vanish at the door.
+• Look around the new people, cars, houses, car park and entrance on both clinics.
+
+The gem shop's App Store packs are not live yet in this build, so the shop may say it is loading. Goals and Finish work without purchases.
+
+Please report incorrect balances, gems not appearing after a goal, anything that vanishes or overlaps, or anything that looks wrong in the new scenery.

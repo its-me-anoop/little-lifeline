@@ -1,0 +1,152 @@
+{
+  "identifier": "9624E7D4-E25C-5AC0-B6C0-1F6127CFA542",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "2.99",
+      "familyShareable": true,
+      "internalID": "861E7929-C6CB-580E-92DB-85037E6DF734",
+      "localizations": [
+        {
+          "description": "Earlier supporter pass. Previous owners keep it.",
+          "displayName": "Orchard Pass",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.plus",
+      "referenceName": "Orchard Pass",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "0CEEB2E6-4639-522B-B47C-0414DC2776D3",
+      "localizations": [
+        {
+          "description": "A small thank-you to the developer.",
+          "displayName": "Nice Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.tip.small",
+      "referenceName": "Nice Tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "622EE11A-421F-5274-AF4B-C2FCE73E57F4",
+      "localizations": [
+        {
+          "description": "A kind thank-you to the developer.",
+          "displayName": "Kind Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.tip.medium",
+      "referenceName": "Kind Tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "CB9F4DE1-95F6-5577-9B2F-711A6F4186FB",
+      "localizations": [
+        {
+          "description": "A generous thank-you to the developer.",
+          "displayName": "Generous Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.tip.large",
+      "referenceName": "Generous Tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "860C8D82-DAB7-5FD0-BA4F-21C89B80F926",
+      "localizations": [
+        {
+          "description": "80 gems to finish construction early.",
+          "displayName": "Handful of Gems",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.gems.small",
+      "referenceName": "Handful of Gems",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "3D203D59-40FD-54A6-AEDC-308D5DFA8948",
+      "localizations": [
+        {
+          "description": "450 gems to finish construction early.",
+          "displayName": "Pouch of Gems",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.gems.medium",
+      "referenceName": "Pouch of Gems",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "BB9B7151-32AA-5A50-8AD9-36DBB95C8FF4",
+      "localizations": [
+        {
+          "description": "1,000 gems to finish construction early.",
+          "displayName": "Chest of Gems",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.gems.large",
+      "referenceName": "Chest of Gems",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "24.99",
+      "familyShareable": false,
+      "internalID": "43F98475-820B-5BCA-90FF-83CC53883E3D",
+      "localizations": [
+        {
+          "description": "2,800 gems to finish construction early.",
+          "displayName": "Vault of Gems",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.gems.xl",
+      "referenceName": "Vault of Gems",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": true,
+      "internalID": "0BF8DC1E-24D9-58BE-A325-A9226C64D121",
+      "localizations": [
+        {
+          "description": "A second builder: two rooms can build or renovate at once.",
+          "displayName": "Second Builder",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.flutterly.gravitile.builder",
+      "referenceName": "Second Builder",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

@@ -59,7 +59,7 @@ namespace IdleClinic.Presentation
             Initialize();if(Location==location)return;
             scene.gameObject.SetActive(false);ClinicArt.Destroy(scene.gameObject);anchors.Clear();Location=location;
             scene=art.Group(location==ClinicLocation.DoctorsClinic?"Small doctors clinic":"Fixed hospital",transform);
-            doctors=null;
+            doctors=null;effects=new ClinicUpgradeEffects(art,scene);
             if(location==ClinicLocation.DoctorsClinic)doctors=new DoctorsClinicWorld(art,scene,this,Anchor,RegisterSockets);
             else
             {
@@ -81,7 +81,7 @@ namespace IdleClinic.Presentation
             SceneCamera.cullingMask=1<<ClinicArt.Layer;SceneCamera.nearClipPlane=.1f;SceneCamera.farClipPlane=100;
             SceneCamera.allowHDR=false;SceneCamera.allowMSAA=true;
             BuildArchitecture();BuildFurniture();BuildAnchors();BuildLighting();BuildPrivacy();ClinicSurroundings.Build(art,scene);ClinicFurnishings.Build(art,scene);
-            actors=new ClinicActors(art,scene,this);upgrades=new ClinicUpgrades(art,scene);
+            actors=new ClinicActors(art,scene,this);upgrades=new ClinicUpgrades(art,scene);effects=new ClinicUpgradeEffects(art,scene);
             amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
             waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
             refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(3.40f,Floor,-1.66f),openingWidth:1.30f,name:"Waiting refreshment doorway");
@@ -102,11 +102,12 @@ namespace IdleClinic.Presentation
 
         public void Render(ClinicState state,float deltaTime,bool reducedMotion=false)
         {
-            Initialize();if(state==null)return;ConfigureLocation(state.Location);
+            Initialize();if(state==null)return;ConfigureLocation(state.Location);effects.Reduced=reducedMotion;
             ActiveServiceCount=0;foreach(var patient in state.Patients)if(patient.Phase==ClinicPatientPhase.CheckingIn||patient.Phase==ClinicPatientPhase.Consulting||patient.Phase==ClinicPatientPhase.Treating||patient.Phase==ClinicPatientPhase.Dispensing)ActiveServiceCount++;
             if(doctors!=null)
             {
                 actors.Render(state,reducedMotion);doctors.Render(state,actors,deltaTime,reducedMotion);
+                effects.Armed=true;effects.Update(deltaTime);
                 UpdateHome(deltaTime,reducedMotion);return;
             }
             for(int i=0;i<3;i++)roomState[i]=null;
@@ -114,27 +115,31 @@ namespace IdleClinic.Presentation
             for(int i=0;i<2;i++)
             {
                 ReceptionDeskState desk=null;for(int j=0;j<state.ReceptionDesks.Count;j++)if(state.ReceptionDesks[j].Id==i)desk=state.ReceptionDesks[j];
-                desks[i].SetActive(desk!=null);tills[i]=desk==null?0:desk.Till;
+                ClinicUpgradeEffects.Show(desks[i],desk!=null);tills[i]=desk==null?0:desk.Till;
                 int stacks=tills[i]==0?0:Mathf.Clamp(1+(int)Math.Log10(Math.Max(1,tills[i])),1,6);
                 for(int j=0;j<6;j++)cash[i,j].SetActive(j<stacks && desk!=null);
             }
             var treatment=roomState[1];int stationCount=treatment==null?1:treatment.StationCount;
-            for(int i=0;i<2;i++)stations[i].SetActive(i<stationCount);
+            for(int i=0;i<2;i++)ClinicUpgradeEffects.Show(stations[i],i<stationCount);
             receptionDivider.SetActive(desks[0].activeSelf&&desks[1].activeSelf);treatmentDivider.SetActive(stationCount>=2);
             var waiting=roomState[2];waitingBuilt=waiting!=null&&waiting.Built;
             waitingClosed.SetActive(!waitingBuilt);
             int capacity=waitingBuilt?Mathf.Clamp(4+2*(waiting.FacilitiesLevel-1),0,14):0;
-            for(int i=0;i<14;i++)seats[i].SetActive(i<capacity);
+            for(int i=0;i<14;i++)ClinicUpgradeEffects.Show(seats[i],i<capacity);
             for(int i=0;i<3;i++)
             {
                 var room=roomState[i];int tier=room==null?1:room.Tier;
-                for(int j=0;j<2;j++)tierDetails[i,j].SetActive((i!=2||waitingBuilt)&&tier>=j+2);
+                for(int j=0;j<2;j++)ClinicUpgradeEffects.Show(tierDetails[i,j],(i!=2||waitingBuilt)&&tier>=j+2);
                 bool building=false;for(int j=0;j<state.Construction.Count;j++)if((int)state.Construction[j].Room==i)building=true;
                 renovations[i].SetActive(building);
             }
             actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor.Render(actors,deltaTime,reducedMotion);
+            effects.Armed=true;effects.Update(deltaTime);
             UpdateHome(deltaTime,reducedMotion);
         }
+        private ClinicUpgradeEffects effects;
+        /// <summary>A ring of sparkles on the floor around an improved room or object.</summary>
+        public void CelebrateUpgrade(Vector3 point,float radius)=>effects?.Celebrate(new Vector3(point.x,Floor,point.z),radius);
         private void UpdateHome(float deltaTime,bool reducedMotion)
         {
             if(homing)
@@ -184,6 +189,7 @@ namespace IdleClinic.Presentation
         public Vector3 GetAmenityPoint(ClinicAmenity kind)=>doctors!=null?doctors.AmenityPoint(kind):kind==ClinicAmenity.Parking?ClinicAmenities.ParkingPoint:
             kind==ClinicAmenity.Toilet?ClinicAmenities.ToiletPoint:ClinicAmenities.VendingPoint;
         public Vector3 GetVendingCashPoint()=>doctors!=null?doctors.VendingCashPoint:ClinicAmenities.VendingCashPoint;
+        public Vector3 GetParkingCashPoint()=>ClinicParkingPresentation.CashPoint(doctors!=null);
         public Vector3 GetAnchorPoint(string name)
         {
             if(anchors.TryGetValue(name??"",out var anchor))return anchor.position;
@@ -330,14 +336,33 @@ namespace IdleClinic.Presentation
                 art.Box("Daylight window",scene,new Vector3(x,1.43f,4.81f),new Vector3(1.29f,.86f,.03f),"Blue");
                 art.Box("Window mullion",scene,new Vector3(x,1.44f,4.77f),new Vector3(.055f,.87f,.04f),"Ivory");
             }
-            art.Box("Entry mat",scene,new Vector3(.68f,.145f,-4.55f),new Vector3(1.29f,.012f,1.0f),"Sage");
-            for(float x=-5.4f;x<5.5f;x+=.72f)art.Box("Front path paver",scene,new Vector3(x,.12f,-5.15f),new Vector3(.68f,.07f,.55f),"Ivory");
+            art.Box("Entry mat",scene,new Vector3(.68f,.145f,-4.55f),new Vector3(1.29f,.012f,1.0f),"CarGraphite");
+            art.Box("Entry mat border",scene,new Vector3(.68f,.143f,-4.55f),new Vector3(1.37f,.01f,1.08f),"Chrome");
+            for(float x=-5.4f;x<5.5f;x+=.72f)art.Box("Front path paver",scene,new Vector3(x,.12f,-5.15f),new Vector3(.68f,.07f,.55f),"Concrete");
             art.Model("Plant",scene,new Vector3(5.15f,Floor,-4.22f));art.Model("Plant",scene,new Vector3(-5.09f,Floor,-3.98f));
+            // Freestanding entrance totem: a blue hospital-style panel with a white cross on a concrete base.
             var entrance=art.Group("Entrance care emblem",scene,new Vector3(1.60f,0,-4.68f));
-            art.Box("Emblem post",entrance,new Vector3(0,.72f,0),new Vector3(.075f,1.45f,.075f),"Gold");
-            art.Cylinder("Sage sign",entrance,new Vector3(0,1.49f,0),new Vector3(.56f,.10f,.56f),"SageDark").transform.localRotation=Quaternion.Euler(90,0,0);
-            art.Box("Care mark horizontal",entrance,new Vector3(0,1.49f,-.066f),new Vector3(.32f,.085f,.027f),"Linen");
-            art.Box("Care mark vertical",entrance,new Vector3(0,1.49f,-.066f),new Vector3(.085f,.32f,.027f),"Linen");
+            art.Box("Emblem post",entrance,new Vector3(0,.14f,0),new Vector3(.42f,.28f,.22f),"Concrete");
+            art.Box("Totem panel",entrance,new Vector3(0,1.00f,0),new Vector3(.36f,1.46f,.12f),"SignBlue");
+            art.Box("Totem cap",entrance,new Vector3(0,1.75f,0),new Vector3(.40f,.05f,.16f),"CarGraphite");
+            art.Box("Care mark horizontal",entrance,new Vector3(0,1.42f,-.066f),new Vector3(.24f,.07f,.02f),"Paint");
+            art.Box("Care mark vertical",entrance,new Vector3(0,1.42f,-.066f),new Vector3(.07f,.24f,.02f),"Paint");
+            for(int line=0;line<3;line++)art.Box("Totem directory line",entrance,new Vector3(0,1.10f-line*.13f,-.066f),new Vector3(.22f,.035f,.012f),"Paint");
+            // Street edge: tactile paving at the crossing, bollards kept clear of the crossing and walking routes.
+            art.Box("Crossing tactile paving",scene,new Vector3(.72f,.035f,-7.12f),new Vector3(1.85f,.02f,.40f),"PlateYellow");
+            foreach(var x in new[]{-5.2f,-4.1f,-3.0f,-1.9f,-.8f,2.8f,3.9f,5.0f})
+            {
+                var bollard=art.Group("Kerbside bollard",scene,new Vector3(x,0,-7.22f));
+                art.Cylinder("Bollard post",bollard,new Vector3(0,.42f,0),new Vector3(.13f,.84f,.13f),"CarGraphite");
+                art.Cylinder("Bollard band",bollard,new Vector3(0,.72f,0),new Vector3(.135f,.06f,.135f),"Paint");
+            }
+            var seat=art.Group("Entrance bench",scene,new Vector3(3.9f,0,-5.55f));
+            art.Box("Entrance bench seat",seat,new Vector3(0,.46f,0),new Vector3(1.40f,.07f,.40f),"Timber");
+            art.Box("Entrance bench back",seat,new Vector3(0,.74f,.19f),new Vector3(1.40f,.34f,.05f),"Timber");
+            for(int side=-1;side<=1;side+=2)art.Box("Entrance bench frame",seat,new Vector3(side*.60f,.30f,.04f),new Vector3(.06f,.60f,.44f),"CarGraphite");
+            var bin=art.Group("Entrance litter bin",scene,new Vector3(5.0f,0,-5.62f));
+            art.Cylinder("Litter bin body",bin,new Vector3(0,.42f,0),new Vector3(.40f,.84f,.40f),"CarGraphite");
+            art.Cylinder("Litter bin lid",bin,new Vector3(0,.86f,0),new Vector3(.44f,.06f,.44f),"Chrome");
             selection=art.Group("Room selection",scene);
             for(int side=-1;side<=1;side+=2)
             {

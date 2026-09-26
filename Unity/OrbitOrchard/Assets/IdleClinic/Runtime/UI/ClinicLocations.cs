@@ -36,7 +36,7 @@ namespace IdleClinic.App
         }
         private void ToggleLocations()
         {
-            locationsOpen=!locationsOpen;selectedRoom=null;selectedObject=null;settingsOpen=false;
+            locationsOpen=!locationsOpen;selectedRoom=null;selectedObject=null;settingsOpen=false;gemsOpen=false;
             world.SelectRoom(default(IdleClinic.Presentation.ClinicHit));dockKey="";UpdateReadouts();
         }
         private void BuildLocationsDock()
@@ -123,7 +123,7 @@ namespace IdleClinic.App
         private void ResetLocationPresentation()
         {
             CancelWorldGesture();
-            selectedRoom=null;selectedObject=null;settingsOpen=false;locationsOpen=false;dockKey="";
+            selectedRoom=null;selectedObject=null;settingsOpen=false;gemsOpen=false;locationsOpen=false;dockKey="";
             lastTutorial=State.Tutorial;wideWorldMarkers=false;
             ClearLocationMarkersAndFlights();
             world.Home(ReducedMotion);
@@ -140,6 +140,7 @@ namespace IdleClinic.App
             foreach(var marker in objectTargets.Values)marker.RemoveFromHierarchy();objectTargets.Clear();objectHits.Clear();
             waitingMarker?.RemoveFromHierarchy();waitingMarker=null;
             vendingCashMarker?.RemoveFromHierarchy();vendingCashMarker=null;
+            parkingCashMarker?.RemoveFromHierarchy();parkingCashMarker=null;
         }
     }
 }

@@ -238,7 +238,12 @@ namespace IdleClinic.Tests
             Assert.That(relief.gameObject.activeInHierarchy,Is.True);var head=System.Array.Find(actor.GetComponentInChildren<SkinnedMeshRenderer>().bones,b=>b.name=="head");
             Assert.That(Vector3.Dot(dressing.position-head.position,actor.forward),Is.GreaterThan(.13f));
             Assert.That(dressing.position.y-head.position.y,Is.InRange(.04f,.10f));
-            state.Patients.Clear();world.Render(state,.1f,reducedMotion);
+            var start=actor.position;
+            state.Patients.Clear();state.Tick+=20;world.Render(state,.1f,reducedMotion);
+            Assert.That(actor.gameObject.activeSelf,Is.True,"A visitor leaving on foot walks on down the street instead of vanishing at the door.");
+            Assert.That(Vector3.Distance(actor.position,start),Is.GreaterThan(.5f));
+            state.Tick+=600;world.Render(state,.1f,reducedMotion);
+            Assert.That(actor.gameObject.activeSelf,Is.False,"A long jump ends the stroll and returns the rig to the pool.");
             state.Patients.Add(new ClinicPatientState { Id=71,Phase=ClinicPatientPhase.ReceptionQueue,FromAnchor="reception.queue.0",ToAnchor="reception.queue.0" });
             world.Render(state,.1f,reducedMotion);
             Assert.That(Find("Patient 71"),Is.SameAs(actor));Assert.That(relief.gameObject.activeSelf,Is.False);

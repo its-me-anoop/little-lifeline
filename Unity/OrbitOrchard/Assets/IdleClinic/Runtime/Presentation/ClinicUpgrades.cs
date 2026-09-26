@@ -45,7 +45,7 @@ namespace IdleClinic.Presentation
                 int equipment=0;
                 if(kind==0){for(int i=0;i<state.ReceptionDesks.Count;i++)if(state.ReceptionDesks[i].Id==station)equipment=state.ReceptionDesks[i].EquipmentLevel;}
                 else {for(int i=0;i<state.TreatmentStations.Count;i++)if(state.TreatmentStations[i].Id==station)equipment=state.TreatmentStations[i].EquipmentLevel;}
-                for(int level=2;level<=6;level++)stationDetails[kind,station,level-2].SetActive(level<=equipment);
+                for(int level=2;level<=6;level++)ClinicUpgradeEffects.Show(stationDetails[kind,station,level-2],level<=equipment);
             }
             for(int room=0;room<3;room++)
             {
@@ -53,7 +53,7 @@ namespace IdleClinic.Presentation
                 for(int track=0;track<3;track++)for(int level=2;level<=6;level++)
                 {
                     bool active=data!=null&&data.Built&&data.Level((UpgradeTrack)track)>=level;
-                    var detail=details[room,track,level-2];if(detail.activeSelf!=active)detail.SetActive(active);
+                    ClinicUpgradeEffects.Show(details[room,track,level-2],active);
                 }
             }
         }

@@ -5,6 +5,7 @@ process never reads or changes the user's open Blender scene.
 """
 from pathlib import Path
 import math
+import os
 import sys
 import bpy
 from mathutils import Vector, Matrix
@@ -22,6 +23,7 @@ COLORS = {
     "SageDark": (.22,.36,.28), "Apricot": (.84,.49,.31), "Gold": (.76,.56,.23),
     "Ink": (.20,.27,.26), "Blue": (.41,.62,.64), "Skin": (.78,.56,.39),
     "Wood": (.59,.40,.27), "Clay": (.74,.55,.41), "Leaf": (.31,.49,.30),
+    "Rose": (.68,.37,.38),
 }
 MATS = {}
 for role, rgb in COLORS.items():
@@ -54,6 +56,15 @@ def tube(name,a,b,radius,role,vertices=12):
     av,bv=u(a),u(b);direction=bv-av
     bpy.ops.mesh.primitive_cylinder_add(vertices=vertices,radius=radius,depth=direction.length,location=(av+bv)/2)
     ob=bpy.context.object;ob.name=name;ob.rotation_euler=direction.to_track_quat("Z","Y").to_euler()
+    return material(ob,role,True)
+def taper(name,a,b,r1,r2,role,vertices=14,depth_scale=1):
+    """An open limb or torso segment narrowing from a to b. Joints are covered by rounded caps,
+    so no flat cone ends show. depth_scale flattens the front-to-back section, as for a chest."""
+    av,bv=u(a),u(b);direction=bv-av
+    bpy.ops.mesh.primitive_cone_add(vertices=vertices,radius1=r1,radius2=r2,depth=direction.length,location=(av+bv)/2,end_fill_type="NOTHING")
+    ob=bpy.context.object;ob.name=name
+    if depth_scale!=1:ob.scale=(1,depth_scale,1)
+    ob.rotation_euler=direction.to_track_quat("Z","Y").to_euler()
     return material(ob,role,True)
 def socket(asset,name,p,forward=(0,0,1)):
     ob=bpy.data.objects.new(asset+"__"+name,None);bpy.context.collection.objects.link(ob)
@@ -175,21 +186,59 @@ def human(name,uniform):
         bpy.ops.object.select_all(action="DESELECT");ob.select_set(True)
         bpy.ops.object.convert(target="MESH");bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
         group=ob.vertex_groups.new(name=bone);group.add(list(range(len(ob.data.vertices))),1,"REPLACE");parts.append(ob)
-    skin(orb("Tailored torso",(0,1.00,0),(.225,.235,.135),uniform,16),"spine")
-    skin(orb("Hip",(0,.74,0),(.20,.15,.135),"Ink"),"pelvis")
-    skin(orb("Face",(0,1.38,.015),(.16,.185,.145),"Skin",16),"head")
-    skin(orb("Sculpted hair",(0,1.50,-.015),(.165,.095,.15),"Ink"),"head")
-    for x in (-.055,.055):skin(orb("Eye",(x,1.40,.148),(.014,.018,.009),"Ink",8),"head")
-    skin(orb("Nose",(0,1.36,.157),(.030,.025,.023),"Skin",8),"head")
-    skin(box("Shirt placket",(0,1.00,.132),(.045,.25,.012),"Linen",.005),"spine")
-    if name!="Patient":skin(box("Name badge",(-.115,1.09,.142),(.085,.055,.018),"Gold",.008),"spine")
+    # Adult proportions, about six heads tall. Joints and clips are unchanged, so every
+    # socket, seat and animation from the previous figures still lines up.
+    nurse,receptionist,patient=name=="Nurse",name=="Receptionist",name=="Patient"
+    trousers="Ink"
+    # Head, face and hair.
+    skin(orb("Face",(0,1.405,.012),(.102,.122,.108),"Skin",20),"head")
+    skin(orb("Jaw",(0,1.345,.028),(.082,.062,.080),"Skin",16),"head")
+    for x in (-.101,.101):skin(orb("Ear",(x,1.395,-.004),(.018,.034,.024),"Skin",10),"head")
+    for x in (-.037,.037):
+        skin(orb("Eye",(x,1.418,.103),(.012,.014,.007),"Ink",10),"head")
+        skin(box("Brow",(x,1.447,.102),(.034,.008,.012),"Ink",.003),"head")
+    skin(orb("Nose",(0,1.385,.116),(.017,.030,.020),"Skin",10),"head")
+    skin(box("Mouth",(0,1.340,.100),(.036,.007,.010),"Clay",.003),"head")
+    skin(orb("Sculpted hair",(0,1.468,-.010),(.110,.072,.114),"Ink",16),"head")
+    skin(orb("Back hair",(0,1.410,-.052),(.106,.090,.074),"Ink",14),"head")
+    skin(taper("Neck",(0,1.230,0),(0,1.330,.008),.047,.042,"Skin"),"neck")
+    # Torso: shoulders broader than the waist.
+    skin(taper("Tailored torso",(0,1.200,0),(0,1.000,0),.172,.150,uniform,20,.64),"chest")
+    skin(taper("Waist",(0,1.005,0),(0,.840,0),.150,.146,uniform,20,.66),"spine")
+    skin(orb("Chest top",(0,1.195,0),(.172,.055,.110),uniform,20),"chest")
+    for x in (-.168,.168):skin(orb("Shoulder",(x,1.178,0),(.056,.052,.060),uniform,14),"chest")
+    skin(taper("Hip",(0,.860,0),(0,.720,0),.146,.150,trousers,20,.68),"pelvis")
+    skin(orb("Seat",(0,.725,0),(.150,.045,.100),trousers,18),"pelvis")
+    skin(box("Belt",(0,.832,0),(.316,.032,.206),"Wood" if receptionist else trousers,.012),"pelvis")
+    if nurse:
+        skin(box("Scrub neckline",(0,1.200,.104),(.074,.052,.010),"Skin",.004),"chest")
+        skin(box("Scrub chest pocket",(-.080,1.085,.107),(.078,.070,.010),uniform,.004),"chest")
+        skin(box("Pocket pen",(-.098,1.130,.112),(.010,.050,.010),"Gold",.002),"chest")
+    elif receptionist:
+        skin(box("Shirt placket",(0,1.070,.110),(.052,.230,.010),"Linen",.004),"chest")
+        for side in (-1,1):skin(box("Blazer lapel",(side*.052,1.130,.108),(.040,.150,.010),"SageDark",.004),"chest")
+        skin(box("Shirt collar",(0,1.215,.090),(.090,.030,.030),"Linen",.008),"chest")
+    else:
+        skin(orb("Hood",(0,1.215,-.070),(.140,.060,.070),uniform,14),"chest")
+        skin(box("Zip",(0,1.050,.110),(.012,.260,.008),"Linen",.003),"chest")
+        skin(box("Front pocket",(0,.940,.098),(.180,.070,.012),uniform,.006),"spine")
+    if not patient:skin(box("Name badge",(.080,1.110,.110),(.060,.040,.010),"Gold",.004),"chest")
     for side in ("L","R"):
-        for bone,a,b,r,role in (("upper_arm.","shoulder.","elbow.",.075,uniform),("forearm.","elbow.","hand.",.061,uniform),("upper_leg.","hip.","knee.",.092,"Ink"),("lower_leg.","knee.","ankle.",.071,"Ink")):
-            skin(tube(bone+side,rest[a+side],rest[b+side],r,role),bone+side)
-            skin(orb("Joint",rest[a+side],(r,r,r),role),bone+side)
-        skin(orb("Hand",rest["hand."+side],(.06,.065,.057),"Skin"),"hand."+side)
+        sleeve="Skin" if nurse else uniform
+        skin(taper("upper_arm."+side,rest["shoulder."+side],rest["elbow."+side],.050,.042,uniform),"upper_arm."+side)
+        if nurse:skin(orb("Sleeve cuff",rest["elbow."+side],(.047,.030,.047),uniform,12),"upper_arm."+side)
+        skin(taper("forearm."+side,rest["elbow."+side],rest["hand."+side],.040,.031,sleeve),"forearm."+side)
+        skin(orb("Elbow",rest["elbow."+side],(.041,.041,.041),sleeve,10),"forearm."+side)
+        hand=rest["hand."+side]
+        skin(orb("Hand",(hand[0],hand[1]-.035,hand[2]),(.030,.050,.026),"Skin",12),"hand."+side)
+        skin(orb("Thumb",(hand[0]-(-.020 if side=="L" else .020),hand[1]-.020,hand[2]+.020),(.012,.025,.012),"Skin",8),"hand."+side)
+        skin(taper("upper_leg."+side,rest["hip."+side],rest["knee."+side],.076,.056,trousers),"upper_leg."+side)
+        skin(orb("Knee",rest["knee."+side],(.056,.056,.056),trousers,12),"lower_leg."+side)
+        skin(taper("lower_leg."+side,rest["knee."+side],rest["ankle."+side],.054,.040,trousers),"lower_leg."+side)
         ankle=rest["ankle."+side]
-        skin(orb("Shoe",(ankle[0],.07,.10),(.10,.065,.145),"Ink"),"foot."+side)
+        shoe="Linen" if nurse else "Wood" if receptionist else "Ink"
+        skin(orb("Shoe",(ankle[0],.060,.060),(.052,.048,.120),shoe,14),"foot."+side)
+        skin(box("Shoe sole",(ankle[0],.014,.060),(.104,.026,.236),"Ink" if nurse else "Clay",.010),"foot."+side)
     bpy.ops.object.select_all(action="DESELECT")
     for ob in parts:ob.select_set(True)
     bpy.context.view_layer.objects.active=parts[0];bpy.ops.object.join();mesh=bpy.context.object;mesh.name=name+"Skin"
@@ -294,35 +343,43 @@ elif not ICON_ONLY:
     print("CLINIC_COMPLETE",SOURCE,flush=True)
 
 def render_icon():
-    """A real geometry render of the clinic nurse and a sage care bag, with no text or baked border."""
+    """A real geometry render: the clinic nurse waving outside a little clinic with a bold care cross,
+    on a warm field that stands out on the Home Screen. The cross is green: the red cross on white is a protected emblem. No text or baked border."""
     for collection in bpy.data.collections:collection.hide_render=collection.name!="Nurse"
-    root=bpy.data.objects["NurseRig"];root.location=u((.54,0,.28));root.rotation_euler[2]=math.pi
+    root=bpy.data.objects["NurseRig"];root.location=u((.78,0,-.70));root.rotation_euler[2]=math.pi*1.10;root.scale=(1.32,1.32,1.32)
     root.animation_data.action=bpy.data.actions["Nurse_Call"]
     bpy.context.scene.frame_set(9)
     collection=bpy.data.collections.new("App icon sculpture");bpy.context.scene.collection.children.link(collection)
     bpy.context.view_layer.active_layer_collection=bpy.context.view_layer.layer_collection.children[collection.name]
-    box("Care bag",(-.22,.54,-.32),(1.36,1.00,.56),"Sage",.18)
-    box("Stitched front pocket",(-.22,.50,-.619),(1.06,.70,.055),"SageDark",.13)
-    for x in (-.61,.17):
-        tube("Brass handle riser",(x,1.03,-.31),(x,1.24,-.31),.060,"Gold")
-    box("Curved handle grip",(-.22,1.26,-.31),(.88,.13,.13),"Wood",.06)
-    for x in (-.74,.30):box("Bag latch",(x,.97,-.637),(.11,.18,.035),"Gold",.025)
-    box("Ivory care symbol",(-.22,.52,-.66),(.46,.145,.04),"Linen",.045)
-    box("Ivory care symbol",(-.22,.52,-.676),(.145,.46,.04),"Linen",.045)
-    box("Studio floor",(0,-.10,0),(200,.15,200),"Ivory",0)
-    scene=bpy.context.scene;scene.render.engine="CYCLES";scene.cycles.samples=48
+    def paint(role,rgb,rough=.55):
+        mat=bpy.data.materials.new(role);mat.use_nodes=True;node=mat.node_tree.nodes.get("Principled BSDF")
+        node.inputs["Base Color"].default_value=(*rgb,1);node.inputs["Roughness"].default_value=rough;MATS[role]=mat
+    paint("IconField",(1.0,.66,.24));paint("IconCoral",(.03,.42,.20),.4);paint("IconGlass",(.38,.66,.74),.2)
+    paint("IconWall",(.97,.95,.88));paint("IconRoof",(.16,.42,.34))
+    # The clinic: bright walls, a deep green roof slab, a glass door and a large illuminated cross.
+    box("Clinic walls",(-.30,.78,.55),(1.90,1.56,1.10),"IconWall",.10)
+    box("Clinic roof",(-.30,1.62,.55),(2.12,.16,1.30),"IconRoof",.07)
+    box("Glass door",(-.12,.52,-.02),(.52,1.02,.05),"IconGlass",.03)
+    box("Door frame",(-.12,1.07,-.02),(.62,.08,.07),"IconRoof",.02)
+    for x in (-.92,.52):box("Window",(x,.98,-.02),(.40,.40,.05),"IconGlass",.03)
+    box("Sign plate",(-.30,2.18,.40),(.98,.98,.14),"IconWall",.16)
+    box("Care cross",(-.30,2.18,.31),(.72,.24,.08),"IconCoral",.05)
+    box("Care cross",(-.30,2.18,.30),(.24,.72,.08),"IconCoral",.05)
+    plant((-1.42,0,-.20),1.25);plant((.46,0,-.08),.9)
+    box("Field",(0,-.10,0),(200,.15,200),"IconField",0)
+    scene=bpy.context.scene;scene.render.engine="CYCLES";scene.cycles.samples=64
     scene.render.resolution_x=1024;scene.render.resolution_y=1024;scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG";scene.render.image_settings.color_mode="RGB";scene.render.film_transparent=False
-    bpy.ops.object.camera_add(location=(3.4,6,3.8));camera=bpy.context.object
-    camera.rotation_euler=(Vector((0,0,.90))-camera.location).to_track_quat("-Z","Y").to_euler()
-    camera.data.type="ORTHO";camera.data.ortho_scale=2.45;scene.camera=camera
-    bpy.ops.object.light_add(type="AREA",location=(1,4,7));key=bpy.context.object
-    key.data.energy=650;key.data.shape="DISK";key.data.size=5
-    scene.world=bpy.data.worlds.new("Warm clinic studio");scene.world.use_nodes=True
-    scene.world.node_tree.nodes.get("Background").inputs[0].default_value=(.82,.83,.75,1)
-    scene.world.node_tree.nodes.get("Background").inputs[1].default_value=.70
-    scene.view_settings.view_transform="Standard";scene.view_settings.exposure=-.55
-    scene.render.filepath=str(OUT.parents[2]/"AppIcon.png")
+    bpy.ops.object.camera_add(location=(3.2,7,3.6));camera=bpy.context.object
+    camera.rotation_euler=(Vector((.12,.05,1.20))-camera.location).to_track_quat("-Z","Y").to_euler()
+    camera.data.type="ORTHO";camera.data.ortho_scale=3.75;scene.camera=camera
+    bpy.ops.object.light_add(type="AREA",location=(2,5,7));key=bpy.context.object
+    key.data.energy=900;key.data.shape="DISK";key.data.size=5
+    scene.world=bpy.data.worlds.new("Warm clinic afternoon");scene.world.use_nodes=True
+    scene.world.node_tree.nodes.get("Background").inputs[0].default_value=(1.0,.84,.58,1)
+    scene.world.node_tree.nodes.get("Background").inputs[1].default_value=.75
+    scene.view_settings.view_transform="Standard";scene.view_settings.exposure=-.15
+    scene.render.filepath=os.environ.get("CLINIC_ICON_OUT") or str(OUT.parents[2]/"AppIcon.png")
     bpy.ops.render.render(write_still=True)
     print("CLINIC_ICON",scene.render.filepath,flush=True)
 

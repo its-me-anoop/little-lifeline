@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using IdleClinic.Core;
@@ -8,6 +10,10 @@ using UnityEngine;
 
 namespace IdleClinic.Services
 {
+    /// <summary>Outcome of applying an App Store transaction to the saved ledger. Finish the transaction
+    /// for Granted, AlreadyGranted and Refunded; leave it unfinished for Rejected and NotSaved.</summary>
+    public enum ClinicPurchaseGrant { Granted, AlreadyGranted, Rejected, NotSaved, Refunded }
+
     /// <summary>Progress and accounted time commit together before offline results are exposed.</summary>
     public sealed class ClinicProfileStore
     {
@@ -99,6 +105,8 @@ namespace IdleClinic.Services
                 Error = "This clinic state could not be saved. The last good save is unchanged.";
                 return false;
             }
+            ClinicStateMigration.TryAdoptCurrentRules(profile.state);
+            ClinicStateMigration.TryAdoptCurrentRules(profile.doctorsState);
             // Active ticks have already happened even if storage fails. Pair their in-memory
             // watermark with that state; the disk snapshot retains its own previous time.
             profile.lastAccountedUtcTicks = Math.Max(profile.lastAccountedUtcTicks, now.UtcDateTime.Ticks);
@@ -114,7 +122,7 @@ namespace IdleClinic.Services
         /// <summary>Publish travel only after both clinics and the shared wallet commit together.</summary>
         public bool SelectLocation(ClinicLocation destination, DateTimeOffset now)
         {
-            if (!CanChangeLocation()) return false;
+            if (!CanCommit()) return false;
             if (!Enum.IsDefined(typeof(ClinicLocation), destination)) { Error = "Choose a clinic."; return false; }
             if (destination == Profile.activeLocation) return true;
             if (Profile.doctorsState == null) { Error = "The doctors’ clinic is still locked."; return false; }
@@ -124,12 +132,12 @@ namespace IdleClinic.Services
             var transferred = from.TransferWalletTo(to);
             if (!transferred.Success) { Error = transferred.Message; return false; }
             candidate.activeLocation = destination;
-            return CommitTravel(candidate, now);
+            return CommitCandidate(candidate, now);
         }
 
         public bool OpenDoctorsClinic(DateTimeOffset now)
         {
-            if (!CanChangeLocation()) return false;
+            if (!CanCommit()) return false;
             if (Profile.doctorsState != null || Profile.activeLocation != ClinicLocation.StarterClinic)
             { Error = "The doctors’ clinic is already open."; return false; }
             var candidate = Copy(Profile);
@@ -141,17 +149,249 @@ namespace IdleClinic.Services
             if (!transferred.Success) { Error = transferred.Message; return false; }
             candidate.doctorsState = doctors.State;
             candidate.activeLocation = ClinicLocation.DoctorsClinic;
-            return CommitTravel(candidate, now);
+            return CommitCandidate(candidate, now);
         }
 
-        private bool CanChangeLocation()
+        /// <summary>Rooms that can build or renovate at once.</summary>
+        public int ConstructionSlots => HasUnlock(ClinicUnlocks.ExtraBuilder) ? 2 : 1;
+        public bool HasUnlock(string unlock) => Profile?.premium?.unlocks != null && Profile.premium.unlocks.Contains(unlock);
+
+        public bool UnlockExtraBuilderWithGems(DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            if (HasUnlock(ClinicUnlocks.ExtraBuilder)) { Error = "Your second builder is already working for you."; return false; }
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Spend(ClinicUnlocks.ExtraBuilderGems)) { Error = "You need " + ClinicUnlocks.ExtraBuilderGems + " gems for a second builder."; return false; }
+            ClinicPremiumState.Record(candidate.premium.unlocks, ClinicUnlocks.ExtraBuilder);
+            return CommitCandidate(candidate, now);
+        }
+
+        /// <summary>Mirror an owned App Store unlock into the save, so it works offline. Repeating is harmless.</summary>
+        public bool RecordPurchasedUnlock(string unlock, DateTimeOffset now)
+        {
+            if (string.IsNullOrEmpty(unlock)) return false;
+            if (HasUnlock(unlock)) return true;
+            if (!CanCommit()) return false;
+            var candidate = Copy(Profile);
+            ClinicPremiumState.Record(candidate.premium.unlocks, unlock);
+            return CommitCandidate(candidate, now);
+        }
+
+        public IEnumerable<ClinicMilestone> ClaimableMilestones()
+            => Profile == null ? Enumerable.Empty<ClinicMilestone>()
+                : ClinicMilestones.All.Where(m => !Profile.premium.milestonesClaimed.Contains(m.Id) && m.IsMet(Profile.state, Profile.doctorsState));
+
+        public bool ClaimMilestone(string id, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var milestone = ClinicMilestones.Find(id);
+            if (milestone == null) { Error = "That goal is not available."; return false; }
+            if (Profile.premium.milestonesClaimed.Contains(id)) { Error = "That reward has already been collected."; return false; }
+            if (!milestone.IsMet(Profile.state, Profile.doctorsState)) { Error = "Finish the goal to collect its reward."; return false; }
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Earn(milestone.GemReward)) { Error = "Your gem balance is full."; return false; }
+            ClinicPremiumState.Record(candidate.premium.milestonesClaimed, id);
+            return CommitCandidate(candidate, now);
+        }
+
+        public ClinicGuideProgress GuideProgress => Profile?.premium == null ? default
+            : new ClinicGuideProgress(Profile.premium.milestonesClaimed.Count(id => !id.StartsWith(ClinicGuide.Prefix, StringComparison.Ordinal)), Profile.premium.gemsSpent);
+
+        /// <summary>The first unclaimed guide step, done or not; null once the whole guide is collected.</summary>
+        public ClinicGuideStep CurrentGuideStep()
+            => Profile?.premium == null ? null : ClinicGuide.Steps.FirstOrDefault(s => !Profile.premium.milestonesClaimed.Contains(s.Id));
+
+        public bool IsGuideStepDone(ClinicGuideStep step)
+            => step != null && Profile != null && step.IsDone(Profile.state, Profile.doctorsState, GuideProgress);
+
+        public bool ClaimGuideStep(string id, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var step = ClinicGuide.Find(id);
+            if (step == null) { Error = "That step is not available."; return false; }
+            if (Profile.premium.milestonesClaimed.Contains(id)) { Error = "That reward has already been collected."; return false; }
+            if (!IsGuideStepDone(step)) { Error = "Finish this step to collect its reward."; return false; }
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Earn(step.GemReward)) { Error = "Your gem balance is full."; return false; }
+            ClinicPremiumState.Record(candidate.premium.milestonesClaimed, id);
+            return CommitCandidate(candidate, now);
+        }
+
+        /// <summary>Finish active-clinic construction for gems priced from the time actually remaining.</summary>
+        public bool SkipConstruction(int jobId, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var candidate = Copy(Profile);
+            var state = candidate.ActiveState;
+            var job = state.Construction.Find(c => c.Id == jobId);
+            if (job == null) { Error = "That work has already finished."; return false; }
+            var cost = ClinicPremiumRules.SkipCost(state, job);
+            if (!candidate.premium.Spend(cost)) { Error = "You need " + cost + " gems to finish this now."; return false; }
+            if (!new ClinicSimulation(state).CompleteConstructionNow(jobId).Success) { Error = "That work has already finished."; return false; }
+            return CommitCandidate(candidate, now);
+        }
+
+        /// <summary>Apply one verified App Store transaction at most once. Finish the transaction only after
+        /// <see cref="ClinicPurchaseGrant.Granted"/> or <see cref="ClinicPurchaseGrant.AlreadyGranted"/>.</summary>
+        public ClinicPurchaseGrant GrantPurchase(string transactionId, long gems, DateTimeOffset now)
+        {
+            if (string.IsNullOrEmpty(transactionId) || transactionId.Length > ClinicPremiumState.MaximumIdLength || gems <= 0)
+                return ClinicPurchaseGrant.Rejected;
+            if (Profile?.premium != null && Profile.premium.processedTransactionIds.Contains(transactionId)) return ClinicPurchaseGrant.AlreadyGranted;
+            if (Profile?.premium != null && Profile.premium.revokedTransactionIds.Contains(transactionId)) return ClinicPurchaseGrant.Refunded;
+            if (!CanCommit()) return ClinicPurchaseGrant.NotSaved;
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Purchase(gems)) { Error = "Your gem balance is full."; return ClinicPurchaseGrant.NotSaved; }
+            ClinicPremiumState.Record(candidate.premium.processedTransactionIds, transactionId);
+            return CommitCandidate(candidate, now) ? ClinicPurchaseGrant.Granted : ClinicPurchaseGrant.NotSaved;
+        }
+
+        /// <summary>Apple refunded a purchase: remove its gems once, never taking the balance below zero.</summary>
+        public ClinicPurchaseGrant RevokePurchase(string transactionId, long gems, DateTimeOffset now)
+        {
+            if (string.IsNullOrEmpty(transactionId) || transactionId.Length > ClinicPremiumState.MaximumIdLength || gems <= 0)
+                return ClinicPurchaseGrant.Rejected;
+            if (Profile?.premium != null && Profile.premium.revokedTransactionIds.Contains(transactionId)) return ClinicPurchaseGrant.AlreadyGranted;
+            if (!CanCommit()) return ClinicPurchaseGrant.NotSaved;
+            var candidate = Copy(Profile);
+            // A purchase that was never granted gives nothing back, but is remembered so it cannot be granted later.
+            candidate.premium.Revoke(candidate.premium.processedTransactionIds.Contains(transactionId) ? gems : 0);
+            ClinicPremiumState.Record(candidate.premium.revokedTransactionIds, transactionId);
+            return CommitCandidate(candidate, now) ? ClinicPurchaseGrant.Granted : ClinicPurchaseGrant.NotSaved;
+        }
+
+        // ---- Offline limits -------------------------------------------------------------------------------
+        public int OfflineLimitHours
+        {
+            get { var hours = 8; foreach (var tier in ClinicShopOffers.OfflineTiers) if (HasUnlock(tier.Id)) hours = Math.Max(hours, tier.Hours); return hours; }
+        }
+        public double OfflineCoinMultiplier
+        {
+            get { var multiplier = 1d; foreach (var tier in ClinicShopOffers.OfflineTiers) if (HasUnlock(tier.Id)) multiplier = Math.Max(multiplier, tier.CoinMultiplier); return multiplier; }
+        }
+        public long OfflineCoinCap => Profile == null ? 0 : ClinicRules.OfflineCoinCap(Profile.ActiveState, OfflineCoinMultiplier);
+
+        public bool BuyOfflineUpgrade(string id, DateTimeOffset now)
+        {
+            var tier = Array.Find(ClinicShopOffers.OfflineTiers, o => o.Id == id);
+            if (tier == null) { Error = "That upgrade is not available."; return false; }
+            if (OfflineLimitHours >= tier.Hours) { Error = "You already have this."; return false; }
+            return SpendGems(tier.Gems, now, candidate => ClinicPremiumState.Record(candidate.premium.unlocks, tier.Id));
+        }
+
+        // ---- Daily goals and login streak ---------------------------------------------------------------
+        public int Today(DateTimeOffset now) => ClinicDaily.Day(now);
+
+        /// <summary>Start a new day's goals from the current totals. Kept in memory until the next save.</summary>
+        public void EnsureDay(DateTimeOffset now)
+        {
+            if (Profile == null) return;
+            Profile.Normalize();
+            var daily = Profile.daily; var today = Today(now);
+            if (daily.firstSeenUtcTicks == 0) daily.firstSeenUtcTicks = now.UtcDateTime.Ticks;
+            if (daily.day == today) return;
+            var totals = ClinicDailyTotals.Of(Profile.state, Profile.doctorsState);
+            daily.day = today; daily.claimed.Clear();
+            daily.baseTreatments = totals.Treatments; daily.baseCollected = totals.Collected; daily.baseSpent = totals.Spent; daily.baseParking = totals.ParkingFees;
+        }
+
+        public IReadOnlyList<ClinicDailyGoal> DailyGoals(DateTimeOffset now)
+        {
+            EnsureDay(now);
+            var active = Profile.ActiveState;
+            return ClinicDaily.Goals(Profile.daily.day, active, (active.Amenity(ClinicAmenity.Parking)?.Level ?? 0) > 0 && ClinicRules.ParkingExitFee(active) > 0);
+        }
+        public ClinicDailyTotals DailyTotals => ClinicDailyTotals.Of(Profile.state, Profile.doctorsState);
+        public bool IsDailyClaimed(string id) => Profile?.daily?.claimed.Contains(id) == true;
+        public long DailyProgress(ClinicDailyGoal goal) => goal.Progress(DailyTotals, Profile.daily.Baseline);
+        public bool IsDailyDone(ClinicDailyGoal goal) => goal.IsDone(DailyTotals, Profile.daily.Baseline);
+        public int DailyReady(DateTimeOffset now) => DailyGoals(now).Count(g => IsDailyDone(g) && !IsDailyClaimed(g.Id)) + (LoginRewardReady(now) ? 1 : 0);
+
+        public bool ClaimDailyGoal(string id, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var goal = DailyGoals(now).FirstOrDefault(g => g.Id == id);
+            if (goal == null) { Error = "That goal is not on today's list."; return false; }
+            if (IsDailyClaimed(id)) { Error = "Already collected today."; return false; }
+            if (!IsDailyDone(goal)) { Error = "Finish the goal to collect its reward."; return false; }
+            var candidate = Copy(Profile);
+            candidate.daily.claimed.Add(id);
+            var gems = goal.GemReward + (candidate.daily.claimed.Count == ClinicDaily.GoalsPerDay ? ClinicDaily.AllGoalsGemBonus : 0);
+            if (!candidate.premium.Earn(gems) || !ClinicSimulation.TryGrantReward(candidate.ActiveState, goal.CoinReward)) { Error = "Your balance is full."; return false; }
+            return CommitCandidate(candidate, now);
+        }
+
+        public bool LoginRewardReady(DateTimeOffset now) => Profile?.daily != null && Profile.daily.loginDay != Today(now);
+        /// <summary>The streak day the next login reward counts as: it grows on consecutive days and restarts after a gap.</summary>
+        public int NextStreakDay(DateTimeOffset now)
+            => Profile.daily.loginDay == Today(now) - 1 ? Profile.daily.loginStreak + 1 : Profile.daily.loginDay == Today(now) ? Profile.daily.loginStreak : 1;
+
+        public bool ClaimLoginReward(DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            EnsureDay(now);
+            if (!LoginRewardReady(now)) { Error = "Come back tomorrow for the next reward."; return false; }
+            var candidate = Copy(Profile);
+            var streak = NextStreakDay(now);
+            candidate.daily.loginDay = Today(now); candidate.daily.loginStreak = streak;
+            if (!candidate.premium.Earn(ClinicDaily.StreakReward(streak))
+                || !ClinicSimulation.TryGrantReward(candidate.ActiveState, ClinicDaily.StreakCoins(streak, candidate.ActiveState))) { Error = "Your balance is full."; return false; }
+            return CommitCandidate(candidate, now);
+        }
+
+        // ---- Coin packs and boosts ----------------------------------------------------------------------
+        public long CoinPackAmount(ClinicShopOffers.CoinPack pack) => Math.Max(50, ClinicRules.VisitFee(Profile.ActiveState)) * pack.Visits;
+
+        public bool BuyCoinPack(string id, DateTimeOffset now)
+        {
+            var pack = Array.Find(ClinicShopOffers.CoinPacks, p => p.Id == id);
+            if (pack == null) { Error = "That pack is not available."; return false; }
+            var coins = CoinPackAmount(pack);
+            return SpendGems(pack.Gems, now, candidate => ClinicSimulation.TryGrantReward(candidate.ActiveState, coins));
+        }
+
+        public bool BoostActive(DateTimeOffset now) => Profile?.daily != null && Profile.daily.boostEndsUtcTicks > now.UtcDateTime.Ticks;
+        public TimeSpan BoostRemaining(DateTimeOffset now) => BoostActive(now) ? TimeSpan.FromTicks(Profile.daily.boostEndsUtcTicks - now.UtcDateTime.Ticks) : TimeSpan.Zero;
+
+        public bool BuyBoost(string id, DateTimeOffset now)
+        {
+            var boost = Array.Find(ClinicShopOffers.Boosts, b => b.Id == id);
+            if (boost == null) { Error = "That boost is not available."; return false; }
+            return SpendGems(boost.Gems, now, candidate =>
+            {
+                var from = Math.Max(candidate.daily.boostEndsUtcTicks, now.UtcDateTime.Ticks);
+                candidate.daily.boostEndsUtcTicks = from + TimeSpan.FromHours(boost.Hours).Ticks;
+                return true;
+            });
+        }
+
+        /// <summary>While a boost runs, every collection is matched by the same amount again as a reward.</summary>
+        public long GrantBoostBonus(long collected, DateTimeOffset now)
+        {
+            if (collected <= 0 || !BoostActive(now) || !CanCommit()) return 0;
+            var candidate = Copy(Profile);
+            if (!ClinicSimulation.TryGrantReward(candidate.ActiveState, collected)) return 0;
+            return CommitCandidate(candidate, now) ? collected : 0;
+        }
+
+        private bool SpendGems(long gems, DateTimeOffset now, Func<ClinicProfile, bool> apply)
+        {
+            if (!CanCommit()) return false;
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Spend(gems)) { Error = "You need " + gems + " gems."; return false; }
+            if (!apply(candidate)) { Error = "That could not be applied."; return false; }
+            return CommitCandidate(candidate, now);
+        }
+        private bool SpendGems(long gems, DateTimeOffset now, Action<ClinicProfile> apply) => SpendGems(gems, now, candidate => { apply(candidate); return true; });
+
+        private bool CanCommit()
         {
             if (HasPendingOfflineProgress) { Error = "Saving your return first…"; return false; }
             if (!IsValid(Profile)) { Error = "Your clinic could not be checked. The last good save is unchanged."; return false; }
             return true;
         }
 
-        private bool CommitTravel(ClinicProfile candidate, DateTimeOffset now)
+        private bool CommitCandidate(ClinicProfile candidate, DateTimeOffset now)
         {
             candidate.lastAccountedUtcTicks = Math.Max(candidate.lastAccountedUtcTicks, now.UtcDateTime.Ticks);
             candidate.revision = NextRevision(candidate.revision);
@@ -176,8 +416,10 @@ namespace IdleClinic.Services
                 return result;
             }
             var candidate = Copy(Profile);
-            var advanced = new ClinicSimulation(candidate.state).AdvanceOffline(elapsed);
-            var doctors = candidate.doctorsState == null ? null : new ClinicSimulation(candidate.doctorsState).AdvanceOffline(elapsed);
+            var seconds = OfflineLimitHours * 3600d;
+            var advanced = new ClinicSimulation(candidate.state).AdvanceOffline(elapsed, seconds, ClinicRules.OfflineCoinCap(candidate.state, OfflineCoinMultiplier));
+            var doctors = candidate.doctorsState == null ? null
+                : new ClinicSimulation(candidate.doctorsState).AdvanceOffline(elapsed, seconds, ClinicRules.OfflineCoinCap(candidate.doctorsState, OfflineCoinMultiplier));
             candidate.lastAccountedUtcTicks = Math.Max(candidate.lastAccountedUtcTicks, targetTicks);
             candidate.revision = NextRevision(candidate.revision);
             if (!WriteSnapshot(candidate))
@@ -196,6 +438,8 @@ namespace IdleClinic.Services
             result.tillEarned = AddReport(advanced.TillEarned, doctors?.TillEarned ?? 0);
             result.treatmentsCompleted = AddReport(advanced.TreatmentsCompleted, doctors?.TreatmentsCompleted ?? 0);
             result.wasCapped = advanced.WasCapped;
+            result.coinCapped = advanced.CoinCapped || (doctors?.CoinCapped ?? false);
+            result.limitHours = OfflineLimitHours;
             result.applied = true;
             LastOfflineReport = result;
             return result;
@@ -362,7 +606,8 @@ namespace IdleClinic.Services
                 && profile.lastAccountedUtcTicks > 0 && profile.lastAccountedUtcTicks <= DateTime.MaxValue.Ticks && profile.state != null;
 
         private static bool IsValid(ClinicProfile profile)
-            => IsValidClinics(profile, ClinicProfile.CurrentSchemaVersion) && profile.premium != null && profile.premium.IsValid();
+            => IsValidClinics(profile, ClinicProfile.CurrentSchemaVersion) && profile.premium != null && profile.premium.IsValid()
+                && (profile.daily == null || profile.daily.IsValid());
 
         private static bool IsValidClinics(ClinicProfile profile, int version)
         {

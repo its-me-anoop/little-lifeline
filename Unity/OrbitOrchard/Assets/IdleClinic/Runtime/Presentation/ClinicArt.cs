@@ -44,13 +44,44 @@ namespace IdleClinic.Presentation
             if(materials.TryGetValue(role,out var material)) return material;
             material=new Material(Shader.Find(role=="Paper" ? "Unlit/Color" : "Standard")){name="Clinic "+role,enableInstancing=true};
             material.color=Color(role);
-            if(role!="Paper") { material.SetFloat("_Glossiness",role=="Gold"?.40f:.19f);material.SetFloat("_Metallic",role=="Gold"?.45f:0); }
+            if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:0); }
             materials.Add(role,material);return material;
+        }
+        private static float Glossiness(string role)
+        {
+            if(role=="Glass")return .82f;
+            if(role=="Chrome")return .72f;
+            if(role.StartsWith("Car",StringComparison.Ordinal))return .58f;
+            if(role=="LampLight"||role=="TailLight")return .6f;
+            return role=="Gold"?.40f:.19f;
         }
         internal static Color Color(string role)
         {
             switch(role)
             {
+                // Vehicles, street and building materials in real-world tones, slightly warmed to sit with the clinic palette.
+                case "CarWhite":return new Color(.87f,.87f,.84f);
+                case "CarSilver":return new Color(.64f,.66f,.66f);
+                case "CarGraphite":return new Color(.27f,.29f,.30f);
+                case "CarNavy":return new Color(.19f,.27f,.40f);
+                case "CarRed":return new Color(.60f,.17f,.15f);
+                case "CarSage":return new Color(.38f,.49f,.42f);
+                case "CarTaxi":return new Color(.90f,.70f,.20f);
+                case "Glass":return new Color(.20f,.27f,.31f);
+                case "Chrome":return new Color(.76f,.77f,.75f);
+                case "Tyre":return new Color(.12f,.13f,.13f);
+                case "LampLight":return new Color(.98f,.93f,.76f);
+                case "TailLight":return new Color(.70f,.12f,.12f);
+                case "PlateYellow":return new Color(.93f,.80f,.27f);
+                case "Paint":return new Color(.93f,.93f,.89f);
+                case "Concrete":return new Color(.73f,.73f,.69f);
+                case "AsphaltDark":return new Color(.31f,.33f,.33f);
+                case "SignBlue":return new Color(.16f,.33f,.58f);
+                case "RoofTile":return new Color(.60f,.32f,.24f);
+                case "Slate":return new Color(.35f,.39f,.42f);
+                case "Brick":return new Color(.63f,.39f,.30f);
+                case "Render":return new Color(.90f,.87f,.80f);
+                case "Timber":return new Color(.45f,.31f,.22f);
                 case "Paper":return new Color(.95f,.935f,.875f);
                 case "Ivory":return new Color(.88f,.875f,.81f);
                 case "Linen":return new Color(.94f,.93f,.86f);

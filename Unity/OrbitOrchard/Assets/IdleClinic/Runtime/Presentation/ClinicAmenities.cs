@@ -96,10 +96,10 @@ namespace IdleClinic.Presentation
                 else { vendingLevel=level;VendingTill=amenity.Till; }
 
             }
-            for(int kind=1;kind<3;kind++)for(int tier=1;tier<=3;tier++)tierDetails[kind,tier-1].SetActive(tier<=(kind==0?parking:kind==1?toiletLevel:vendingLevel));
+            for(int kind=1;kind<3;kind++)for(int tier=1;tier<=3;tier++)ClinicUpgradeEffects.Show(tierDetails[kind,tier-1],tier<=(kind==0?parking:kind==1?toiletLevel:vendingLevel));
             parkingWorld.Render(state,parking,reducedMotion);
             toiletClosure.SetActive(toiletLevel==0);
-            toilet.SetActive(toiletLevel>0);toiletPlot.SetActive(toiletLevel==0);vending.SetActive(vendingLevel>0);vendingPlot.SetActive(vendingLevel==0);
+            ClinicUpgradeEffects.Show(toilet,toiletLevel>0);toiletPlot.SetActive(toiletLevel==0);ClinicUpgradeEffects.Show(vending,vendingLevel>0);vendingPlot.SetActive(vendingLevel==0);
             tipCup.SetActive(vendingLevel>0);cash.SetActive(vendingLevel>0&&VendingTill>0);
             bool toiletApproach=false,toiletOccupied=false;ClinicPatientState vendingUser=null;
             for(int i=0;i<state.Patients.Count;i++)

@@ -25,7 +25,7 @@ namespace IdleClinic.Tests
         {
             var clip = Resources.Load<AudioClip>("ClinicAudio/morning-rounds");
             Assert.That(clip, Is.Not.Null);
-            Assert.That(clip.length, Is.EqualTo(48).Within(.001));
+            Assert.That(clip.length, Is.EqualTo(16 * 4 * 60 / 116d).Within(.001));
             var data = Samples(clip);
             Assert.That(data.Max(v => Mathf.Abs(v)), Is.InRange(.08f, .4f));
             Assert.That(data.Sum(v => (double)v*v) / data.Length, Is.InRange(.0003, .01));

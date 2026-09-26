@@ -18,6 +18,8 @@ namespace IdleClinic.App
     {
         public static bool IsVendingCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected
             &&change.DeskId==-1&&change.Amenity==ClinicAmenity.Vending;
+        public static bool IsParkingCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected
+            &&change.DeskId==-1&&change.Amenity==ClinicAmenity.Parking;
     }
 
     /// <summary>Read-only control values from the same rules used to schedule service.</summary>
@@ -77,9 +79,10 @@ namespace IdleClinic.App
         private void SelectObject(ClinicHit hit)
         {
             if(!ClinicSelectionPolicy.CanSelectObject(State,hit))return;
-            locationsOpen=false;settingsOpen=false;selectedRoom=null;selectedObject=hit;world.SelectRoom(hit);dockKey="";UpdateReadouts();
+            locationsOpen=false;settingsOpen=false;gemsOpen=false;selectedRoom=null;selectedObject=hit;world.SelectRoom(hit);dockKey="";UpdateReadouts();
         }
         private void CollectVending()=>Run(()=>simulation.CollectVendingTips());
+        private void CollectParking()=>Run(()=>simulation.CollectParkingFees());
 
         private void BuildRoomShortcuts(VisualElement heading,ClinicRoom room)
         {
@@ -172,6 +175,13 @@ namespace IdleClinic.App
                 var label=Text(collect,"","purchase-price",true);
                 readouts.Add(()=>{label.text=Money(State.Amenity(ClinicAmenity.Vending).Till);collect.SetEnabled(State.Amenity(ClinicAmenity.Vending).Till>0);});
             }
+            if(kind==ClinicAmenity.Parking&&level>0&&(ClinicRules.ParkingExitFee(State)>0||amenity.Till>0))
+            {
+                var collect=IconButton(row,ClinicGlyph.Coin,"Collect parking charges",CollectParking,"vending-collect",
+                    ()=>State.Amenity(ClinicAmenity.Parking).Till.ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins");
+                var label=Text(collect,"","purchase-price",true);
+                readouts.Add(()=>{label.text=Money(State.Amenity(ClinicAmenity.Parking).Till);collect.SetEnabled(State.Amenity(ClinicAmenity.Parking).Till>0);});
+            }
             if(kind!=ClinicAmenity.Parking&&kind!=ClinicAmenity.Taxi)
             {
                 var footer=Box(dock,"management-footer");RoomShortcut(footer,ClinicRoom.Waiting);
@@ -183,7 +193,7 @@ namespace IdleClinic.App
         private string AmenityBenefit(ClinicAmenity kind,int level)
         {
             var income=ClinicRules.LocationMultiplier(State);
-            return kind==ClinicAmenity.Parking?(level*2)+" bays · "+(level*5*income)+" coins/car":
+            return kind==ClinicAmenity.Parking?(level*2)+" bays · "+ClinicRules.ParkingChargePerCar(State,level)+" coins/car":
                 kind==ClinicAmenity.Vending?(level*5*income)+" coins/tip":kind==ClinicAmenity.Taxi?"Faster taxi visits":"More comfort · better tips";
         }
 
@@ -210,6 +220,19 @@ namespace IdleClinic.App
             vendingCashMarker.Q<Label>().text=Money(till);
             ClinicMarkerPresentation.CashDetail(vendingCashMarker,wideWorldMarkers);
             PositionMarker(vendingCashMarker,world.WorldToViewport(world.GetVendingCashPoint()),till>0,-30,
+                wideWorldMarkers?new Vector2(44,44):(Vector2?)null);
+            if(parkingCashMarker==null)
+            {
+                parkingCashMarker=Box(overlay,"cash-marker");parkingCashMarker.pickingMode=PickingMode.Ignore;
+                parkingCashMarker.Add(new ClinicIcon(ClinicGlyph.Coin,19,new Color(.46f,.28f,.07f)));
+                Text(parkingCashMarker,"","cash-amount",true);
+                RegisterAccessibleButton(parkingCashMarker,"Collect parking charges",CollectParking,
+                    ()=>State.Amenity(ClinicAmenity.Parking).Till.ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins");
+            }
+            var parkingTill=State.Amenity(ClinicAmenity.Parking)?.Till??0;
+            parkingCashMarker.Q<Label>().text=Money(parkingTill);
+            ClinicMarkerPresentation.CashDetail(parkingCashMarker,wideWorldMarkers);
+            PositionMarker(parkingCashMarker,world.WorldToViewport(world.GetParkingCashPoint()),parkingTill>0,-30,
                 wideWorldMarkers?new Vector2(44,44):(Vector2?)null);
         }
         // Physical taps use the same minimum-size rectangles as accessibility.

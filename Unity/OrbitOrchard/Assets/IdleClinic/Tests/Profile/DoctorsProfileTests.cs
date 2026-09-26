@@ -147,11 +147,11 @@ namespace IdleClinic.Tests
         {
             var store = CompletedStarter(); Assert.That(store.OpenDoctorsClinic(now), Is.True, store.Error);
             var expected = Clone(store.Profile);
-            var first = new ClinicSimulation(expected.state).AdvanceOffline(36 * 3600);
-            var second = new ClinicSimulation(expected.doctorsState).AdvanceOffline(36 * 3600);
+            var first = new ClinicSimulation(expected.state).AdvanceOffline(36 * 3600, ClinicRules.MaximumOfflineSeconds, ClinicRules.OfflineCoinCap(expected.state, 1));
+            var second = new ClinicSimulation(expected.doctorsState).AdvanceOffline(36 * 3600, ClinicRules.MaximumOfflineSeconds, ClinicRules.OfflineCoinCap(expected.doctorsState, 1));
             var report = store.ApplyOffline(now.AddHours(36));
             Assert.That(report.applied, Is.True, store.Error);
-            Assert.That(report.earningsSeconds, Is.EqualTo(8 * 3600).Within(.000001));
+            Assert.That(report.earningsSeconds, Is.EqualTo(first.EarningsSeconds).Within(.000001));
             Assert.That(report.tillEarned, Is.EqualTo(first.TillEarned + second.TillEarned));
             Assert.That(report.paymentsReceived, Is.EqualTo(first.PaymentsReceived + second.PaymentsReceived));
             Assert.That(JsonUtility.ToJson(store.Profile.state), Is.EqualTo(JsonUtility.ToJson(expected.state)));
@@ -253,11 +253,18 @@ namespace IdleClinic.Tests
             public ClinicPreferences preferences = new ClinicPreferences();
             public long lastAccountedUtcTicks;
         }
-        private static VersionThreeProfile ToVersionThree(ClinicProfile profile) => new VersionThreeProfile
+        private static VersionThreeProfile ToVersionThree(ClinicProfile profile)
         {
-            revision = profile.revision, state = profile.state, additionalClinics = profile.additionalClinics,
-            activeLocation = profile.activeLocation, preferences = profile.preferences, lastAccountedUtcTicks = profile.lastAccountedUtcTicks
-        };
+            // 3.3 only ever wrote rules 3.
+            var copy = Clone(profile);
+            copy.state.RulesVersion = 3;
+            foreach (var clinic in copy.additionalClinics) clinic.RulesVersion = 3;
+            return new VersionThreeProfile
+            {
+                revision = copy.revision, state = copy.state, additionalClinics = copy.additionalClinics,
+                activeLocation = copy.activeLocation, preferences = copy.preferences, lastAccountedUtcTicks = copy.lastAccountedUtcTicks
+            };
+        }
         private string WriteVersionThree(ClinicProfile profile)
         {
             WriteEnvelope(JsonUtility.ToJson(ToVersionThree(profile)));

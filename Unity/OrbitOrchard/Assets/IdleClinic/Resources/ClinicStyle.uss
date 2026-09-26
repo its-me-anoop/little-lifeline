@@ -126,3 +126,66 @@ Button:disabled { opacity: .48; }
 .settings-row .preference { min-width: 0; margin-right: 4px; padding: 8px 3px; }
 .settings-row .preference-label { font-size: 14px; white-space: normal; -unity-text-align: middle-center; }
 .upgrade-dock .dock-heading > .object-shortcut { margin-left: 2px; }
+
+/* Gems and goals. Raspberry marks premium currency; coins keep the gold. */
+.balances { flex-direction: row; align-items: center; }
+.gem-balance { flex-direction: row; align-items: center; margin-left: 8px; min-height: 44px; padding: 6px 12px 6px 8px; background-color: rgb(250,236,238); border-radius: 22px; border-bottom-width: 2px; border-bottom-color: rgb(221,186,196); }
+.gem-value { font-size: 18px; margin-left: 5px; color: rgb(116,38,66); }
+.gem-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background-color: rgb(158,52,90); color: rgb(252,244,246); font-size: 14px; -unity-text-align: middle-center; }
+.gem-section { font-size: 14px; color: rgb(83,103,82); margin: 10px 2px 6px 2px; -unity-font-style: bold; }
+.gem-goal { flex-direction: row; align-items: center; min-height: 44px; padding: 6px 10px; margin-bottom: 4px; border-radius: 12px; background-color: rgb(238,240,224); }
+.gem-goal-ready { background-color: rgb(248,228,233); }
+.gem-goal-title { flex-grow: 1; flex-shrink: 1; margin-left: 9px; font-size: 15px; white-space: normal; -unity-text-align: middle-left; }
+.gem-amount { flex-direction: row; align-items: center; margin-left: 8px; flex-shrink: 0; }
+.gem-amount-value { font-size: 14px; margin-left: 4px; color: rgb(116,38,66); }
+.gem-shelf { flex-direction: row; flex-wrap: wrap; }
+.gem-pack { flex-grow: 1; flex-basis: 40%; min-height: 76px; margin: 0 6px 6px 0; padding: 8px 10px; border-radius: 12px; align-items: flex-start; background-color: rgb(250,236,238); }
+.gem-pack-amount { font-size: 20px; margin-top: 2px; color: rgb(116,38,66); }
+.gem-pack-price { font-size: 14px; }
+.gem-offer-title { font-size: 17px; white-space: normal; max-width: 100%; -unity-text-align: upper-left; }
+.gem-note { font-size: 14px; color: rgb(83,103,82); margin: 6px 2px 2px 2px; white-space: normal; }
+.skip-button { flex-direction: row; align-items: center; flex-shrink: 0; min-height: 44px; margin-left: 6px; padding: 6px 12px 6px 8px; border-radius: 12px; background-color: rgb(250,236,238); }
+.skip-label { font-size: 15px; margin-left: 5px; color: rgb(116,38,66); }
+.compact .gem-balance { margin-left: 6px; padding-right: 10px; }
+
+/* Guided play: one next step at a time, bottom-centre, out of the way of panels. */
+.guide-card { position: absolute; bottom: 20px; align-self: center; flex-direction: row; align-items: center; max-width: 440px; min-height: 56px; padding: 8px 14px 8px 10px; background-color: rgb(248,247,234); border-radius: 18px; border-bottom-width: 3px; border-bottom-color: rgb(200,214,189); }
+.guide-card > ClinicIcon { width: 26px; height: 26px; }
+.guide-words { flex-shrink: 1; margin-left: 10px; margin-right: 10px; }
+.guide-title { font-size: 16px; -unity-text-align: middle-left; white-space: normal; }
+.guide-why { font-size: 14px; color: rgb(83,103,82); -unity-text-align: middle-left; white-space: normal; }
+.guide-reward { flex-direction: row; align-items: center; flex-shrink: 0; padding: 4px 8px; border-radius: 12px; background-color: rgb(250,236,238); }
+.guide-reward-value { font-size: 14px; margin-left: 4px; color: rgb(116,38,66); }
+.guide-ready { background-color: rgb(250,236,238); border-bottom-color: rgb(221,186,196); }
+.guide-ready .guide-reward { background-color: rgb(158,52,90); }
+.guide-ready .guide-reward-value { color: rgb(252,244,246); }
+.guide-target { border-width: 3px; border-color: rgb(192,147,51); }
+.guide-pointer { position: absolute; width: 40px; height: 40px; border-radius: 20px; justify-content: center; align-items: center; background-color: rgb(192,120,40); border-width: 2px; border-color: rgb(252,244,230); }
+
+/* Feedback that names what just happened. */
+.float-text { font-size: 20px; width: 80px; -unity-text-align: middle-center; -unity-text-outline-width: 1px; }
+.float-coins { color: rgb(120,78,12); -unity-text-outline-color: rgb(255,244,202); }
+.float-good { color: rgb(38,92,58); -unity-text-outline-color: rgb(244,248,236); }
+
+/* Buttons respond to the finger; less motion keeps them still. */
+Button { transition-property: scale; transition-duration: .09s; transition-timing-function: ease-out-cubic; }
+Button:active { scale: .95 .95; }
+.reduced-motion Button { transition-duration: 0s; }
+.reduced-motion Button:active { scale: 1 1; }
+
+/* Shop tabs, the daily streak and goal progress. */
+.gem-tabs { flex-direction: row; margin: 2px 0 6px 0; }
+.gem-tab { flex-grow: 1; flex-basis: 0; min-height: 40px; margin-right: 6px; border-radius: 12px; background-color: rgb(238,240,224); font-size: 15px; -unity-font-style: bold; }
+.gem-tab-selected { background-color: rgb(250,236,238); color: rgb(116,38,66); }
+.tab-badge { position: absolute; top: -6px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background-color: rgb(158,52,90); color: rgb(252,244,246); font-size: 13px; -unity-text-align: middle-center; }
+.streak-row { flex-direction: row; margin-bottom: 6px; }
+.streak-day { flex-grow: 1; flex-basis: 0; min-height: 52px; margin-right: 4px; border-radius: 10px; align-items: center; justify-content: center; background-color: rgb(238,240,224); }
+.streak-done { background-color: rgb(210,228,189); }
+.streak-next { background-color: rgb(250,236,238); border-width: 2px; border-color: rgb(158,52,90); }
+.streak-number { font-size: 15px; }
+.streak-gems { font-size: 13px; color: rgb(116,38,66); }
+.daily-bar { height: 6px; margin-top: 4px; border-radius: 3px; background-color: rgb(221,226,206); overflow: hidden; }
+.daily-fill { height: 6px; border-radius: 3px; background-color: rgb(92,140,98); }
+.best-value { position: absolute; top: -8px; right: 6px; padding: 2px 7px; border-radius: 8px; background-color: rgb(192,120,40); color: rgb(252,246,236); font-size: 13px; }
+.gem-confirm { background-color: rgb(158,52,90); }
+.gem-confirm .gem-pack-amount { color: rgb(252,244,246); }

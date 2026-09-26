@@ -9,13 +9,13 @@ namespace IdleClinic.Presentation
         private readonly Vector3 offset;private readonly float northPavementOffset,roadOffset;
         private readonly Transform[] cars=new Transform[4],pedestrians=new Transform[6],leftLegs=new Transform[6],rightLegs=new Transform[6];
         private readonly Transform[][] trafficWheels=new Transform[4][];
-        private static readonly string[] CarColors={"Apricot","Sage","Blue","Mustard","Rose","Denim"};
+        private static readonly string[] CarColors={"Apricot","Sage","Blue","Mustard","Rose","Denim"}; // pedestrian clothing
         internal ClinicStreetLife(ClinicArt art,Transform parent,Vector3 offset=default,float northPavementOffset=0,float roadOffset=0)
         {
             this.offset=offset;this.northPavementOffset=northPavementOffset;this.roadOffset=roadOffset;var root=art.Group("Neighbourhood street life",parent);
             for(int i=0;i<4;i++)
             {
-                cars[i]=Car(art,root,"Traffic car "+i,Vector3.zero,i).transform;
+                cars[i]=Car(art,root,"Traffic car "+i,Vector3.zero,i==3?TaxiAppearance:i).transform;
                 var wheelParts=new System.Collections.Generic.List<Transform>();
                 foreach(var part in cars[i].GetComponentsInChildren<Transform>())if(part.name=="Car tyre"||part.name=="Car hubcap")wheelParts.Add(part);
                 trafficWheels[i]=wheelParts.ToArray();
@@ -23,21 +23,27 @@ namespace IdleClinic.Presentation
             for(int i=0;i<6;i++)
             {
                 var person=art.Group("Street pedestrian "+i,root);pedestrians[i]=person;
-                person.localScale=Vector3.one*(i==4?.83f:i==5?.94f:.98f);
-                art.Orb("Pedestrian head",person,new Vector3(0,1.40f,0),new Vector3(.32f,.36f,.30f),i%3==0?"SkinDeep":i%3==1?"SkinLight":"SkinBrown");
-                art.Orb("Pedestrian hair",person,new Vector3(0,1.52f,-.02f),new Vector3(.33f,.17f,.30f),i==5?"HairSilver":"HairChestnut");
-                art.Box("Pedestrian coat",person,new Vector3(0,.99f,0),new Vector3(.43f,.58f,.27f),CarColors[i]);
-                art.Orb("Pedestrian arm",person,new Vector3(-.29f,.93f,0),new Vector3(.13f,.49f,.15f),CarColors[i]);
-                art.Orb("Pedestrian arm",person,new Vector3(.29f,.93f,0),new Vector3(.13f,.49f,.15f),CarColors[i]);
-                leftLegs[i]=art.Group("Pedestrian left leg",person,new Vector3(-.13f,.72f,0));
-                rightLegs[i]=art.Group("Pedestrian right leg",person,new Vector3(.13f,.72f,0));
+                person.localScale=Vector3.one*(i==4?.90f:i==5?.96f:1f);
+                // Same adult proportions as the clinic's characters: a smaller head, neck, tapered coat and slim limbs.
+                string skin=i%3==0?"SkinDeep":i%3==1?"SkinLight":"SkinBrown",coat=CarColors[i];
+                art.Orb("Pedestrian head",person,new Vector3(0,1.42f,.01f),new Vector3(.21f,.25f,.22f),skin);
+                art.Orb("Pedestrian hair",person,new Vector3(0,1.49f,-.015f),new Vector3(.22f,.15f,.23f),i==5?"HairSilver":i==2?"HairGold":"HairChestnut");
+                art.Cylinder("Pedestrian neck",person,new Vector3(0,1.27f,0),new Vector3(.09f,.10f,.09f),skin);
+                art.Box("Pedestrian coat",person,new Vector3(0,1.02f,0),new Vector3(.36f,.46f,.22f),coat);
+                art.Box("Pedestrian coat hem",person,new Vector3(0,.76f,0),new Vector3(.33f,.12f,.21f),coat);
+                art.Orb("Pedestrian shoulders",person,new Vector3(0,1.21f,0),new Vector3(.40f,.10f,.23f),coat);
+                art.Box("Pedestrian arm",person,new Vector3(-.21f,.98f,0),new Vector3(.08f,.50f,.09f),coat);
+                art.Box("Pedestrian arm",person,new Vector3(.21f,.98f,0),new Vector3(.08f,.50f,.09f),coat);
+                for(int side=-1;side<=1;side+=2)art.Orb("Pedestrian hand",person,new Vector3(side*.21f,.70f,0),new Vector3(.06f,.08f,.06f),skin);
+                leftLegs[i]=art.Group("Pedestrian left leg",person,new Vector3(-.085f,.72f,0));
+                rightLegs[i]=art.Group("Pedestrian right leg",person,new Vector3(.085f,.72f,0));
                 foreach(var leg in new[]{leftLegs[i],rightLegs[i]})
                 {
-                    art.Box("Pedestrian trousers",leg,new Vector3(0,-.27f,0),new Vector3(.16f,.53f,.18f),"Denim");
-                    art.Orb("Pedestrian shoe",leg,new Vector3(0,-.59f,.055f),new Vector3(.20f,.14f,.30f),"Ink");
+                    art.Box("Pedestrian trousers",leg,new Vector3(0,-.33f,0),new Vector3(.11f,.66f,.12f),i%2==0?"Denim":"Ink");
+                    art.Box("Pedestrian shoe",leg,new Vector3(0,-.68f,.04f),new Vector3(.10f,.07f,.22f),i==1?"Linen":"Tyre");
                 }
-                if(i%2==0)art.Box("Pedestrian shoulder bag",person,new Vector3(.32f,.73f,.08f),new Vector3(.16f,.26f,.23f),"Wood");
-                if(i==3)art.Orb("Pedestrian hair bun",person,new Vector3(0,1.56f,-.18f),new Vector3(.22f,.21f,.23f),"HairChestnut");
+                if(i%2==0)art.Box("Pedestrian shoulder bag",person,new Vector3(.24f,.84f,.06f),new Vector3(.07f,.22f,.20f),"Timber");
+                if(i==3)art.Orb("Pedestrian hair bun",person,new Vector3(0,1.50f,-.12f),new Vector3(.12f,.12f,.12f),"HairChestnut");
             }
         }
         internal void Render(ClinicState state,bool reducedMotion)
@@ -85,27 +91,57 @@ namespace IdleClinic.Presentation
                 leftLegs[i].localRotation=Quaternion.Euler(swing,0,0);rightLegs[i].localRotation=Quaternion.Euler(-swing,0,0);
             }
         }
+        /// <summary>Top of the roof panel; roof signs and racks sit on it.</summary>
+        internal const float CarRoofHeight=.88f;
+        /// <summary>Pass as the appearance for a licensed taxi; only taxis are painted taxi yellow.</summary>
+        internal const int TaxiAppearance=-1;
+        private static readonly string[] Paints={"CarWhite","CarSilver","CarNavy","CarGraphite","CarRed","CarSage","CarWhite"};
+
+        /// <summary>A small car in real proportions: sedan, hatchback or SUV. Wheels keep a 0.175 m radius,
+        /// which the parking animation uses to roll them, and the "Car tyre"/"Car hubcap" names it steers.</summary>
         internal static GameObject Car(ClinicArt art,Transform parent,string name,Vector3 position,int appearance)
         {
-            var root=art.Group(name,parent,position);string color=CarColors[appearance%CarColors.Length];
-            art.Box("Car rounded body",root,new Vector3(0,.41f,0),new Vector3(.95f,.42f,1.85f),color);
-            art.Orb("Car cabin",root,new Vector3(0,.75f,-.12f),new Vector3(.88f,.68f,1.02f),color);
-            art.Box("Car windscreen",root,new Vector3(0,.76f,.25f),new Vector3(.70f,.31f,.045f),"Blue").transform.localRotation=Quaternion.Euler(24,0,0);
-            art.Box("Car rear window",root,new Vector3(0,.76f,-.51f),new Vector3(.66f,.25f,.035f),"Blue").transform.localRotation=Quaternion.Euler(-20,0,0);
+            var root=art.Group(name,parent,position);bool taxi=appearance==TaxiAppearance;
+            string paint=taxi?"CarTaxi":Paints[appearance%Paints.Length];
+            int body=taxi?0:appearance%3;bool suv=body==2,hatch=body==1;
+            float lift=suv?.07f:0,length=hatch?1.92f:2.08f,cabinBack=hatch?-.66f:-.46f,cabinFront=suv?.44f:.36f;
+            // Lower body with a gentle waist, sills and a raised bonnet.
+            art.Box("Car rounded body",root,new Vector3(0,.37f+lift,0),new Vector3(1.0f,.30f,length),paint);
+            art.Box("Car bonnet",root,new Vector3(0,.535f+lift,length*.5f-.33f),new Vector3(.96f,.05f,.62f),paint).transform.localRotation=Quaternion.Euler(4,0,0);
+            art.Box("Car boot",root,new Vector3(0,.535f+lift,-length*.5f+.22f),new Vector3(.96f,.05f,.40f),paint);
+            art.Box("Car sill",root,new Vector3(0,.215f+lift,0),new Vector3(1.02f,.05f,length-.62f),"Tyre");
+            // Glasshouse: pillars in body colour, tinted glass all round, and a roof panel.
+            float cabinCenter=(cabinFront+cabinBack)*.5f,cabinLength=cabinFront-cabinBack;
+            // Tinted glass cabin under a shorter roof panel: from above, the uncovered glass reads as the
+            // windscreen and rear window without panels standing proud of the roofline.
+            art.Box("Car cabin",root,new Vector3(0,.70f+lift,cabinCenter),new Vector3(.86f,.30f,cabinLength),"Glass");
+            art.Box("Car roof",root,new Vector3(0,CarRoofHeight-.02f+lift,cabinCenter-.03f),new Vector3(.86f,.05f,cabinLength-(hatch?.16f:.26f)),paint);
             for(int side=-1;side<=1;side+=2)
             {
-                art.Box("Car side window",root,new Vector3(side*.445f,.76f,-.12f),new Vector3(.025f,.29f,.49f),"Blue");
+                art.Box("Car side window",root,new Vector3(side*.432f,.70f+lift,cabinCenter),new Vector3(.02f,.24f,cabinLength-.08f),"Glass");
+                art.Box("Car pillar",root,new Vector3(side*.436f,.70f+lift,cabinCenter-.02f),new Vector3(.03f,.30f,.07f),paint);
+                art.Box("Car door line",root,new Vector3(side*.502f,.40f+lift,cabinCenter-.02f),new Vector3(.006f,.24f,.012f),"Tyre");
+                art.Box("Car door handle",root,new Vector3(side*.504f,.49f+lift,cabinCenter+.22f),new Vector3(.01f,.02f,.09f),"Chrome");
+                art.Box("Car mirror",root,new Vector3(side*.54f,.62f+lift,cabinFront-.02f),new Vector3(.09f,.07f,.05f),paint);
                 for(int wheel=-1;wheel<=1;wheel+=2)
                 {
-                    var tire=art.Cylinder("Car tyre",root,new Vector3(side*.48f,.25f,wheel*.58f),new Vector3(.35f,.12f,.35f),"Ink");tire.transform.localRotation=Quaternion.Euler(0,0,90);
-                    var hub=art.Cylinder("Car hubcap",root,new Vector3(side*.55f,.25f,wheel*.58f),new Vector3(.17f,.014f,.17f),"Gold");hub.transform.localRotation=Quaternion.Euler(0,0,90);
-                    art.Box("Car wheel spoke",hub.transform,new Vector3(0,-side*1.06f,0),new Vector3(.78f,.12f,.11f),"SageDark");
-                    art.Box("Car wheel spoke",hub.transform,new Vector3(0,-side*1.06f,0),new Vector3(.11f,.12f,.78f),"SageDark");
+                    float z=wheel*(length*.5f-.40f);
+                    art.Box("Car wheel arch",root,new Vector3(side*.496f,.31f+lift*.5f,z),new Vector3(.02f,.25f,.46f),"Tyre");
+                    var tire=art.Cylinder("Car tyre",root,new Vector3(side*.46f,.175f,z),new Vector3(.35f,.13f,.35f),"Tyre");tire.transform.localRotation=Quaternion.Euler(0,0,90);
+                    var hub=art.Cylinder("Car hubcap",root,new Vector3(side*.528f,.175f,z),new Vector3(.21f,.012f,.21f),"Chrome");hub.transform.localRotation=Quaternion.Euler(0,0,90);
+                    art.Box("Car wheel spoke",hub.transform,new Vector3(0,-side*1.2f,0),new Vector3(.82f,.6f,.14f),"CarGraphite");
+                    art.Box("Car wheel spoke",hub.transform,new Vector3(0,-side*1.2f,0),new Vector3(.14f,.6f,.82f),"CarGraphite");
                 }
-                art.Box("Car headlamp",root,new Vector3(side*.30f,.42f,.94f),new Vector3(.20f,.13f,.025f),"Linen");
-                art.Box("Car tail lamp",root,new Vector3(side*.32f,.44f,-.94f),new Vector3(.16f,.10f,.025f),"Rose");
+                art.Box("Car headlamp",root,new Vector3(side*.33f,.46f+lift,length*.5f+.005f),new Vector3(.24f,.08f,.02f),"LampLight");
+                art.Box("Car indicator",root,new Vector3(side*.45f,.46f+lift,length*.5f),new Vector3(.06f,.06f,.02f),"Mustard");
+                art.Box("Car tail lamp",root,new Vector3(side*.36f,.47f+lift,-length*.5f-.005f),new Vector3(.20f,.09f,.02f),"TailLight");
             }
-            art.Box("Car front bumper",root,new Vector3(0,.26f,.96f),new Vector3(.75f,.07f,.06f),"Wood");
+            art.Box("Car grille",root,new Vector3(0,.37f+lift,length*.5f+.005f),new Vector3(.40f,.10f,.02f),"Tyre");
+            art.Box("Car front bumper",root,new Vector3(0,.25f+lift,length*.5f+.01f),new Vector3(.98f,.11f,.08f),paint);
+            art.Box("Car rear bumper",root,new Vector3(0,.25f+lift,-length*.5f-.01f),new Vector3(.98f,.11f,.08f),paint);
+            art.Box("Car number plate",root,new Vector3(0,.27f+lift,length*.5f+.055f),new Vector3(.30f,.07f,.01f),"Paint");
+            art.Box("Car number plate",root,new Vector3(0,.35f+lift,-length*.5f-.055f),new Vector3(.30f,.07f,.01f),"PlateYellow");
+            if(suv)for(int side=-1;side<=1;side+=2)art.Box("Car roof rail",root,new Vector3(side*.34f,CarRoofHeight+.03f+lift,cabinCenter-.03f),new Vector3(.03f,.03f,cabinLength-.3f),"Chrome");
             return root.gameObject;
         }
     }

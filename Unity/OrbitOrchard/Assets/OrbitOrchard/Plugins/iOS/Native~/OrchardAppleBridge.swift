@@ -21,6 +21,7 @@ public final class OrchardAppleBridge: NSObject, @preconcurrency GKGameCenterCon
     private override init() {
         super.init()
         store.onChange = { [weak self] in self?.emit(source: "store") }
+        store.onGemDelivery = { [weak self] delivery in self?.emitGems(delivery) }
         NotificationCenter.default.addObserver(self, selector: #selector(accessibilityDidChange),
             name: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil)
     }
@@ -45,7 +46,20 @@ public final class OrchardAppleBridge: NSObject, @preconcurrency GKGameCenterCon
             await store.refreshEntitlements()
             await store.loadProducts()
             emit(source: "store")
+            await store.redeliverUnfinishedGems()
         }
+    }
+
+    @objc public func finishTransaction(_ transactionID: String) {
+        Task { await store.finishGemTransaction(transactionID) }
+    }
+
+    private func emitGems(_ delivery: OrchardStoreService.GemDelivery) {
+        let message: [String: Any] = ["type": "gems", "transactionId": delivery.transactionID,
+                                      "productId": delivery.productID, "revoked": delivery.revoked]
+        guard let data = try? JSONSerialization.data(withJSONObject: message),
+              let json = String(data: data, encoding: .utf8) else { return }
+        eventHandler?(json)
     }
 
     @objc public func loadProducts() {
@@ -53,7 +67,7 @@ public final class OrchardAppleBridge: NSObject, @preconcurrency GKGameCenterCon
     }
 
     @objc public func purchase(_ productID: String) {
-        guard let product = ([store.plusProduct].compactMap { $0 } + store.tipProducts)
+        guard let product = ([store.plusProduct].compactMap { $0 } + store.tipProducts + store.gemProducts + store.unlockProducts)
             .first(where: { $0.id == productID }) else {
             emit(source: "store", message: "This product is unavailable. Refresh the shop and try again.")
             return
@@ -139,7 +153,7 @@ public final class OrchardAppleBridge: NSObject, @preconcurrency GKGameCenterCon
     }
 
     private func emit(source: String, message: String? = nil) {
-        let products = ([store.plusProduct].compactMap { $0 } + store.tipProducts).map { product in
+        let products = ([store.plusProduct].compactMap { $0 } + store.tipProducts + store.gemProducts + store.unlockProducts).map { product in
             ["id": product.id, "title": product.displayName, "description": product.description,
              "price": product.displayPrice, "isConsumable": product.type == .consumable] as [String: Any]
         }
@@ -162,6 +176,7 @@ public final class OrchardAppleBridge: NSObject, @preconcurrency GKGameCenterCon
             "dailyAvailability": "",
             "status": message ?? (source == "store" ? storeStatus : (gameCenter?.statusMessage ?? "")),
             "products": products,
+            "ownedProducts": Array(store.ownedUnlocks).sorted(),
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: snapshot),
               let json = String(data: data, encoding: .utf8) else { return }

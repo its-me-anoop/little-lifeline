@@ -37,13 +37,15 @@ Open **Settings** for separate **Music** and **Effects** switches. Check both sw
 
 ## Saves and offline earnings
 
-Progress is saved locally. Existing staff can earn for up to eight hours while the app is away; return to collect the money waiting at reception. Timed construction can finish during a longer absence. There is no game-account login or developer cloud-save service.
+Progress is saved locally. Existing staff can earn for up to eight hours while the app is away, until the tills are full; return to collect the money waiting at reception. Gem upgrades in the shop extend this to 12 or 24 hours. Timed construction can finish during a longer absence. There is no game-account login or developer cloud-save service.
 
 Keep the app installed when updating. Deleting it removes local game data, while offloading may retain that data. Device backups are controlled through Apple or your computer's backup settings. We cannot retrieve a lost save from a Little Lifeline account.
 
 ## Purchases
 
-The current clinic has no shop, advertisements, subscriptions or purchases required to progress. **Restore purchases** checks earlier verified ownership through Apple. It does not grant extra coins or unlock a paid clinic benefit in this version. For an Apple transaction or refund, use [Apple's purchase support](https://support.apple.com/billing).
+Tap the gem counter beside your coins to open Gems & goals. Gems come free from milestones, daily goals and your login streak, and can also be bought as optional gem packs. Spend them to finish construction, top up coins, double collections for a while or earn for longer offline. The Second Builder lets two rooms build at once; buy it or unlock it with 400 gems. Every room, upgrade and clinic can be earned without paying.
+
+Gems are saved with your clinic on this device and never expire. They cannot be restored after the app is deleted. **Restore purchases** re-applies the Second Builder through Apple. If a gem purchase was interrupted, reopen the app to receive it. For an Apple transaction or refund, use [Apple's purchase support](https://support.apple.com/billing).
 
 ## Send a useful report
 

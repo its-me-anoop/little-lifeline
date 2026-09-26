@@ -1,6 +1,6 @@
 # Little Lifeline Privacy Policy
 
-Effective date: 12 September 2026
+Effective date: 26 September 2026
 
 Little Lifeline is a fictional clinic management game developed by Anoop Jose (Flutterly). You do not need an account to play. The game does not ask for or store real patient or medical information.
 
@@ -14,7 +14,7 @@ Your device may include app data in an iCloud or computer backup, depending on y
 
 ## Apple services
 
-The app uses Apple's StoreKit service to check previously verified purchase ownership and may request App Store product information. Choosing **Restore purchases** asks Apple to synchronise eligible earlier purchases and may prompt for Apple Account authentication. This release does not offer new purchases or require payment to progress. Restoring earlier ownership does not unlock an additional clinic benefit in this version.
+The app uses Apple's StoreKit service to offer optional gem packs and a Second Builder, and to check previously verified purchase ownership. When you buy something, Apple processes the payment and sends the app a transaction record. The app keeps each transaction's identifier in your on-device save so a purchase is applied once, and removes unspent gems if Apple reports a refund. Choosing **Restore purchases** asks Apple to synchronise eligible purchases such as the Second Builder and may prompt for Apple Account authentication. Gems are part of your local save: deleting the app deletes them, and we cannot restore them from a developer account.
 
 Apple handles its App Store services, transactions and any payment information. We do not receive your Apple Account password or payment card details. See [Apple's Privacy Policy](https://www.apple.com/legal/privacy/).
 

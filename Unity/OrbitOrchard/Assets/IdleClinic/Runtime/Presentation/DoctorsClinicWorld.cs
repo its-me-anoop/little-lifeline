@@ -50,9 +50,9 @@ namespace IdleClinic.Presentation
         {
             waitingBuilt=state.Room(ClinicRoom.Waiting)?.Built==true;waitingCrates.SetActive(!waitingBuilt);
             int capacity=waitingBuilt?Mathf.Min(30,8+2*((state.Room(ClinicRoom.Waiting)?.FacilitiesLevel??1)-1)):0;
-            for(int i=0;i<30;i++)seats[i].SetActive(i<capacity);
+            for(int i=0;i<30;i++)ClinicUpgradeEffects.Show(seats[i],i<capacity);
             for(int role=0;role<4;role++)for(int i=0;i<(role==3?2:4);i++)
-            {int level=StationLevel(state,(ClinicStaffRole)role,i);workstations[role,i].SetActive(level>0);futureStations[role,i].SetActive(level==0);}
+            {int level=StationLevel(state,(ClinicStaffRole)role,i);ClinicUpgradeEffects.Show(workstations[role,i],level>0);futureStations[role,i].SetActive(level==0);}
             for(int i=0;i<4;i++)
             {
                 var desk=state.ReceptionDesks.Find(d=>d.Id==i);tills[i]=desk?.Till??0;
@@ -61,8 +61,8 @@ namespace IdleClinic.Presentation
             }
             foreach(var detail in details)detail.Render(state);
             int toiletLevel=state.Amenity(ClinicAmenity.Toilet)?.Level??0,vendingLevel=state.Amenity(ClinicAmenity.Vending)?.Level??0;
-            for(int i=0;i<2;i++)toilets[i].SetActive(toiletLevel>0);
-            vending.SetActive(vendingLevel>0);vendingTill=state.Amenity(ClinicAmenity.Vending)?.Till??0;vendingCash.SetActive(vendingLevel>0&&vendingTill>0);
+            for(int i=0;i<2;i++)ClinicUpgradeEffects.Show(toilets[i],toiletLevel>0);
+            ClinicUpgradeEffects.Show(vending,vendingLevel>0);vendingTill=state.Amenity(ClinicAmenity.Vending)?.Till??0;vendingCash.SetActive(vendingLevel>0&&vendingTill>0);
             ClinicPatientState user=null;foreach(var p in state.Patients)if(p.Phase==ClinicPatientPhase.UsingAmenity&&p.VisitingAmenity==ClinicAmenity.Vending)user=p;
             vendingTip.gameObject.SetActive(user!=null&&!reduced);
             if(user!=null){float t=Mathf.Clamp01((float)((state.Tick+state.SubTick-user.PhaseStartedTick)/Math.Max(1,user.PhaseEndsTick-user.PhaseStartedTick)));vendingTip.position=Vector3.Lerp(world.GetAnchorPoint(user.ToAnchor)+Vector3.up,VendingCashPoint,t)+Vector3.up*Mathf.Sin(t*Mathf.PI)*.22f;}
@@ -272,11 +272,11 @@ namespace IdleClinic.Presentation
         }
         private void Neighbourhood()
         {
-            art.Box("Doctors neighbourhood road",parent,new Vector3(0,-.17f,-14.0f),new Vector3(100,.10f,3.3f),"Asphalt");
-            for(int i=-14;i<15;i++)art.Box("Street centre marking",parent,new Vector3(i*3.2f,-.11f,-14.0f),new Vector3(1.8f,.015f,.09f),"Linen");
-            art.Box("Clinic front promenade west",parent,new Vector3(-27.25f,.06f,-10.675f),new Vector3(10.5f,.12f,3.35f),"TilePeach");
-            art.Box("Clinic entrance promenade",parent,new Vector3(.775f,.06f,-10.675f),new Vector3(30.45f,.12f,3.35f),"TilePeach");
-            art.Box("Clinic front promenade east",parent,new Vector3(28.05f,.06f,-10.675f),new Vector3(8.9f,.12f,3.35f),"TilePeach");
+            art.Box("Doctors neighbourhood road",parent,new Vector3(0,-.17f,-14.0f),new Vector3(100,.10f,3.3f),"AsphaltDark");
+            for(int i=-14;i<15;i++)art.Box("Street centre marking",parent,new Vector3(i*3.2f,-.11f,-14.0f),new Vector3(1.8f,.015f,.09f),"Paint");
+            art.Box("Clinic front promenade west",parent,new Vector3(-27.25f,.06f,-10.675f),new Vector3(10.5f,.12f,3.35f),"Concrete");
+            art.Box("Clinic entrance promenade",parent,new Vector3(.775f,.06f,-10.675f),new Vector3(30.45f,.12f,3.35f),"Concrete");
+            art.Box("Clinic front promenade east",parent,new Vector3(28.05f,.06f,-10.675f),new Vector3(8.9f,.12f,3.35f),"Concrete");
             art.Box("Taxi sheltered passenger pavement",parent,new Vector3(19.8f,.06f,-9.45f),new Vector3(7.6f,.12f,.90f),"TilePeach");
             art.Box("Taxi waiting promenade",parent,new Vector3(20.45f,.06f,-7.475f),new Vector3(12.1f,.12f,3.05f),"TilePeach");
             for(int i=0;i<ClinicRules.TaxiWaitingCapacity;i++)
@@ -285,15 +285,22 @@ namespace IdleClinic.Presentation
                 for(int side=-1;side<=1;side+=2)art.Orb("Taxi waiting footprint",parent,new Vector3(point.x+side*.115f,.13f,point.z),new Vector3(.105f,.016f,.22f),"TileSage");
             }
             art.Box("Taxi layby passenger kerb",parent,new Vector3(19.8f,.03f,-9.94f),new Vector3(7.6f,.14f,.08f),"Clay");
-            art.Box("Far pavement",parent,new Vector3(0,.04f,-16.45f),new Vector3(90,.17f,1.55f),"Linen");
-            for(int stripe=0;stripe<8;stripe++)art.Box("Doctors road crossing",parent,new Vector3(1.4f,-.105f,-12.65f-stripe*.39f),new Vector3(1.3f,.018f,.19f),"Linen");
+            art.Box("Far pavement",parent,new Vector3(0,.04f,-16.45f),new Vector3(90,.17f,1.55f),"Concrete");
+            for(int stripe=0;stripe<8;stripe++)art.Box("Doctors road crossing",parent,new Vector3(1.4f,-.105f,-12.65f-stripe*.39f),new Vector3(1.3f,.018f,.19f),"Paint");
             for(int i=0;i<11;i++)
             {
                 float x=-29+i*5.4f;var building=art.Group("Neighbourhood premises "+i,parent,new Vector3(x,0,-20.0f-(i%2)*1.2f));
-                art.Box("Terracotta building",building,new Vector3(0,1.55f,0),new Vector3(3.6f,3.1f,3.4f),i%3==0?"Clay":i%3==1?"TileSage":"TilePeach");
-                art.Box("Neighbourhood roof",building,new Vector3(0,3.18f,0),new Vector3(3.9f,.18f,3.7f),"SageDark");
+                var facade=i%3==0?"Brick":i%3==1?"Render":"Sage";
+                art.Box("Terracotta building",building,new Vector3(0,1.55f,0),new Vector3(3.6f,3.1f,3.4f),facade);
+                art.Box("Neighbourhood roof",building,new Vector3(0,3.08f,0),new Vector3(3.7f,.10f,3.5f),"Paint");
+                ClinicSurroundings.PitchedRoof(art,building,new Vector3(0,3.1f,0),new Vector2(3.6f,3.4f),facade,i%2==0?"Slate":"RoofTile");
+                for(int side=-1;side<=1;side+=2)
+                {
+                    art.Box("Upper window frame",building,new Vector3(side*1.0f,2.74f,1.72f),new Vector3(.70f,.56f,.05f),"Paint");
+                    art.Box("Upper window glass",building,new Vector3(side*1.0f,2.74f,1.745f),new Vector3(.58f,.44f,.02f),"Glass");
+                }
                 art.Box("Shop door",building,new Vector3(0,.87f,1.72f),new Vector3(.75f,1.7f,.06f),"Wood");
-                for(int side=-1;side<=1;side+=2)art.Box("Shop window",building,new Vector3(side*1.08f,1.42f,1.73f),new Vector3(.95f,1.15f,.045f),"Blue");
+                for(int side=-1;side<=1;side+=2)art.Box("Shop window",building,new Vector3(side*1.08f,1.42f,1.73f),new Vector3(.95f,1.15f,.045f),"Glass");
                 var canopy=art.Group("Shop striped canopy",building,new Vector3(0,2.45f,1.98f));for(int n=0;n<8;n++)art.Box("Canopy stripe",canopy,new Vector3(-1.58f+n*.45f,0,0),new Vector3(.45f,.10f,.8f),n%2==0?"Sage":"Linen");
             }
             for(int i=0;i<15;i++)
@@ -303,6 +310,25 @@ namespace IdleClinic.Presentation
                 art.Orb("Tree crown",tree,new Vector3(0,2.15f,0),new Vector3(1.60f,2.25f,1.55f),i%2==0?"Leaf":"Sage");
                 if(i%3==0){art.Box("Garden planter",parent,new Vector3(x,.23f,10.3f),new Vector3(2.7f,.40f,.58f),"Clay");for(int n=0;n<5;n++)art.Orb("Garden flowering shrub",parent,new Vector3(x-1+n*.5f,.61f,10.3f),new Vector3(.6f,.5f,.62f),n%2==0?"Leaf":"Apricot");}
             }
+            // Street edge and entrance, matching the starter clinic: bollards kept clear of the crossing and the
+            // entrance, tactile paving at the crossing kerb, and a blue totem west of the doors.
+            foreach(var x in new[]{-10.0f,-8.6f,-7.2f,-5.8f,-4.4f,-3.0f,4.2f,5.6f,7.0f,8.4f,9.8f})
+            {
+                var bollard=art.Group("Kerbside bollard",parent,new Vector3(x,.12f,-12.15f));
+                art.Cylinder("Bollard post",bollard,new Vector3(0,.42f,0),new Vector3(.13f,.84f,.13f),"CarGraphite");
+                art.Cylinder("Bollard band",bollard,new Vector3(0,.72f,0),new Vector3(.135f,.06f,.135f),"Paint");
+            }
+            art.Box("Crossing tactile paving",parent,new Vector3(1.4f,.125f,-12.05f),new Vector3(1.3f,.02f,.40f),"PlateYellow");
+            var totem=art.Group("Doctors entrance totem",parent,new Vector3(-2.7f,.12f,-9.45f));
+            art.Box("Totem base",totem,new Vector3(0,.14f,0),new Vector3(.46f,.28f,.24f),"Concrete");
+            art.Box("Totem panel",totem,new Vector3(0,1.05f,0),new Vector3(.40f,1.56f,.12f),"SignBlue");
+            art.Box("Totem cap",totem,new Vector3(0,1.85f,0),new Vector3(.44f,.05f,.16f),"CarGraphite");
+            art.Box("Care mark horizontal",totem,new Vector3(0,1.50f,-.066f),new Vector3(.26f,.07f,.02f),"Paint");
+            art.Box("Care mark vertical",totem,new Vector3(0,1.50f,-.066f),new Vector3(.07f,.26f,.02f),"Paint");
+            for(int line=0;line<4;line++)art.Box("Totem directory line",totem,new Vector3(0,1.18f-line*.13f,-.066f),new Vector3(.24f,.035f,.012f),"Paint");
+            var bin=art.Group("Entrance litter bin",parent,new Vector3(-3.6f,.12f,-9.40f));
+            art.Cylinder("Litter bin body",bin,new Vector3(0,.42f,0),new Vector3(.40f,.84f,.40f),"CarGraphite");
+            art.Cylinder("Litter bin lid",bin,new Vector3(0,.86f,0),new Vector3(.44f,.06f,.44f),"Chrome");
             for(int i=0;i<4;i++)
             {
                 float x=16+i*4.0f;art.Box("Garden bench seat",parent,new Vector3(x,.57f,-5.5f),new Vector3(2.2f,.12f,.58f),"Wood");art.Box("Garden bench back",parent,new Vector3(x,.94f,-5.22f),new Vector3(2.2f,.62f,.10f),"Wood");
@@ -378,7 +404,7 @@ namespace IdleClinic.Presentation
                 if(kind==2)active=StationLevel(s,role,index)>=level;
                 else if(kind==3){for(int i=0;i<s.Amenities.Count;i++)if(s.Amenities[i].Kind==amenity){active=s.Amenities[i].Level>=level;break;}}
                 else {for(int i=0;i<s.Rooms.Count;i++)if(s.Rooms[i].Kind==room){var data=s.Rooms[i];active=data.Built&&(kind==0?data.Level(track):data.Tier)>=level;break;}}
-                if(root.activeSelf!=active)root.SetActive(active);
+                ClinicUpgradeEffects.Show(root,active);
             }
         }
     }

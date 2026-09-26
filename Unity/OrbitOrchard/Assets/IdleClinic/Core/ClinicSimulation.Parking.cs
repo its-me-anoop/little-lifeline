@@ -57,8 +57,28 @@ namespace IdleClinic.Core
                 int duration=entering?ClinicRules.ParkingEntryTicks:ClinicRules.ParkingExitTicks;
                 if(!ParkingMovementHasSafeWindow(entering))continue;
                 Phase(patient,entering?ClinicPatientPhase.DrivingToParking:ClinicPatientPhase.DrivingFromParking,patient.FromAnchor,patient.ToAnchor,duration);
+                if(!entering)ChargeParkingExit(patient);
                 return;
             }
+        }
+        /// <summary>The car pays at the barrier as it leaves; the fee waits in the car park's cash box.</summary>
+        private void ChargeParkingExit(ClinicPatientState patient)
+        {
+            if(!patient.ParkingFeeDue)return;
+            patient.ParkingFeeDue=false;
+            var fee=ClinicRules.ParkingExitFee(State);var amenity=State.Amenity(ClinicAmenity.Parking);
+            if(fee<=0||State.TotalEarned>MaximumMoney-fee||amenity.Till>MaximumMoney-fee||State.TotalParkingFees>MaximumMoney-fee)return;
+            amenity.Till+=fee;State.TotalParkingFees+=fee;State.TotalEarned+=fee;
+            Emit(ClinicEventKind.ParkingFeePaid,ClinicRoom.Reception,patientId:patient.Id,amount:fee,source:"parking.exit",amenity:ClinicAmenity.Parking);
+        }
+        public ClinicCommandResult CollectParkingFees()
+        {
+            var amenity=State.Amenity(ClinicAmenity.Parking);var amount=amenity?.Till??0;
+            if(amount<=0)return No("Parking charges collect here as cars leave.");
+            if(State.Wallet>MaximumMoney-amount)return No("The clinic wallet is full.");
+            State.Wallet+=amount;State.TotalCollected+=amount;amenity.Till=0;
+            Emit(ClinicEventKind.CashCollected,ClinicRoom.Reception,amount:amount,source:"parking.cash",amenity:ClinicAmenity.Parking);
+            return Yes("Parking charges collected.",amount:amount);
         }
         private bool ParkingMovementHasSafeWindow(bool entering)
         {

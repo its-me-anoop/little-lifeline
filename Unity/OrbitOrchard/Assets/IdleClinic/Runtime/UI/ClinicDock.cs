@@ -12,13 +12,14 @@ namespace IdleClinic.App
         {
             dock.Clear();readouts.Clear();
             dock.RemoveFromClassList("upgrade-dock");dock.RemoveFromClassList("management-dock");dock.RemoveFromClassList("locations-dock");
-            if(!locationsOpen&&!settingsOpen && !selectedRoom.HasValue&&!selectedObject.HasValue){dock.style.display=DisplayStyle.None;ApplySafeArea();return;}
+            if(!gemsOpen&&!locationsOpen&&!settingsOpen && !selectedRoom.HasValue&&!selectedObject.HasValue){dock.style.display=DisplayStyle.None;ApplySafeArea();return;}
             dock.style.display=DisplayStyle.Flex;
             var heading=Box(dock,"dock-heading");
-            var title=Text(heading,locationsOpen?"Your clinics":settingsOpen?"Make yourself at home":selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title");
+            var title=Text(heading,gemsOpen?"Gems & goals":locationsOpen?"Your clinics":settingsOpen?"Make yourself at home":selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title");
             if(displayFont!=null)title.style.unityFontDefinition=FontDefinition.FromFont(displayFont);
-            if(!locationsOpen&&!settingsOpen&&!selectedObject.HasValue&&State.Tutorial==ClinicTutorialStep.Complete)BuildRoomShortcuts(heading,selectedRoom.Value);
+            if(!gemsOpen&&!locationsOpen&&!settingsOpen&&!selectedObject.HasValue&&State.Tutorial==ClinicTutorialStep.Complete)BuildRoomShortcuts(heading,selectedRoom.Value);
             IconButton(heading,ClinicGlyph.Close,"Close controls",CloseContext,"round-control close-control");
+            if(gemsOpen){BuildGemsDock();ApplySafeArea();return;}
             if(locationsOpen){BuildLocationsDock();ApplySafeArea();return;}
             if(settingsOpen){BuildSettings();ApplySafeArea();return;}
             if(selectedObject.HasValue){BuildManagementDock(selectedObject.Value);ApplySafeArea();return;}
@@ -55,6 +56,7 @@ namespace IdleClinic.App
             var actions=Box(dock,"action-row");
             var construction=State.Construction.FirstOrDefault(c=>c.Room==room.Kind);
             if(construction!=null)BuildConstructionReadout(construction,actions);
+            else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.BuildersBusy)BuildBuilderBusy(actions);
             else if(room.Tier<ClinicRules.MaximumTier(State))
                 Purchase(actions,ClinicGlyph.Upgrade,"Expand room",ClinicRules.RenovationCost(State,room.Kind),()=>true,
                     ()=>simulation.Renovate(room.Kind),"Room "+(room.Tier+1)+" · "+TimeLabel(ClinicRules.RenovationSeconds(State,room.Kind)),"minor-action");
@@ -149,6 +151,15 @@ namespace IdleClinic.App
             return button;
         }
 
+        /// <summary>Every builder is on another room: say where, and offer a second builder.</summary>
+        private void BuildBuilderBusy(VisualElement parent)
+        {
+            var job=State.Construction.OrderBy(c=>c.EndsTick).First();
+            var busy=IconButton(parent,ClinicGlyph.Clock,"Builder busy on "+RoomName(job.Room)+". Add a second builder",ToggleGems,"room-shortcut builder-busy");
+            var label=Text(busy,"","purchase-detail");
+            readouts.Add(()=>label.text="Builder busy · "+RoomName(job.Room)+" "+TimeLabel((job.EndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond));
+        }
+
         private void BuildConstructionReadout(ClinicConstructionState job,VisualElement parent=null)
         {
             var row=Box(parent??dock,"construction-readout");
@@ -158,9 +169,10 @@ namespace IdleClinic.App
                 ring.Progress=(State.Tick-job.StartedTick)/(float)Math.Max(1,job.EndsTick-job.StartedTick);
                 label.text=TimeLabel((job.EndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond)+"  ·  Improving";
             });
+            BuildSkipButton(row,job);
         }
 
-        private void ToggleSettings(){locationsOpen=false;settingsOpen=!settingsOpen;selectedRoom=null;selectedObject=null;dockKey="";UpdateReadouts();}
+        private void ToggleSettings(){locationsOpen=false;gemsOpen=false;settingsOpen=!settingsOpen;selectedRoom=null;selectedObject=null;dockKey="";UpdateReadouts();}
         private void BuildSettings()
         {
             var content=new ScrollView(ScrollViewMode.Vertical){name="clinic-settings-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden};

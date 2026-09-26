@@ -28,14 +28,15 @@ namespace IdleClinic.Core
         ConstructionStarted, ConstructionCompleted, EquipmentUpgraded, StationAdded,
         TutorialAdvanced, StationUpgraded, StaffTrained, AmenityUpgraded, AmenityVisitStarted, TipReceived,
         DoctorHired, PharmacistHired, ConsultationStarted, ConsultationCompleted,
-        DispensingStarted, DispensingCompleted, DoctorsClinicUnlocked, TaxiArrived, TaxiDeparted
+        DispensingStarted, DispensingCompleted, DoctorsClinicUnlocked, TaxiArrived, TaxiDeparted,
+        ParkingFeePaid
     }
 
     [Serializable]
     public sealed class ClinicState
     {
         public int SchemaVersion = 3;
-        public int RulesVersion = 3;
+        public int RulesVersion = ClinicBalance.CurrentRulesVersion;
         public ClinicLocation Location;
         public bool DoctorsClinicUnlocked;
         public long TotalTransferredIn;
@@ -55,6 +56,10 @@ namespace IdleClinic.Core
         public long TotalSpent;
         public long TotalTreatments;
         public long TotalTips;
+        // Car park exit charges (rules 4). Absent from older saves, which read it as zero.
+        public long TotalParkingFees;
+        // Coins paid into the wallet by rewards (daily goals, coin packs, boosts), not by patients.
+        public long TotalRewards;
         public bool WaitingRoomUnlocked;
         public ClinicTutorialStep Tutorial;
         public List<ClinicRoomState> Rooms = new List<ClinicRoomState>();
@@ -164,6 +169,8 @@ namespace IdleClinic.Core
         public bool Paid;
         public long Payment;
         public bool HasAdmissionReservation;
+        // Set when reception admits a parked patient under rules 4; cleared when the barrier charges them.
+        public bool ParkingFeeDue;
     }
 
     [Serializable]
@@ -234,6 +241,8 @@ namespace IdleClinic.Core
         public long PaymentsReceived;
         public long TillEarned;
         public long TreatmentsCompleted;
+        /// <summary>Offline earning stopped because the tills reached their coin limit.</summary>
+        public bool CoinCapped;
         public List<ClinicEvent> Events = new List<ClinicEvent>();
     }
 }

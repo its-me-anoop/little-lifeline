@@ -50,5 +50,17 @@ namespace IdleClinic.Core
             }
             return ClinicSimulation.IsValidState(state);
         }
+
+        /// <summary>Move a valid clinic to the current price rules once nothing is under construction, so every
+        /// job completes on the rules it was bought with. Owned levels are untouched; only later prices change.</summary>
+        public static bool TryAdoptCurrentRules(ClinicState state)
+        {
+            if (state == null || state.RulesVersion == ClinicBalance.CurrentRulesVersion || state.RulesVersion != 3
+                || state.Construction.Count != 0 || !ClinicSimulation.IsValidState(state)) return false;
+            state.RulesVersion = ClinicBalance.CurrentRulesVersion;
+            if (ClinicSimulation.IsValidState(state)) return true;
+            state.RulesVersion = 3;
+            return false;
+        }
     }
 }

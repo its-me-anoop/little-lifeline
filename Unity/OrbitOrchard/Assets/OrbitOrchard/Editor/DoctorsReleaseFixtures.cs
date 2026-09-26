@@ -26,7 +26,7 @@ namespace OrbitOrchard.Editor
             var build = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../build")) + Path.DirectorySeparatorChar;
             if (!output.StartsWith(build, StringComparison.Ordinal)) throw new InvalidOperationException("QA fixtures must stay inside this checkout's build directory.");
             var fixture = Type.GetType("IdleClinic.Tests.DoctorsProgressionFixture, IdleClinic.Core.Tests", true);
-            var starter = (ClinicSimulation)fixture.GetMethod("MaxStarter").Invoke(null, null);
+            var starter = (ClinicSimulation)fixture.GetMethod("MaxStarter").Invoke(null, new object[] { ClinicBalance.CurrentRulesVersion });
             fixture.GetMethod("Earn").Invoke(null, new object[] { starter, 130000L });
             Persist(Path.Combine(output, "maxed-starter"), starter, null, ClinicLocation.StarterClinic);
 

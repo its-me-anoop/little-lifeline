@@ -58,6 +58,11 @@ extern "C" {
         dispatch_async(dispatch_get_main_queue(), ^{ [OrchardAppleBridge.shared purchase:identifier]; });
     }
 
+    __attribute__((visibility("default"))) void OO_FinishTransaction(const char *transactionID) {
+        NSString *identifier = OrchardString(transactionID);
+        dispatch_async(dispatch_get_main_queue(), ^{ [OrchardAppleBridge.shared finishTransaction:identifier]; });
+    }
+
     __attribute__((visibility("default"))) void OO_RestorePurchases(void) {
         dispatch_async(dispatch_get_main_queue(), ^{ [OrchardAppleBridge.shared restorePurchases]; });
     }

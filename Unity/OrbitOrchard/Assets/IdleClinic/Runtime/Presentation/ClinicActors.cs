@@ -16,6 +16,13 @@ namespace IdleClinic.Presentation
         private readonly Dictionary<int,Actor> staff=new Dictionary<int,Actor>();
         private readonly Stack<Actor> patientPool=new Stack<Actor>();
         private readonly List<int> retired=new List<int>(40);
+        // Presentation only: a visitor who leaves on foot keeps walking down the street after the
+        // simulation has finished with them, instead of vanishing at the door.
+        private const int MaximumDepartures=12;
+        private const float DepartureSpeed=1.35f,WalkCycleLength=1.08f;
+        private readonly HashSet<int> leavingOnFoot=new HashSet<int>();
+        private readonly List<Departure> departures=new List<Departure>(MaximumDepartures);
+        private double lastRenderTick=-1;
         private readonly Dictionary<string,AnimationClip[]> clips=new Dictionary<string,AnimationClip[]>();
         internal ClinicActors(ClinicArt art,Transform parent,ClinicWorld world)
         { this.art=art;this.parent=parent;this.world=world; }
@@ -32,6 +39,7 @@ namespace IdleClinic.Presentation
         internal void Render(ClinicState state,bool reducedMotion)
         {
             double tick=state.Tick+state.SubTick;
+            float elapsed=lastRenderTick<0?0:(float)Math.Max(0,(tick-lastRenderTick)*.1);lastRenderTick=tick;
             retired.Clear();
             foreach(var entry in patients)
             {
@@ -39,7 +47,12 @@ namespace IdleClinic.Presentation
                 if(!present)retired.Add(entry.Key);
             }
             for(int i=0;i<retired.Count;i++)
-            { var actor=patients[retired[i]];actor.Root.gameObject.SetActive(false);patientPool.Push(actor);patients.Remove(retired[i]); }
+            {
+                var actor=patients[retired[i]];patients.Remove(retired[i]);
+                if(leavingOnFoot.Remove(retired[i])&&actor.HasPosition&&actor.Root.gameObject.activeSelf)StartDeparture(actor,retired[i],state.Location);
+                else {actor.Root.gameObject.SetActive(false);patientPool.Push(actor);}
+            }
+            RenderDepartures(elapsed,tick,reducedMotion);
             for(int i=0;i<state.Patients.Count;i++)
             {
                 var person=state.Patients[i];
@@ -67,6 +80,7 @@ namespace IdleClinic.Presentation
                     !doctors&&person.Phase==ClinicPatientPhase.ReceptionQueue,savedPath,moveStarted);
                 int pose=actor.Moving?1:person.Phase==ClinicPatientPhase.CheckingIn||person.Phase==ClinicPatientPhase.Dispensing||person.Phase==ClinicPatientPhase.UsingAmenity&&!seated?2:seated?4:0;
                 actor.Sample(pose,tick*.1+person.Id*.17,reducedMotion,person.Phase==ClinicPatientPhase.Leaving||person.Phase==ClinicPatientPhase.WalkingToTaxi,person.FirstAidComplete);actor.Appearance.AfterPose(seated);
+                if(person.Phase==ClinicPatientPhase.Leaving&&person.ParkingBayId<0&&!person.UsesTaxi)leavingOnFoot.Add(person.Id);else leavingOnFoot.Remove(person.Id);
             }
             foreach(var entry in staff)
             {
@@ -86,6 +100,64 @@ namespace IdleClinic.Presentation
                     for(int p=0;p<state.Patients.Count;p++)if(state.Patients[p].Id==member.PatientId&&state.Patients[p].Phase==ClinicPatientPhase.WalkingToTreatment){pose=5;break;}
                 Place(actor,member.FromAnchor,member.ToAnchor,Progress(tick,member.MoveStartedTick,member.MoveEndsTick),walking,true,tick,false);
                 actor.Sample(pose,tick*.1+member.Id*.13,reducedMotion);actor.Appearance.AfterPose(false);
+            }
+        }
+        private void StartDeparture(Actor actor,int id,ClinicLocation location)
+        {
+            if(departures.Count>=MaximumDepartures)FinishDeparture(0);
+            var departure=new Departure{Actor=actor,Seed=id};var start=actor.Root.position;float y=start.y;
+            departure.Add(start);
+            if(location==ClinicLocation.StarterClinic)
+            {
+                // Onto the front pavement; every third visitor uses the zebra crossing to the far side.
+                const float pavement=-6.95f,farPavement=-11.05f,crossing=.72f;
+                departure.Add(new Vector3(start.x,y,pavement));
+                if(id%3==0){departure.Add(new Vector3(crossing,y,pavement));departure.Add(new Vector3(crossing,y,farPavement));departure.Add(new Vector3(id%2==0?-26f:26f,y,farPavement));}
+                else departure.Add(new Vector3(id%2==0?26f:-26f,y,pavement));
+            }
+            else
+            {
+                float promenade=start.z-.8f;
+                departure.Add(new Vector3(start.x,y,promenade));departure.Add(new Vector3(id%2==0?42f:-42f,y,promenade));
+            }
+            departures.Add(departure);
+        }
+        private void RenderDepartures(float elapsed,double tick,bool reducedMotion)
+        {
+            for(int i=departures.Count-1;i>=0;i--)
+            {
+                var departure=departures[i];
+                // A long jump (offline return, location change) ends the stroll rather than teleporting it.
+                if(elapsed>5){FinishDeparture(i);continue;}
+                departure.Distance+=elapsed*DepartureSpeed;
+                if(departure.Distance>=departure.Length){FinishDeparture(i);continue;}
+                var actor=departure.Actor;
+                actor.Root.position=departure.Sample(departure.Distance,out var direction);
+                if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
+                actor.WalkCycles+=elapsed*DepartureSpeed/WalkCycleLength;actor.Moving=true;
+                actor.Sample(1,tick*.1+departure.Seed*.17,reducedMotion,true,true);actor.Appearance.AfterPose(false);
+            }
+        }
+        private void FinishDeparture(int index)
+        {
+            var actor=departures[index].Actor;departures.RemoveAt(index);
+            actor.Moving=false;actor.Root.gameObject.SetActive(false);patientPool.Push(actor);
+        }
+        private sealed class Departure
+        {
+            internal Actor Actor;internal int Seed;internal float Distance,Length;
+            private readonly Vector3[] points=new Vector3[6];private int count;
+            internal void Add(Vector3 point){if(count>0)Length+=Vector3.Distance(points[count-1],point);points[count++]=point;}
+            internal Vector3 Sample(float distance,out Vector3 direction)
+            {
+                for(int i=1;i<count;i++)
+                {
+                    float segment=Vector3.Distance(points[i-1],points[i]);
+                    direction=points[i]-points[i-1];
+                    if(distance<=segment||i==count-1)return Vector3.Lerp(points[i-1],points[i],segment<=.0001f?1:Mathf.Clamp01(distance/segment));
+                    distance-=segment;
+                }
+                direction=Vector3.forward;return points[0];
             }
         }
         private static float Progress(double tick,long from,long until)=>until<=from?1:Mathf.Clamp01((float)((tick-from)/(until-from)));

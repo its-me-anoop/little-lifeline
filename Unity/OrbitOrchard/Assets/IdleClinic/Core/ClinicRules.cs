@@ -12,6 +12,8 @@ namespace IdleClinic.Core
         public const int MaximumRoomTier = 3;
         public const int MaximumPatients = 40;
         public const double MaximumOfflineSeconds = 8 * 60 * 60;
+        /// <summary>The longest absence any offline upgrade can cover.</summary>
+        public const double MaximumOfflineUpgradeSeconds = 24 * 60 * 60;
         public const int ArrivalIntervalTicks = 70;
         public const long WaitingRoomCost = 160;
         public const long TreatmentStationCost = 180;
@@ -58,6 +60,17 @@ namespace IdleClinic.Core
         }
         public static long ParkingFee(ClinicState state)
             => ClinicBalance.For(state).ParkingFeePerLevel * LocationMultiplier(state) * state.Amenity(ClinicAmenity.Parking).Level;
+        public static long ParkingExitFee(ClinicState state)
+            => ClinicBalance.For(state).ParkingExitFeePerLevel * LocationMultiplier(state) * state.Amenity(ClinicAmenity.Parking).Level;
+        /// <summary>Largest exit charge any car can pay here: the per-level fee at the highest car park level.</summary>
+        public static long MaximumParkingExitFee(ClinicState state)
+            => ClinicBalanceTable.V4.ParkingExitFeePerLevel * LocationMultiplier(state) * (IsDoctors(state) ? 6 : 3);
+        /// <summary>What one parked car earns at a given car park level, under the clinic's rules.</summary>
+        public static long ParkingChargePerCar(ClinicState state, int level)
+        {
+            var balance = ClinicBalance.For(state);
+            return (balance.ParkingExitFeePerLevel > 0 ? balance.ParkingExitFeePerLevel : balance.ParkingFeePerLevel) * LocationMultiplier(state) * level;
+        }
         public static double ReceptionSeconds(ClinicState state) => ReceptionTicks(state) / 10d;
         public static double TreatmentSeconds(ClinicState state) => TreatmentTicks(state) / 10d;
         public static double WaitingCallSeconds(ClinicState state) => WaitingCallTicks(state) / 10d;

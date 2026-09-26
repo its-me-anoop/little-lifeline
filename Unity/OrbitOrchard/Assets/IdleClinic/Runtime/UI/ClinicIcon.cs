@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace IdleClinic.App
 {
-    public enum ClinicGlyph { Coin, Nurse, Reception, Bed, Chair, Equipment, Facility, Plant, Upgrade, Clock, Home, Plus, Minus, Close, Check, Settings, Sound, Haptic, Motion, Help, Arrow, Restore, Parking, Toilet, Vending, Training, Room, Doctor, Pharmacy, Taxi, Music, Locations }
+    public enum ClinicGlyph { Coin, Nurse, Reception, Bed, Chair, Equipment, Facility, Plant, Upgrade, Clock, Home, Plus, Minus, Close, Check, Settings, Sound, Haptic, Motion, Help, Arrow, Restore, Parking, Toilet, Vending, Training, Room, Doctor, Pharmacy, Taxi, Music, Locations, Gem, Goal }
 
     public sealed class ClinicIcon : VisualElement
     {
@@ -24,12 +24,26 @@ namespace IdleClinic.App
             var p = context.painter2D;
             var s = Mathf.Min(r.width, r.height) / 24;
             var o = r.center - new Vector2(12, 12) * s;
-            p.lineWidth = 1.9f * s; p.strokeColor = Tint; p.fillColor = Tint;
+            // Two-tone: every closed outline carries a soft fill of its own colour, so shapes read as
+            // solid objects at small sizes rather than thin wireframes.
+            var soft = new Color(Tint.r, Tint.g, Tint.b, glyph == ClinicGlyph.Coin || glyph == ClinicGlyph.Gem ? .34f : .18f);
+            p.lineWidth = 2.1f * s; p.strokeColor = Tint; p.fillColor = Tint;
             p.lineCap = LineCap.Round; p.lineJoin = LineJoin.Round;
             Vector2 V(float x, float y) => o + new Vector2(x, y) * s;
             void Line(params float[] a) { p.BeginPath(); p.MoveTo(V(a[0],a[1])); for(var i=2;i<a.Length;i+=2)p.LineTo(V(a[i],a[i+1])); p.Stroke(); }
-            void Box(float x,float y,float w,float h) => Line(x,y,x+w,y,x+w,y+h,x,y+h,x,y);
-            void Circle(float x,float y,float radius,bool fill=false) { p.BeginPath(); p.Arc(V(x,y),radius*s,0,360); if(fill)p.Fill();else p.Stroke(); }
+            void Shape(params float[] a)
+            {
+                p.fillColor = soft; p.BeginPath(); p.MoveTo(V(a[0],a[1])); for(var i=2;i<a.Length;i+=2)p.LineTo(V(a[i],a[i+1])); p.ClosePath(); p.Fill();
+                p.fillColor = Tint; Line(a);
+            }
+            void Box(float x,float y,float w,float h) => Shape(x,y,x+w,y,x+w,y+h,x,y+h,x,y);
+            void Circle(float x,float y,float radius,bool fill=false)
+            {
+                p.BeginPath(); p.Arc(V(x,y),radius*s,0,360);
+                if(fill){p.Fill();return;}
+                p.fillColor = soft; p.Fill(); p.fillColor = Tint;
+                p.BeginPath(); p.Arc(V(x,y),radius*s,0,360); p.Stroke();
+            }
             void Cross(float x,float y,float half) { Line(x-half,y,x+half,y);Line(x,y-half,x,y+half); }
             switch(glyph)
             {
@@ -63,6 +77,8 @@ namespace IdleClinic.App
                 case ClinicGlyph.Haptic:Box(7,3,10,18);Circle(12,18,1,true);Line(3,7,1,11,3,15);Line(21,7,23,11,21,15);break;
                 case ClinicGlyph.Motion:Circle(15,12,7);Line(2,6,6,6);Line(1,12,5,12);Line(2,18,6,18);Line(15,8,15,12,18,14);break;
                 case ClinicGlyph.Arrow:Line(4,12,20,12,14,6);Line(20,12,14,18);break;
+                case ClinicGlyph.Gem:Shape(6,4,18,4,22,9,12,21,2,9,6,4);Line(2,9,22,9);Line(9,4,7,9,12,21,17,9,15,4);break;
+                case ClinicGlyph.Goal:Line(5,22,5,3);Shape(5,4,18,4,15,8,18,12,5,12,5,4);break;
                 case ClinicGlyph.Restore:Circle(12,12,8);Line(3,3,3,10,9,10);Line(12,7,12,12,16,15);break;
                 default:Circle(12,12,9);Line(9,8,10,6,14,6,16,9,12,12,12,14);Circle(12,18,.8f,true);break;
             }

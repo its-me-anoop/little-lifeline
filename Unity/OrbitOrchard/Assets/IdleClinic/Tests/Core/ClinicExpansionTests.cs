@@ -14,7 +14,7 @@ namespace IdleClinic.Tests
         {
             var game = ClinicSimulation.CreateNew();
             Assert.That(game.State.SchemaVersion, Is.EqualTo(3));
-            Assert.That(game.State.RulesVersion, Is.EqualTo(3));
+            Assert.That(game.State.RulesVersion, Is.EqualTo(ClinicBalance.CurrentRulesVersion));
             Assert.That(game.State.Amenities.Count, Is.EqualTo(3));
             Assert.That(game.State.Amenities.All(a => a.Level == 0 && a.Till == 0), Is.True);
             Assert.That(ClinicRules.ReceptionTicks(game.State, 0), Is.EqualTo(140));
@@ -70,7 +70,8 @@ namespace IdleClinic.Tests
 
         [Test] public void ExpansionPricesGrowAndRoomTiersCapAmenitiesStationsAndTraining()
         {
-            var game = Ready(); Earn(game, 5000);
+            // The rules 3 price schedule; rules 4 pacing is covered by ClinicBalanceTests.
+            var game = Ready(); game.State.RulesVersion = 3; Earn(game, 5000);
             Assert.That(ClinicRules.StationUpgradeCost(game.State, ClinicStaffRole.Receptionist, 0), Is.EqualTo(90));
             Assert.That(ClinicRules.StationUpgradeCost(game.State, ClinicStaffRole.Nurse, 0), Is.EqualTo(110));
             Assert.That(ClinicRules.StaffTrainingCost(game.State.Staff[0]), Is.EqualTo(80));
@@ -105,7 +106,7 @@ namespace IdleClinic.Tests
             var leaving = WaitFor(game, p => p.Id == id && p.Phase == ClinicPatientPhase.Leaving);
             Assert.That(leaving.ParkingBayId, Is.EqualTo(bay));
             Assert.That(leaving.ToAnchor, Is.EqualTo(ClinicRules.ParkingPatientAnchor(bay)));
-            Assert.That(leaving.Payment, Is.EqualTo(55));
+            Assert.That(leaving.Payment, Is.EqualTo(50), "Rules 4: reception charges the visit; parking is paid at the barrier.");
             game.Advance(10);
             Assert.That(game.State.Patients.Any(p => p.Id == id && p.ParkingBayId == bay), Is.True);
             var driving = WaitFor(game, p => p.Id == id && p.Phase == ClinicPatientPhase.DrivingFromParking);
@@ -122,15 +123,64 @@ namespace IdleClinic.Tests
 
         [Test] public void ParkingFeeIsFixedAtCheckInAndAppearanceIsDeterministicAndVaried()
         {
-            var game = Ready(); Earn(game, 1000); game.UpgradeAmenity(ClinicAmenity.Parking);
+            // Rules 3 (saves with work bought before 4.0): the parking fee is part of the reception quote.
+            var game = Ready(); game.State.RulesVersion = 3; Earn(game, 1000); game.UpgradeAmenity(ClinicAmenity.Parking);
             var patient = WaitFor(game, p => p.ParkingBayId >= 0 && p.Phase == ClinicPatientPhase.CheckingIn);
             var quote = patient.Payment; Assert.That(quote, Is.EqualTo(55));
+            Assert.That(patient.ParkingFeeDue, Is.False, "Rules 3 never charges again at the barrier.");
             game.UpgradeAmenity(ClinicAmenity.Parking);
             Assert.That(patient.Payment, Is.EqualTo(quote));
             var appearances = new HashSet<int>();
             for (var i = 0; i < 300; i++)
             { game.Advance(1); foreach (var p in game.State.Patients) { appearances.Add(p.AppearanceId); Assert.That(p.AppearanceId, Is.EqualTo(ClinicRules.PatientAppearance(game.State.Seed, p.Id))); } }
             Assert.That(appearances.Count, Is.GreaterThanOrEqualTo(6)); Valid(game);
+        }
+
+        [Test] public void RulesFourChargesParkingOnceAtTheBarrierIntoTheCarParkCashBox()
+        {
+            var game = Ready(); Earn(game, 1000); game.UpgradeAmenity(ClinicAmenity.Parking);
+            var patient = WaitFor(game, p => p.ParkingBayId >= 0 && p.Phase == ClinicPatientPhase.CheckingIn);
+            Assert.That(patient.Payment, Is.EqualTo(ClinicRules.VisitFee(game.State)), "Reception charges the visit only.");
+            Assert.That(patient.ParkingFeeDue, Is.True);
+            var id = patient.Id;
+            var parking = game.State.Amenity(ClinicAmenity.Parking);
+            Assert.That(parking.Till, Is.Zero);
+            var driving = WaitFor(game, p => p.Id == id && p.Phase == ClinicPatientPhase.DrivingFromParking);
+            Assert.That(driving.ParkingFeeDue, Is.False);
+            Assert.That(ClinicRules.ParkingExitFee(game.State), Is.EqualTo(10));
+            Assert.That(parking.Till, Is.EqualTo(10));
+            Assert.That(game.State.TotalParkingFees, Is.EqualTo(10));
+            Valid(game);
+            game.Advance(30);
+            Assert.That(game.State.TotalParkingFees, Is.EqualTo(10), "Each car pays once.");
+            var wallet = game.State.Wallet;
+            var collected = game.CollectParkingFees();
+            Assert.That(collected.Success, Is.True);
+            Assert.That(collected.Amount, Is.EqualTo(10));
+            Assert.That(game.State.Wallet, Is.EqualTo(wallet + 10));
+            Assert.That(parking.Till, Is.Zero);
+            Assert.That(game.CollectParkingFees().Success, Is.False);
+            Valid(game);
+        }
+
+        [Test] public void OneBuilderWorksAtATimeUnlessASecondIsAdded()
+        {
+            var game = Ready(); Earn(game, 3000);
+            Assert.That(game.ConstructionSlots, Is.EqualTo(1));
+            Assert.That(game.Renovate(ClinicRoom.Reception).Success, Is.True);
+            var busy = game.Renovate(ClinicRoom.FirstAid);
+            Assert.That(busy.Success, Is.False);
+            Assert.That(busy.Message, Does.Contain("builder is busy"));
+            Assert.That(game.BuildersBusy, Is.True);
+            game.ConstructionSlots = 2;
+            Assert.That(game.Renovate(ClinicRoom.FirstAid).Success, Is.True, "A second builder takes a second job.");
+            Assert.That(game.State.Construction.Count, Is.EqualTo(2));
+            game.ConstructionSlots = 1;
+            Valid(game);
+            game.Advance(ClinicRules.RenovationSeconds(game.State, ClinicRoom.Reception) + 1);
+            Assert.That(game.State.Construction, Is.Empty, "Work already running always finishes, even with fewer builders.");
+            Assert.That(game.State.Room(ClinicRoom.Reception).Tier, Is.EqualTo(2));
+            Assert.That(game.State.Room(ClinicRoom.FirstAid).Tier, Is.EqualTo(2));
         }
 
         [Test] public void ToiletAndVendingVisitsReserveSeatsAndAwardTipsOnlyOnceOnUse()
@@ -230,7 +280,7 @@ namespace IdleClinic.Tests
 
         [Test] public void PaidPatientsFinishThroughFullQueuesAmenityVisitsAndRenovation()
         {
-            var game = Amenities();
+            var game = Amenities(); game.ConstructionSlots = 3;
             WaitFor(game, IsVisiting);
             var paid = game.State.Patients.Where(p => p.Paid).Select(p => p.Id).ToArray();
             Earn(game, 600);
@@ -249,7 +299,7 @@ namespace IdleClinic.Tests
             foreach (ClinicRoom room in new[] { ClinicRoom.Reception, ClinicRoom.FirstAid, ClinicRoom.Waiting })
             {
                 while (game.State.Room(room).Tier < 3)
-                { Earn(game, ClinicRules.RenovationCost(game.State.Room(room))); Assert.That(game.Renovate(room).Success, Is.True); game.Advance(180); }
+                { Earn(game, ClinicRules.RenovationCost(game.State, room)); var seconds = ClinicRules.RenovationSeconds(game.State, room); Assert.That(game.Renovate(room).Success, Is.True); game.Advance(seconds); }
             }
             Earn(game, 1000); game.AddTreatmentStation(); game.HireNurse(); game.HireReceptionist();
             foreach (var staff in game.State.Staff)

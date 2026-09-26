@@ -1,72 +1,79 @@
 {
-  "title": "Morning Rounds",
+  "title": "Busy Day",
   "author": "Original project composition",
-  "bpm": 80,
+  "bpm": 116,
   "bars": 16,
   "source": "Tools/create_clinic_audio.py",
   "assets": {
     "morning-rounds": {
-      "seconds": 48.0,
-      "peak": 0.17492123251887615,
-      "rms": 0.03766785822228675,
-      "seamDelta": 0.0006885185565745381,
-      "sha256": "8740474262021c2da87773a79eef59af16e4e87df785e92203e44eeb2282c3cc"
+      "seconds": 33.1034375,
+      "peak": 0.36,
+      "rms": 0.05044070765139463,
+      "seamDelta": 0.0001831603571531662,
+      "sha256": "d3eedb506e6d43d0209bf4a909a0cc7f9ab6f14102b20066fb1e76ade7d5f129"
     },
     "payment": {
-      "seconds": 0.66,
-      "peak": 0.3350861504816347,
-      "rms": 0.09217856300457432,
+      "seconds": 0.44996875,
+      "peak": 0.3152585489756625,
+      "rms": 0.07973228307642134,
       "seamDelta": 0.0,
-      "sha256": "b2ff95d4a73b848d15166baa93a20dac5cadd865d5e753823996148c19b9f894"
+      "sha256": "b91d9aa9678450eb5272f486e0b9c59e7dd39e5f142c6a8d8e94d05e41717462"
     },
     "collect": {
-      "seconds": 0.77,
-      "peak": 0.5395425807179663,
-      "rms": 0.1200426093359327,
+      "seconds": 0.8,
+      "peak": 0.5587614844014266,
+      "rms": 0.09676708110771638,
       "seamDelta": 0.0,
-      "sha256": "df76fc82784ca198f57a5c9c8e5230e09f1fca60ba5c71ef47aa6737c9adf32b"
+      "sha256": "1ddb259d223cf0521db2fe99594648c67cea9816808c2edbd746e09f4b1e7add"
     },
     "care": {
-      "seconds": 0.82,
-      "peak": 0.3174693833904778,
-      "rms": 0.07324840343977815,
+      "seconds": 0.74,
+      "peak": 0.3201458649521829,
+      "rms": 0.06805361090752438,
       "seamDelta": 0.0,
-      "sha256": "c5e82456a2e9e1385cf6ce42ea2d0ce034c03495be74084dcd7abebd81a412d9"
+      "sha256": "5899b13e24ef3026a95ec4a2253456ae823987d608999ff2a845ff72c680f0d1"
     },
     "consultation": {
-      "seconds": 0.82,
-      "peak": 0.2582673466757883,
-      "rms": 0.06261665545395766,
+      "seconds": 0.69,
+      "peak": 0.2562800812084394,
+      "rms": 0.04767265372231829,
       "seamDelta": 0.0,
-      "sha256": "5ed9d27cd02e8033afe60cba43e87fafc28360e33d4e85174185ce27974f147f"
+      "sha256": "39896489c2db99144134222112d29aa38ab5958a45ccc3043960d703b90e7d57"
     },
     "pharmacy": {
-      "seconds": 0.73,
-      "peak": 0.2479478878776279,
-      "rms": 0.05970683640419119,
+      "seconds": 0.58,
+      "peak": 0.2698002096983443,
+      "rms": 0.0598554059024316,
       "seamDelta": 0.0,
-      "sha256": "d46d919f5a8733bb1c47196ca34575e4b0aacf0a3e02a48fa81513e4a6b7ee74"
+      "sha256": "84dd020cd0048906411839a01e2afd52435ef0f68eb6c39dbe32954e771dd36f"
     },
     "upgrade": {
-      "seconds": 0.89,
-      "peak": 0.407278777821415,
-      "rms": 0.09992549323143206,
+      "seconds": 0.9,
+      "peak": 0.40758873954849795,
+      "rms": 0.0680870942416457,
       "seamDelta": 0.0,
-      "sha256": "ff71665590d94b89dd2fe2ae676e9fcd6c79e83579670e914349c45d2a3fb368"
+      "sha256": "d527bedb76b3bc410d14ba62b93b1d9a367f74521dcc1c0c8b0a77ddf6f6c351"
     },
     "complete": {
       "seconds": 1.05,
-      "peak": 0.43431518160980964,
-      "rms": 0.10256200705772262,
+      "peak": 0.4665110178888643,
+      "rms": 0.07359274110386264,
       "seamDelta": 0.0,
-      "sha256": "ed3cc187f0d34c31675bfce29d4943e53fefbefd4a8866f3ee9782fc074ebc68"
+      "sha256": "3871a1daccc08966d66a835f44a0347a53556b83aae4c5c85ce9d24bbec851eb"
+    },
+    "reward": {
+      "seconds": 1.1,
+      "peak": 0.36807034522167137,
+      "rms": 0.06627288541208357,
+      "seamDelta": 0.0,
+      "sha256": "2f377a687b8d68293aa32ae748982c4f43fb7359663bbe51cde71d4d1d74d1d5"
     },
     "tap": {
-      "seconds": 0.615,
-      "peak": 0.09385571048510492,
-      "rms": 0.03380750195426902,
+      "seconds": 0.185,
+      "peak": 0.14155725392395296,
+      "rms": 0.03856491129598695,
       "seamDelta": 0.0,
-      "sha256": "9dbe26abf3e8b590c9af5dc3c78498266dc92b05ff29d4f04b91ebf2b4dcf50f"
+      "sha256": "8c01764c710ddfe775d7348b160d6719410ad088bc1ed31e59b3b3ec61eec9ad"
     },
     "footstep": {
       "seconds": 0.14,

@@ -256,6 +256,7 @@ namespace IdleClinic.App
             foreach(var pair in cashMarkers)
                 if(pair.Value.style.display==DisplayStyle.Flex&&pair.Value.worldBound.Contains(panelPoint)){Collect(pair.Key);return;}
             if(vendingCashMarker!=null&&vendingCashMarker.style.display==DisplayStyle.Flex&&vendingCashMarker.worldBound.Contains(panelPoint)){CollectVending();return;}
+            if(parkingCashMarker!=null&&parkingCashMarker.style.display==DisplayStyle.Flex&&parkingCashMarker.worldBound.Contains(panelPoint)){CollectParking();return;}
             if(waitingMarker!=null&&waitingMarker.style.display==DisplayStyle.Flex&&waitingMarker.worldBound.Contains(panelPoint)){Select(ClinicRoom.Waiting);return;}
             var hit=world.Pick(ToViewport(panelPoint));
             if(hit.Kind!=ClinicHitKind.Cash&&hit.Kind!=ClinicHitKind.VendingCash

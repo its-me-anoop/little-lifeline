@@ -8,7 +8,7 @@ namespace IdleClinic.Core
     {
         private static bool IsValidDoctorsState(ClinicState state)
         {
-            if (state == null || state.SchemaVersion != 3 || state.RulesVersion != 3 || state.Location != ClinicLocation.DoctorsClinic
+            if (state == null || state.SchemaVersion != 3 || (state.RulesVersion != 3 && state.RulesVersion != ClinicBalance.CurrentRulesVersion) || state.Location != ClinicLocation.DoctorsClinic
                 || state.DoctorsClinicUnlocked || state.Tutorial != ClinicTutorialStep.Complete || !state.WaitingRoomUnlocked
                 || state.Tick < 0 || state.Tick >= MaximumTick || state.PausedTrafficTicks < 0 || state.PausedTrafficTicks > state.Tick
                 || double.IsNaN(state.SubTick) || state.SubTick < 0 || state.SubTick >= 1
@@ -18,8 +18,11 @@ namespace IdleClinic.Core
                 || !MoneyRange(state.TotalTransferredIn) || !MoneyRange(state.TotalTransferredOut)
                 || state.TotalPayments < 0 || state.TotalPayments > state.NextPatientId || state.TotalTreatments < 0 || state.TotalTreatments > state.TotalPayments
                 || state.TotalCollected > state.TotalEarned || state.TotalTips < 0 || state.TotalTips > 84L * state.TotalPayments
-                || state.TotalEarned < 100L * state.TotalPayments + state.TotalTips || state.TotalEarned > 820L * state.TotalPayments + state.TotalTips
-                || (decimal)state.Wallet != state.TotalCollected - (decimal)state.TotalSpent + state.TotalTransferredIn - state.TotalTransferredOut
+                || !ValidParkingLedger(state, false)
+                || state.TotalEarned < 100L * state.TotalPayments + state.TotalTips + state.TotalParkingFees
+                || state.TotalEarned > 820L * state.TotalPayments + state.TotalTips + state.TotalParkingFees
+                || !MoneyRange(state.TotalRewards)
+                || (decimal)state.Wallet != state.TotalCollected - (decimal)state.TotalSpent + state.TotalTransferredIn - state.TotalTransferredOut + state.TotalRewards
                 || state.Rooms == null || state.Rooms.Count != 5 || state.ReceptionDesks == null || state.TreatmentStations == null
                 || state.ConsultationStations == null || state.PharmacyStations == null || state.Amenities == null || state.Amenities.Count != 4
                 || state.Staff == null || state.Patients == null || state.Patients.Count > ClinicRules.MaximumPatientCount(state)
@@ -39,8 +42,8 @@ namespace IdleClinic.Core
             foreach (var amenity in state.Amenities)
                 if (amenity == null || !Defined(amenity.Kind) || !amenityKinds.Add(amenity.Kind) || amenity.Level < 1
                     || amenity.Level > ClinicRules.AmenityCap(state, amenity.Kind) || !MoneyRange(amenity.Till)
-                    || amenity.Kind != ClinicAmenity.Vending && amenity.Till != 0) return false;
-            long till = state.Amenity(ClinicAmenity.Vending).Till;
+                    || amenity.Kind != ClinicAmenity.Vending && amenity.Kind != ClinicAmenity.Parking && amenity.Till != 0) return false;
+            long till = state.Amenity(ClinicAmenity.Vending).Till + state.Amenity(ClinicAmenity.Parking).Till;
             foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
             {
                 var count = ClinicRules.StationCount(state, role);
@@ -92,6 +95,7 @@ namespace IdleClinic.Core
                     || patient.Payment < 0 || patient.Payment > 820 || patient.DeskId < -1 || patient.DeskId >= state.ReceptionDesks.Count
                     || patient.SeatId < -1 || patient.SeatId >= ClinicRules.WaitingCapacity(state) || !Defined(patient.VisitingAmenity)
                     || patient.ParkingBayId < -1 || patient.ParkingBayId >= ClinicRules.ParkingCapacity(state)
+                    || patient.ParkingFeeDue && (patient.ParkingBayId < 0 || state.RulesVersion < 4)
                     || patient.ParkingBayId >= 0 && (patient.Id == 0 || patient.Id % 3 != 0 || patient.UsesTaxi || !bays.Add(patient.ParkingBayId))
                     || patient.UsesTaxi != (patient.TaxiDockId >= 0) || patient.TaxiDockId < -1 || patient.TaxiDockId >= ClinicRules.TaxiDockCount(state)
                     || patient.UsesTaxi && patient.Id % 4 != 2

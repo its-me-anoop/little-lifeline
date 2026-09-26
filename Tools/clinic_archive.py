@@ -33,7 +33,7 @@ UNSIGNED_ZIP = 'OrbitOrchard.unsigned.xcarchive.zip'
 SIGNED_ZIP = 'OrbitOrchard.xcarchive.zip'
 RECEIPT = 'signing-receipt.json'
 TRANSFER = 'clinic-signed-transfer.zip'
-BRIDGE = ('Initialize', 'LoadProducts', 'Purchase', 'RestorePurchases',
+BRIDGE = ('Initialize', 'LoadProducts', 'Purchase', 'FinishTransaction', 'RestorePurchases',
           'AuthenticateGameCenter', 'ShowLeaderboard', 'SubmitScore', 'RetryScores',
           'Haptic', 'UseLifelineLeaderboards', 'ShowWeeklyLeaderboard',
           'ScreenWidthPoints', 'ThermalState')

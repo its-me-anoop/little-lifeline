@@ -283,7 +283,7 @@ jobs:
           framework = app / 'Frameworks/UnityFramework.framework/UnityFramework'
           assert framework.is_file(), 'This is not an embedded Unity player.'
           symbols = subprocess.check_output(['xcrun', 'nm', '-gU', str(framework)], text=True)
-          for symbol in ('Initialize', 'LoadProducts', 'Purchase', 'RestorePurchases', 'AuthenticateGameCenter', 'ShowLeaderboard', 'SubmitScore', 'RetryScores', 'Haptic', 'UseLifelineLeaderboards', 'ShowWeeklyLeaderboard', 'ScreenWidthPoints', 'ThermalState'):
+          for symbol in ('Initialize', 'LoadProducts', 'Purchase', 'FinishTransaction', 'RestorePurchases', 'AuthenticateGameCenter', 'ShowLeaderboard', 'SubmitScore', 'RetryScores', 'Haptic', 'UseLifelineLeaderboards', 'ShowWeeklyLeaderboard', 'ScreenWidthPoints', 'ThermalState'):
               assert '_OO_' + symbol in symbols, 'Apple bridge export missing: ' + symbol
           privacy = plistlib.loads((app / 'PrivacyInfo.xcprivacy').read_bytes())
           reasons = [entry for entry in privacy['NSPrivacyAccessedAPITypes'] if entry['NSPrivacyAccessedAPIType'] == 'NSPrivacyAccessedAPICategoryUserDefaults']

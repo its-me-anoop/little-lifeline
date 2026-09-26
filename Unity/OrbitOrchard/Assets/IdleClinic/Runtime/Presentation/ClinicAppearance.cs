@@ -18,11 +18,14 @@ namespace IdleClinic.Presentation
         private readonly GameObject[] training=new GameObject[11];
         private readonly bool patient;
         private int current=-1;
+        private const float HeadScale=.66f;
         internal ClinicAppearance(ClinicArt art,Transform root,bool patient,ClinicStaffRole role=ClinicStaffRole.Nurse)
         {
             this.root=root;this.patient=patient;skin=root.GetComponentInChildren<SkinnedMeshRenderer>();
             var rig=skin as SkinnedMeshRenderer;if(rig!=null){head=Array.Find(rig.bones,b=>b.name=="head");chest=Array.Find(rig.bones,b=>b.name=="chest");}
             headwear=art.Group("Character head accessories",root);bodywear=art.Group("Character body accessories",root);
+            // Accessories were authored for the earlier, larger heads; adult-proportioned heads are two-thirds that size.
+            headwear.localScale=Vector3.one*HeadScale;
             var originals=skin==null?Array.Empty<Material>():skin.sharedMaterials;
             for(int appearance=0;appearance<12;appearance++)
             {
@@ -72,16 +75,22 @@ namespace IdleClinic.Presentation
             }
             if(patient)
             {
-                art.Box("Visitor backpack",bodywear,new Vector3(0,.93f,-.21f),new Vector3(.32f,.40f,.19f),"Wood");
-                art.Box("Backpack pocket",bodywear,new Vector3(0,.86f,-.322f),new Vector3(.24f,.15f,.045f),"Gold");
+                art.Box("Visitor backpack",bodywear,new Vector3(0,.98f,-.165f),new Vector3(.27f,.34f,.14f),"Wood");
+                art.Box("Backpack pocket",bodywear,new Vector3(0,.91f,-.245f),new Vector3(.20f,.13f,.035f),"Gold");
+                for(int side=-1;side<=1;side+=2)art.Box("Backpack strap",bodywear,new Vector3(side*.085f,1.06f,.105f),new Vector3(.028f,.26f,.012f),"Wood");
             }
             else
             {
-                for(int level=2;level<=12;level++)training[level-2]=art.Box("Staff training pin "+level,bodywear,new Vector3(-.14f+((level-2)%6)*.047f,1.16f-((level-2)/6)*.055f,.15f),new Vector3(.034f,.043f,.023f),"Gold");
+                for(int level=2;level<=12;level++)training[level-2]=art.Box("Staff training pin "+level,bodywear,new Vector3(-.125f+((level-2)%6)*.04f,1.165f-((level-2)/6)*.045f,.112f),new Vector3(.026f,.032f,.014f),"Gold");
                 if(role==ClinicStaffRole.Doctor)
-                {art.Box("Doctor coat lapel",bodywear,new Vector3(.09f,1.07f,.175f),new Vector3(.13f,.39f,.045f),"Linen");art.Orb("Doctor stethoscope diaphragm",bodywear,new Vector3(.15f,.90f,.19f),new Vector3(.09f,.09f,.035f),"Gold");art.Box("Doctor stethoscope tube",bodywear,new Vector3(.14f,1.10f,.18f),new Vector3(.022f,.33f,.025f),"Ink");}
+                {
+                    for(int side=-1;side<=1;side+=2)art.Box("Doctor coat lapel",bodywear,new Vector3(side*.06f,1.10f,.112f),new Vector3(.05f,.22f,.014f),"Linen");
+                    art.Box("Doctor coat hem",bodywear,new Vector3(0,.76f,.005f),new Vector3(.31f,.14f,.21f),"Linen");
+                    art.Orb("Doctor stethoscope diaphragm",bodywear,new Vector3(.07f,.97f,.12f),new Vector3(.045f,.045f,.02f),"Gold");
+                    for(int side=-1;side<=1;side+=2)art.Box("Doctor stethoscope tube",bodywear,new Vector3(side*.045f,1.10f,.118f),new Vector3(.014f,.22f,.014f),"Ink");
+                }
                 if(role==ClinicStaffRole.Pharmacist)
-                {art.Box("Pharmacist name badge",bodywear,new Vector3(.13f,1.10f,.18f),new Vector3(.14f,.12f,.023f),"Linen");art.Box("Pharmacist badge cross",bodywear,new Vector3(.13f,1.10f,.195f),new Vector3(.085f,.025f,.012f),"Sage");art.Box("Pharmacist badge cross",bodywear,new Vector3(.13f,1.10f,.20f),new Vector3(.025f,.085f,.012f),"Sage");}
+                {art.Box("Pharmacist name badge",bodywear,new Vector3(.09f,1.10f,.113f),new Vector3(.08f,.07f,.012f),"Linen");art.Box("Pharmacist badge cross",bodywear,new Vector3(.09f,1.10f,.121f),new Vector3(.05f,.016f,.008f),"Sage");art.Box("Pharmacist badge cross",bodywear,new Vector3(.09f,1.10f,.124f),new Vector3(.016f,.05f,.008f),"Sage");}
             }
         }
         internal void Apply(int appearance,int trainingLevel=1)

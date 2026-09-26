@@ -38,7 +38,7 @@ namespace IdleClinic.App
         private readonly Dictionary<int, ClinicProgress> patientRings = new Dictionary<int, ClinicProgress>();
         private readonly Dictionary<int, VisualElement> constructionMarkers = new Dictionary<int, VisualElement>();
         private readonly Dictionary<ClinicRoom, VisualElement> roomTargets = new Dictionary<ClinicRoom, VisualElement>();
-        private VisualElement waitingMarker,vendingCashMarker;
+        private VisualElement waitingMarker,vendingCashMarker,parkingCashMarker;
         private Button parkingControl;
         private readonly Dictionary<string,VisualElement> objectTargets=new Dictionary<string,VisualElement>();
         private readonly Dictionary<VisualElement,ClinicHit> objectHits=new Dictionary<VisualElement,ClinicHit>();
@@ -87,6 +87,7 @@ namespace IdleClinic.App
             saves = new ClinicProfileStore(Application.persistentDataPath);
             profile = saves.LoadClinic(DateTimeOffset.UtcNow);
             BindSimulations();
+            apple.GemTransactionReceived+=OnGemTransaction;
             world = new GameObject("Idle Clinic World").AddComponent<ClinicWorld>();
             world.Initialize();
             world.ConfigureLocation(profile.activeLocation);
@@ -94,11 +95,14 @@ namespace IdleClinic.App
             root.Clear();
             BuildInterface();
             ready = true;
+            ProcessGemTransactions();
+            CheckPurchasedUnlocks();
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             gameObject.AddComponent<ClinicPerformanceRecorder>();
+            ApplyQALaunchArguments();
 #endif
             if(saves.LastOfflineReport.applied && saves.LastOfflineReport.tillEarned>0)
-                Notify("While away: " + Money(saves.LastOfflineReport.tillEarned) + " ready to collect",8);
+                Notify(OfflineMessage(saves.LastOfflineReport),8);
             if(!string.IsNullOrEmpty(saves.Error)) Notify(saves.Error,10);
         }
 
@@ -110,9 +114,11 @@ namespace IdleClinic.App
             overlay=Box(root,"overlay");overlay.pickingMode=PickingMode.Ignore;
             particles=Box(overlay,"overlay");particles.pickingMode=PickingMode.Ignore;
             header=Box(root,"header");header.pickingMode=PickingMode.Ignore;
-            wallet=Box(header,"wallet");wallet.pickingMode=PickingMode.Ignore;
+            var balances=Box(header,"balances");balances.pickingMode=PickingMode.Ignore;
+            wallet=Box(balances,"wallet");wallet.pickingMode=PickingMode.Ignore;
             wallet.Add(new ClinicIcon(ClinicGlyph.Coin,28,new Color(.55f,.36f,.08f)));
             walletLabel=Text(wallet,"0","wallet-value",true);walletLabel.name="clinic-wallet";
+            BuildGemControl(balances);
             var settings=IconButton(header,ClinicGlyph.Settings,"Settings",ToggleSettings,"round-control");settings.name="clinic-settings";
             hint=Box(root,"tutorial-hint");hint.pickingMode=PickingMode.Ignore;
             hintLabel=Text(hint,"","hint-label");
@@ -124,6 +130,7 @@ namespace IdleClinic.App
             BuildLocationControl(cameraTools);
             dock=Box(root,"context-dock");dock.style.display=DisplayStyle.None;
             dock.RegisterCallback<GeometryChangedEvent>(_=>ApplySafeArea());
+            BuildGuide();
             toast=Text(root,"","toast");toast.style.display=DisplayStyle.None;toast.pickingMode=PickingMode.Ignore;
             root.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
             ApplySafeArea();RebuildDock();UpdateReadouts();
@@ -141,21 +148,22 @@ namespace IdleClinic.App
                 otherSimulation?.Advance(delta, false);
             }
             saveClock+=delta;readoutClock+=delta;
-            if(saveClock>=5){saveClock=0;if(saves.HasPendingOfflineProgress)ResumeClinic();else SaveNow();}
+            if(saveClock>=5){saveClock=0;if(saves.HasPendingOfflineProgress)ResumeClinic();else{SaveNow();ProcessGemTransactions();}}
             if(readoutClock>=.15){readoutClock=0;UpdateReadouts();}
-            UpdateWorld(delta);UpdateFlights(delta);UpdateAccessibilityFrames();
+            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateAccessibilityFrames();
             if(toast.style.display==DisplayStyle.Flex && Time.unscaledTimeAsDouble>toastUntil)toast.style.display=DisplayStyle.None;
         }
 
         private void UpdateReadouts()
         {
             UpdateLocationReadouts();
-            walletLabel.text=Money(State.Wallet);
+            walletLabel.text=WalletText();
+            UpdateGemReadout();
             if(parkingControl!=null)parkingControl.style.display=State.Tutorial==ClinicTutorialStep.Complete?DisplayStyle.Flex:DisplayStyle.None;
             if(lastTutorial!=State.Tutorial)
             {
                 lastTutorial=State.Tutorial;
-                if(lastTutorial==ClinicTutorialStep.HireFirstNurse){selectedObject=null;selectedRoom=ClinicRoom.FirstAid;settingsOpen=false;locationsOpen=false;world.SelectRoom(ClinicRoom.FirstAid);}
+                if(lastTutorial==ClinicTutorialStep.HireFirstNurse){selectedObject=null;selectedRoom=ClinicRoom.FirstAid;settingsOpen=false;gemsOpen=false;locationsOpen=false;world.SelectRoom(ClinicRoom.FirstAid);}
                 if(lastTutorial==ClinicTutorialStep.Complete){selectedObject=null;selectedRoom=null;world.SelectRoom(default(ClinicHit));Notify("Your clinic is open",3);}
                 dockKey="";
             }
@@ -164,7 +172,7 @@ namespace IdleClinic.App
                 : State.Tutorial==ClinicTutorialStep.HireFirstNurse ? "A nurse makes all the difference"
                 : State.Tutorial==ClinicTutorialStep.FirstTreatment ? "A little care. A fresh start." : "";
             hint.style.display=string.IsNullOrEmpty(hintLabel.text)?DisplayStyle.None:DisplayStyle.Flex;
-            var key=(locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom.ToString())+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
+            var key=simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom.ToString())+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
                 string.Join(";",State.Rooms.Select(r=>$"{r.Built}:{r.Tier}:{r.EquipmentLevel}:{r.FacilitiesLevel}:{r.DecorationLevel}:{r.StationCount}"))+":"+
                 string.Join(";",State.Construction.Select(c=>c.Id))+":"+
                 string.Join(";",State.ReceptionDesks.Select(d=>$"{d.Id}:{d.EquipmentLevel}"))+":"+
@@ -175,6 +183,8 @@ namespace IdleClinic.App
                 string.Join(";",State.Amenities.Select(a=>$"{a.Kind}:{a.Level}"));
             if(key!=dockKey){dockKey=key;RebuildDock();}
             foreach(var update in readouts.ToArray())update();
+            root.EnableInClassList("reduced-motion",ReducedMotion);
+            UpdateGuide();
             UpdateAccessibilityValues();
         }
 
@@ -194,11 +204,11 @@ namespace IdleClinic.App
         private void Select(ClinicRoom room)
         {
             if(!ClinicSelectionPolicy.CanSelectRoom(State,room))return;
-            settingsOpen=false;locationsOpen=false;selectedObject=null;selectedRoom=room;world.SelectRoom(room);dockKey="";UpdateReadouts();
+            settingsOpen=false;gemsOpen=false;locationsOpen=false;selectedObject=null;selectedRoom=room;world.SelectRoom(room);dockKey="";UpdateReadouts();
         }
         private void CloseContext()
         {
-            selectedRoom=null;selectedObject=null;settingsOpen=false;locationsOpen=false;world.SelectRoom(default(ClinicHit));dockKey="";UpdateReadouts();
+            selectedRoom=null;selectedObject=null;settingsOpen=false;gemsOpen=false;locationsOpen=false;world.SelectRoom(default(ClinicHit));dockKey="";UpdateReadouts();
         }
 
         private void Run(Func<ClinicCommandResult> action)
@@ -220,9 +230,17 @@ namespace IdleClinic.App
             foreach(var e in events)
             {
                 clinicAudio.PlayEvent(e.Kind);
+                AnnounceEvent(e);
+                if(e.Kind==ClinicEventKind.CashCollected&&saves.BoostActive(DateTimeOffset.UtcNow))
+                {
+                    // Double collections: the same amount again, paid as a reward. Commit, then bind to the saved profile.
+                    var bonus=saves.GrantBoostBonus(e.Amount,DateTimeOffset.UtcNow);
+                    if(bonus>0){profile=saves.Profile;BindSimulations();FloatText(ClinicCashPresentation.IsVendingCollection(e)?world.GetVendingCashPoint():ClinicCashPresentation.IsParkingCollection(e)?world.GetParkingCashPoint():world.GetCashPoint(e.DeskId),"×2 +"+Money(bonus),"float-coins");}
+                }
                 if(e.Kind==ClinicEventKind.CashCollected)
                 {
                     if(ClinicCashPresentation.IsVendingCollection(e))LaunchCoinsFrom(world.GetVendingCashPoint());
+                    else if(ClinicCashPresentation.IsParkingCollection(e))LaunchCoinsFrom(world.GetParkingCashPoint());
                     else LaunchCoins(e.DeskId,e.Amount);
                     Feedback(0);
                 }
@@ -261,7 +279,9 @@ namespace IdleClinic.App
             cameraTools.style.left=safe.xMin+16;
             dock.style.left=dockArea.xMin;dock.style.right=StyleKeyword.Auto;dock.style.width=dockArea.width;
             dock.style.bottom=bottom+12;
-            LimitDockContent(dockArea.height);
+            if(guideCard!=null){guideCard.style.bottom=bottom+14;guideCard.style.maxWidth=Math.Min(440,dockArea.width);}
+            // Keep a tall dock below the camera buttons (top+76, about 56 tall) instead of sliding under them.
+            LimitDockContent(Math.Min(dockArea.height,h-bottom-12-(top+76+56+10)));
             var dockHeight=dock.resolvedStyle.height;
             if(simulation!=null&&State.Tutorial==ClinicTutorialStep.Complete)
             {
@@ -282,8 +302,11 @@ namespace IdleClinic.App
         {
             // Heading, padding and border remain fixed while the one body scrolls.
             const float fixedHeadingAndInsets=70;
+            // Docks with a tab row (Gems & goals) keep it fixed above the body too.
+            var tabs=dock.Q(className:"gem-tabs");
+            var tabHeight=tabs==null?0:float.IsNaN(tabs.resolvedStyle.height)||tabs.resolvedStyle.height<1?56:tabs.resolvedStyle.height+tabs.resolvedStyle.marginTop+tabs.resolvedStyle.marginBottom;
             dock.Query<ScrollView>(className:"bounded-dock-content").ForEach(body=>
-                body.style.maxHeight=Mathf.Max(44,availableHeight-fixedHeadingAndInsets));
+                body.style.maxHeight=Mathf.Max(44,availableHeight-fixedHeadingAndInsets-tabHeight));
         }
 
         private void Notify(string message,double seconds=4)
@@ -301,6 +324,9 @@ namespace IdleClinic.App
             simulation = new ClinicSimulation(profile.ActiveState);
             var other = profile.activeLocation == ClinicLocation.StarterClinic ? profile.doctorsState : profile.state;
             otherSimulation = other == null ? null : new ClinicSimulation(other);
+            var builders = saves?.ConstructionSlots ?? 1;
+            simulation.ConstructionSlots = builders;
+            if (otherSimulation != null) otherSimulation.ConstructionSlots = builders;
         }
 
         private void TryOpenDoctorsClinic()
@@ -342,12 +368,13 @@ namespace IdleClinic.App
             var report=saves.ApplyOffline(DateTimeOffset.UtcNow);profile=saves.Profile;BindSimulations();
             world.ConfigureLocation(profile.activeLocation);world.ResetActorPlacement();RefreshAudioPreferences();
             skipNextDelta=true;
-            if(report.applied && report.tillEarned>0)Notify("While away: "+Money(report.tillEarned)+" ready to collect",7);
+            if(report.applied && report.tillEarned>0)Notify(OfflineMessage(report),7);
             if(!string.IsNullOrEmpty(saves.Error))Notify(saves.Error,10);
             dockKey="";if(ready)UpdateReadouts();
         }
         private void AppleChanged()
         {
+            CheckPurchasedUnlocks();
             if(!ready||!restoreRequested)return;
             if(apple.IsRestoring){restoreObservedBusy=true;return;}
 #if UNITY_IOS && !UNITY_EDITOR
@@ -377,12 +404,25 @@ namespace IdleClinic.App
         private void OnDestroy()
         {
             DisposeAccessibility();
-            if(apple!=null)apple.StateChanged-=AppleChanged;
+            if(apple!=null){apple.StateChanged-=AppleChanged;apple.GemTransactionReceived-=OnGemTransaction;}
             if(world!=null)Destroy(world.gameObject);
             if(backdrop!=null)Destroy(backdrop.gameObject);
             if(runtimePanel!=null)Destroy(runtimePanel);
         }
 
+        private string OfflineMessage(ClinicOfflineReport report)
+            => report.coinCapped ? "Your tills filled up while you were away: "+Money(report.tillEarned)+" ready to collect. Hold more with offline upgrades in the shop."
+                : report.wasCapped ? "While away: "+Money(report.tillEarned)+" ready to collect ("+report.limitHours+"-hour limit)."
+                : "While away: "+Money(report.tillEarned)+" ready to collect";
+        private double displayedWallet=-1;
+        /// <summary>The wallet counts toward its new value, so earning and spending read as movement.</summary>
+        private string WalletText()
+        {
+            var target=(double)State.Wallet;
+            if(displayedWallet<0||ReducedMotion||Math.Abs(target-displayedWallet)<1)displayedWallet=target;
+            else displayedWallet+=(target-displayedWallet)*.45;
+            return Money((long)Math.Round(displayedWallet));
+        }
         private static string Money(long value)
         {
             if(value>=1000000000)return (value/1000000000d).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+"B";
@@ -391,7 +431,13 @@ namespace IdleClinic.App
             return value.ToString("N0",System.Globalization.CultureInfo.InvariantCulture);
         }
         private static string RoomName(ClinicRoom room)=>room==ClinicRoom.Reception?"Reception":room==ClinicRoom.FirstAid?"First aid":room==ClinicRoom.Consultation?"Consultations":room==ClinicRoom.Pharmacy?"Pharmacy":"Waiting room";
-        private static string TimeLabel(double seconds)=>seconds>=60?Math.Ceiling(seconds/60)+"m":Math.Ceiling(Math.Max(0,seconds))+"s";
+        private static string TimeLabel(double seconds)
+        {
+            if(seconds<60)return Math.Ceiling(Math.Max(0,seconds))+"s";
+            var minutes=(long)Math.Ceiling(seconds/60);
+            if(minutes<60)return minutes+"m";
+            return minutes%60==0?minutes/60+"h":minutes/60+"h "+minutes%60+"m";
+        }
         private static VisualElement Box(VisualElement parent,string classes)
         {
             var box=new VisualElement();foreach(var name in classes.Split(' '))box.AddToClassList(name);parent.Add(box);return box;

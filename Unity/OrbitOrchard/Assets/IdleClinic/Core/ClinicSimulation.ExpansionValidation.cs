@@ -15,7 +15,9 @@ namespace IdleClinic.Core
             foreach (var amenity in state.Amenities)
             {
                 if (amenity == null || !Defined(amenity.Kind) || (int)amenity.Kind > 2 || !kinds.Add(amenity.Kind) || amenity.Level < 0 || amenity.Level > 3
-                    || amenity.Till < 0 || amenity.Till > state.TotalTips || amenity.Kind != ClinicAmenity.Vending && amenity.Till != 0
+                    || amenity.Till < 0 || amenity.Kind == ClinicAmenity.Vending && amenity.Till > state.TotalTips
+                    || amenity.Kind == ClinicAmenity.Parking && amenity.Till > state.TotalParkingFees
+                    || amenity.Kind != ClinicAmenity.Vending && amenity.Kind != ClinicAmenity.Parking && amenity.Till != 0
                     || amenity.Level == 0 && amenity.Till != 0 || amenity.Level > 0 && state.Tutorial != ClinicTutorialStep.Complete) return false;
                 if (amenity.Kind != ClinicAmenity.Parking && amenity.Level > 0
                     && (!state.Room(ClinicRoom.Waiting).Built || amenity.Level > state.Room(ClinicRoom.Waiting).Tier)) return false;
@@ -56,7 +58,7 @@ namespace IdleClinic.Core
                 {
                     if (patient.Phase == ClinicPatientPhase.Arriving && patient.FromAnchor != ClinicRules.ParkingPatientAnchor(patient.ParkingBayId)) return false;
                     if (patient.Phase == ClinicPatientPhase.Leaving && patient.ToAnchor != ClinicRules.ParkingPatientAnchor(patient.ParkingBayId)) return false;
-                    if (patient.Payment > 0 && patient.Payment < 55) return false;
+                    if (patient.Payment > 0 && patient.Payment < (state.RulesVersion >= 4 ? 50 : 55)) return false;
                 }
                 if (!IsVisitingAmenity(patient)) continue;
                 if (!patient.Paid || !patient.HasAdmissionReservation || patient.SeatId < 0 || patient.TreatmentStationId != -1

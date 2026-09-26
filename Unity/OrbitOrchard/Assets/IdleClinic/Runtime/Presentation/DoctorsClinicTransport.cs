@@ -29,9 +29,9 @@ namespace IdleClinic.Presentation
             {
                 float x=DoctorsParkingLayout.TaxiCenter(dock).x-12.6f;
                 for(int side=-1;side<=1;side+=2)art.Box("Taxi bay marking",stand,new Vector3(x+side*1.5f,-.032f,-11.9f),new Vector3(.065f,.014f,1.30f),"Gold");
-                var car=ClinicStreetLife.Car(art,stand,"Patient taxi "+dock,Vector3.zero,3);taxis[dock]=new TaxiVehicle(car,dock);
-                art.Box("Taxi roof sign",car.transform,new Vector3(0,1.18f,-.07f),new Vector3(.57f,.18f,.25f),"Gold");
-                for(int n=0;n<5;n++)art.Box("Taxi checker",car.transform,new Vector3(-.23f+n*.115f,1.19f,.068f),new Vector3(.06f,.075f,.018f),n%2==0?"Ink":"Linen");
+                var car=ClinicStreetLife.Car(art,stand,"Patient taxi "+dock,Vector3.zero,ClinicStreetLife.TaxiAppearance);taxis[dock]=new TaxiVehicle(car,dock);
+                art.Box("Taxi roof sign",car.transform,new Vector3(0,ClinicStreetLife.CarRoofHeight+.10f,-.05f),new Vector3(.46f,.14f,.20f),"LampLight");
+                for(int n=0;n<5;n++)art.Box("Taxi checker",car.transform,new Vector3(-.18f+n*.09f,ClinicStreetLife.CarRoofHeight+.10f,.053f),new Vector3(.045f,.055f,.012f),n%2==0?"Ink":"Linen");
             }
             for(int level=1;level<=6;level++)
             {

@@ -45,7 +45,7 @@ namespace IdleClinic.Services
                 Configure(voices[i], 1);
                 voices[i].priority = 96;
             }
-            foreach (var name in new[] { "payment", "collect", "care", "consultation", "pharmacy", "upgrade", "complete", "tap", "footstep", "door", "treatment", "construction", "taxi" })
+            foreach (var name in new[] { "payment", "collect", "care", "consultation", "pharmacy", "upgrade", "complete", "tap", "footstep", "door", "treatment", "construction", "taxi", "reward" })
                 clips[name] = Resources.Load<AudioClip>("ClinicAudio/" + name);
         }
 
@@ -106,6 +106,8 @@ namespace IdleClinic.Services
         }
 
         public void PlayTap() => Play("tap", .35f, .07);
+        /// <summary>Gems or a goal reward arrived.</summary>
+        public void PlayReward() => Play("reward", .5f, .25);
 
         public void PlayEvent(ClinicEventKind kind)
         {

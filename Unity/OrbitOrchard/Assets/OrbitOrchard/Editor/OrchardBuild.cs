@@ -41,7 +41,7 @@ namespace OrbitOrchard.Editor
             }
             PlayerSettings.companyName = "Flutterly";
             PlayerSettings.productName = "Little Lifeline";
-            PlayerSettings.bundleVersion = "3.3";
+            PlayerSettings.bundleVersion = "4.0";
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
             PlayerSettings.iOS.buildNumber = "18";
             PlayerSettings.iOS.targetOSVersionString = "18.0";

@@ -63,7 +63,8 @@ namespace IdleClinic.Core
             return room == null ? 0 : ScaleCost(balance.RenovationBase[(int)kind] * LocationMultiplier(state), balance.RenovationGrowth, room.Tier - 1);
         }
         public static int RenovationSeconds(ClinicState state, ClinicRoom kind) => state.Room(kind) == null || state.Room(kind).Tier >= MaximumTier(state) ? 0
-            : (int)ScaleCost(ClinicBalance.For(state).RenovationBaseSeconds * LocationMultiplier(state), ClinicBalance.For(state).RenovationTimeGrowth, state.Room(kind).Tier - 1);
+            : (int)Math.Min(ClinicBalance.For(state).MaximumConstructionSeconds,
+                ScaleCost(ClinicBalance.For(state).RenovationBaseSeconds * LocationMultiplier(state), ClinicBalance.For(state).RenovationTimeGrowth, state.Room(kind).Tier - 1));
         public static long StaffTrainingCost(ClinicState state, ClinicStaffState staff) => staff == null ? 0
             : ScaleCost(ClinicBalance.For(state).TrainingBase[(int)staff.Role] * LocationMultiplier(state), ClinicBalance.For(state).TrainingGrowth, staff.TrainingLevel - 1);
         public static long AmenityUpgradeCost(ClinicState state, ClinicAmenity kind) => state.Amenity(kind) == null || state.Amenity(kind).Level >= MaximumAmenityLevel(state, kind) ? 0
@@ -78,6 +79,13 @@ namespace IdleClinic.Core
         public const int TaxiBookingCapacity = 6;
         public static string TaxiWaitingAnchor(int id) => "taxi.waiting." + id + ".patient";
         public static string RoomPlotAnchor(ClinicRoom room) => room == ClinicRoom.FirstAid ? "firstaid.plot" : room.ToString().ToLowerInvariant() + ".plot";
+        /// <summary>How many coins the tills hold while nobody is there (rules 4): about this many visits' fees.
+        /// Zero means no coin limit, as under earlier rules.</summary>
+        public static long OfflineCoinCap(ClinicState state, double multiplier = 1)
+        {
+            var visits = ClinicBalance.For(state).OfflineCapVisits;
+            return visits <= 0 ? 0 : (long)Math.Min(MaximumCurrency, Math.Ceiling(visits * VisitFee(state) * Math.Max(1, multiplier)));
+        }
         public static long MaximumVisitFee(ClinicState state) => IsDoctors(state) ? 820 : 140;
         public static List<string> StarterCompletion(ClinicState state)
         {

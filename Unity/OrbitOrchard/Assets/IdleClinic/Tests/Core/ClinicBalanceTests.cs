@@ -18,7 +18,8 @@ namespace IdleClinic.Tests
             for (var version = 1; version <= 3; version++)
                 Assert.That(ClinicBalance.For(version), Is.SameAs(ClinicBalanceTable.V3));
             Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(4));
+            Assert.That(ClinicBalance.For(4), Is.SameAs(ClinicBalanceTable.V4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(5));
         }
 
         [Test] public void StarterOverloadsMatchTheFrozenFormulas()
@@ -50,6 +51,7 @@ namespace IdleClinic.Tests
         [Test] public void LocationPricesTimesAndPaymentsMatchTheFrozenFormulas([Values] ClinicLocation location)
         {
             var state = Sweepable(location);
+            state.RulesVersion = 3;
             var checks = 0;
             for (var level = 1; level <= 12; level++)
             {
@@ -102,6 +104,57 @@ namespace IdleClinic.Tests
                 checks++;
             }
             Assert.That(checks, Is.EqualTo(12));
+        }
+
+        [Test] public void RulesFourKeepsIncomeMakesTheStartFasterAndStillClimbsSteeply([Values] ClinicLocation location)
+        {
+            var v3 = Sweepable(location); v3.RulesVersion = 3;
+            var v4 = Sweepable(location); v4.RulesVersion = 4;
+            void Level(ClinicState state, int level)
+            {
+                foreach (var room in state.Rooms)
+                {
+                    room.Tier = Math.Min(6, (level + 1) / 2);
+                    room.EquipmentLevel = room.FacilitiesLevel = room.DecorationLevel = level;
+                }
+                foreach (var staff in state.Staff) staff.TrainingLevel = level;
+                foreach (var amenity in state.Amenities) amenity.Level = Math.Min(level - 1, 6);
+            }
+            for (var level = 1; level <= 12; level++)
+            {
+                Level(v3, level); Level(v4, level);
+                Assert.That(ClinicRules.VisitFee(v4), Is.EqualTo(ClinicRules.VisitFee(v3)), "No clinic earns less.");
+                Assert.That(ClinicRules.VendingTip(v4), Is.EqualTo(ClinicRules.VendingTip(v3)));
+                Assert.That(ClinicRules.ParkingFee(v4), Is.Zero, "Rules 4 moves parking from the reception quote to the barrier.");
+                Assert.That(ClinicRules.ParkingExitFee(v4), Is.GreaterThanOrEqualTo(2 * ClinicRules.ParkingFee(v3)));
+                foreach (var role in Roles)
+                    Assert.That(ClinicRules.StationServiceTicks(v4, role, 0), Is.EqualTo(ClinicRules.StationServiceTicks(v3, role, 0)), "Service speed is unchanged.");
+                foreach (var kind in RoomKinds)
+                    Assert.That(ClinicRules.RenovationSeconds(v4, kind), Is.LessThanOrEqualTo(4 * 60 * 60), "No single wait is longer than four hours.");
+            }
+            // The first purchases of every kind cost less than before...
+            Level(v3, 1); Level(v4, 1);
+            foreach (var kind in RoomKinds)
+            {
+                Assert.That(ClinicRules.RenovationCost(v4, kind), Is.LessThan(ClinicRules.RenovationCost(v3, kind)), kind + " first renovation");
+                Assert.That(ClinicRules.RenovationSeconds(v4, kind), Is.LessThan(ClinicRules.RenovationSeconds(v3, kind)), kind + " first renovation time");
+                foreach (var track in Tracks)
+                    Assert.That(ClinicRules.UpgradeCost(v4, kind, track), Is.LessThan(ClinicRules.UpgradeCost(v3, kind, track)), kind + " " + track + " first upgrade");
+            }
+            // ...and the top of the curve is still steeper, so late tiers stay a goal.
+            Level(v3, 11); Level(v4, 11);
+            foreach (var kind in RoomKinds)
+                foreach (var track in Tracks)
+                    Assert.That(ClinicRules.UpgradeCost(v4, kind, track), Is.GreaterThan(ClinicRules.UpgradeCost(v3, kind, track)), kind + " " + track + " late upgrade");
+        }
+
+        [Test] public void RulesFourRenovationTimesGrowFourfoldUpToFourHours()
+        {
+            var starter = Sweepable(ClinicLocation.StarterClinic);
+            var doctors = Sweepable(ClinicLocation.DoctorsClinic);
+            int Seconds(ClinicState state, int tier) { state.Room(ClinicRoom.Reception).Tier = tier; return ClinicRules.RenovationSeconds(state, ClinicRoom.Reception); }
+            Assert.That(new[] { Seconds(starter, 1), Seconds(starter, 2), Seconds(starter, 3) }, Is.EqualTo(new[] { 30, 120, 0 }));
+            Assert.That(Enumerable.Range(1, 6).Select(tier => Seconds(doctors, tier)), Is.EqualTo(new[] { 60, 240, 960, 3840, 14400, 0 }));
         }
 
         private static ClinicState Sweepable(ClinicLocation location)

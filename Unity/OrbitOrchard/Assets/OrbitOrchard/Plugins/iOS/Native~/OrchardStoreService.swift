@@ -11,6 +11,27 @@ final class OrchardStoreService {
         "com.flutterly.gravitile.tip.medium",
         "com.flutterly.gravitile.tip.large",
     ]
+    /// Gem packs are consumables that Unity records in the saved ledger. They are finished only
+    /// after Unity confirms that save, so an interrupted grant is redelivered on the next launch.
+    nonisolated static let gemIDs = [
+        "com.flutterly.gravitile.gems.small",
+        "com.flutterly.gravitile.gems.medium",
+        "com.flutterly.gravitile.gems.large",
+        "com.flutterly.gravitile.gems.xl",
+    ]
+
+    /// Permanent gameplay-convenience unlocks, restored through Apple like the original Plus pass.
+    nonisolated static let unlockIDs = ["com.flutterly.gravitile.builder"]
+    private(set) var ownedUnlocks: Set<String> = [] { didSet { onChange?() } }
+    private(set) var unlockProducts: [Product] = [] { didSet { onChange?() } }
+
+    struct GemDelivery {
+        let transactionID: String
+        let productID: String
+        let revoked: Bool
+    }
+    var onGemDelivery: ((GemDelivery) -> Void)?
+    private var awaitingLedger: [String: Transaction] = [:]
 
     enum ProductState: Equatable {
         case idle, loading, available, unavailable, failed
@@ -24,6 +45,7 @@ final class OrchardStoreService {
     var hasOrchardPass: Bool { isPlus }
     private(set) var plusProduct: Product? = nil { didSet { onChange?() } }
     private(set) var tipProducts: [Product] = [] { didSet { onChange?() } }
+    private(set) var gemProducts: [Product] = [] { didSet { onChange?() } }
     private(set) var lastTipThanks = false { didSet { onChange?() } }
     private(set) var productState: ProductState = .idle { didSet { onChange?() } }
     private(set) var purchaseState: PurchaseState = .idle { didSet { onChange?() } }
@@ -54,11 +76,15 @@ final class OrchardStoreService {
         guard productState != .loading else { return }
         productState = .loading
         do {
-            let products = try await Product.products(for: [Self.plusID] + Self.tipIDs)
+            let products = try await Product.products(for: [Self.plusID] + Self.tipIDs + Self.gemIDs + Self.unlockIDs)
             plusProduct = products.first { $0.id == Self.plusID && $0.type == .nonConsumable }
             tipProducts = products
                 .filter { Self.tipIDs.contains($0.id) && $0.type == .consumable }
                 .sorted { $0.price < $1.price }
+            gemProducts = products
+                .filter { Self.gemIDs.contains($0.id) && $0.type == .consumable }
+                .sorted { $0.price < $1.price }
+            unlockProducts = products.filter { Self.unlockIDs.contains($0.id) && $0.type == .nonConsumable }
             productState = plusProduct == nil ? .unavailable : .available
             if plusProduct == nil {
                 statusMessage = "Existing purchases are unavailable in the App Store right now. Try again later."
@@ -79,7 +105,8 @@ final class OrchardStoreService {
     @discardableResult
     func purchase(_ product: Product) async -> Bool {
         guard !isPurchasing, !isRestoring,
-              product.id == Self.plusID || Self.tipIDs.contains(product.id) else { return false }
+              product.id == Self.plusID || Self.tipIDs.contains(product.id) || Self.gemIDs.contains(product.id)
+                || Self.unlockIDs.contains(product.id) else { return false }
         purchaseState = .purchasing
         lastTipThanks = false
         statusMessage = nil
@@ -132,14 +159,14 @@ final class OrchardStoreService {
 
     func refreshEntitlements() async {
         var plus = false
+        var unlocks: Set<String> = []
         for await entitlement in Transaction.currentEntitlements {
-            if case let .verified(transaction) = entitlement,
-               transaction.productID == Self.plusID,
-               transaction.revocationDate == nil {
-                plus = true
-            }
+            guard case let .verified(transaction) = entitlement, transaction.revocationDate == nil else { continue }
+            if transaction.productID == Self.plusID { plus = true }
+            if Self.unlockIDs.contains(transaction.productID) { unlocks.insert(transaction.productID) }
         }
         isPlus = plus
+        ownedUnlocks = unlocks
     }
 
     private func receive(_ result: VerificationResult<Transaction>) async {
@@ -147,15 +174,55 @@ final class OrchardStoreService {
             statusMessage = "A purchase could not be verified by Apple. Try Restore Purchases."
             return
         }
-        guard transaction.productID == Self.plusID || Self.tipIDs.contains(transaction.productID) else { return }
+        guard transaction.productID == Self.plusID || Self.tipIDs.contains(transaction.productID)
+                || Self.gemIDs.contains(transaction.productID) || Self.unlockIDs.contains(transaction.productID) else { return }
         await grantAndFinish(transaction)
     }
 
+    /// Hand every verified gem transaction still unfinished (for example after a crash) back to Unity.
+    func redeliverUnfinishedGems() async {
+        for await result in Transaction.unfinished {
+            if case let .verified(transaction) = result, Self.gemIDs.contains(transaction.productID) {
+                deliverGems(transaction)
+            }
+        }
+    }
+
+    /// Unity calls this only after the grant or refund is durably saved.
+    func finishGemTransaction(_ transactionID: String) async {
+        if let transaction = awaitingLedger.removeValue(forKey: transactionID) {
+            await transaction.finish()
+            return
+        }
+        for await result in Transaction.unfinished {
+            if case let .verified(transaction) = result, String(transaction.id) == transactionID {
+                await transaction.finish()
+                return
+            }
+        }
+    }
+
+    private func deliverGems(_ transaction: Transaction) {
+        let id = String(transaction.id)
+        awaitingLedger[id] = transaction
+        onGemDelivery?(GemDelivery(transactionID: id, productID: transaction.productID,
+                                   revoked: transaction.revocationDate != nil))
+    }
+
     private func grantAndFinish(_ transaction: Transaction) async {
+        if Self.gemIDs.contains(transaction.productID) {
+            purchaseState = transaction.revocationDate == nil ? .purchased : .idle
+            statusMessage = nil
+            deliverGems(transaction)
+            return
+        }
         await refreshEntitlements()
         if transaction.revocationDate != nil {
             purchaseState = .idle
             statusMessage = "This purchase is no longer active."
+        } else if Self.unlockIDs.contains(transaction.productID) {
+            purchaseState = .purchased
+            statusMessage = "Your second builder is ready. Two rooms can now build at once."
         } else if Self.tipIDs.contains(transaction.productID) {
             lastTipThanks = true
             purchaseState = .purchased

@@ -197,7 +197,7 @@ namespace IdleClinic.Tests
             state.Staff.Add(new ClinicStaffState{Id=7,Role=ClinicStaffRole.Receptionist,StationId=1,TrainingLevel=2});
             var first=ClinicWorkstationReadout.Create(state,ClinicStaffRole.Receptionist,0);
             var second=ClinicWorkstationReadout.Create(state,ClinicStaffRole.Receptionist,1);
-            Assert.That(first.EquipmentLevel,Is.EqualTo(1));Assert.That(first.EquipmentPrice,Is.EqualTo(90));
+            Assert.That(first.EquipmentLevel,Is.EqualTo(1));Assert.That(first.EquipmentPrice,Is.EqualTo(ClinicRules.StationUpgradeCost(state,ClinicStaffRole.Receptionist,0)));
             Assert.That(first.EquipmentCapped,Is.False);Assert.That(first.TrainingCapped,Is.False);
             Assert.That(second.StaffId,Is.EqualTo(7));Assert.That(second.EquipmentCapped,Is.True);
             Assert.That(second.TrainingCapped,Is.True);Assert.That(second.ServiceTicks,Is.LessThan(first.ServiceTicks));
@@ -221,8 +221,8 @@ namespace IdleClinic.Tests
                 Assert.That(dock.Q<Button>("staff-training-7"),Is.Not.Null);
                 Assert.That(dock.Q<Button>("station-equipment-Receptionist-0"),Is.Null);
                 Assert.That(dock.Q<Button>("staff-training-0"),Is.Null);
-                Assert.That(dock.Q<Button>("station-equipment-Receptionist-1").tooltip,Does.Contain("162 coins"));
-                Assert.That(dock.Q<Button>("staff-training-7").tooltip,Does.Contain("144 coins"));
+                Assert.That(dock.Q<Button>("station-equipment-Receptionist-1").tooltip,Does.Contain(ClinicRules.StationUpgradeCost(state,ClinicStaffRole.Receptionist,1).ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins"));
+                Assert.That(dock.Q<Button>("staff-training-7").tooltip,Does.Contain(ClinicRules.StaffTrainingCost(state,state.Staff.Find(s=>s.Id==7)).ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins"));
                 Assert.That(dock.Q<Button>("manage-reception"),Is.Not.Null,"Room-wide upgrades remain reachable.");
             }
         }
@@ -256,8 +256,8 @@ namespace IdleClinic.Tests
                 Assert.That(vending.Q<Button>("collect-vending-tips"),Is.Not.Null);
                 var parking=ax.BuildObjectDock(new ClinicHit(ClinicHitKind.Parking));
                 Assert.That(parking.Q<Button>("build-car-park"),Is.Not.Null);
-                Assert.That(parking.Q<Button>("build-car-park").tooltip,Does.Contain("220 coins"));
-                Assert.That(parking.Query<Label>().ToList().Any(l=>l.text=="2 bays · 5 coins/car"),Is.True);
+                Assert.That(parking.Q<Button>("build-car-park").tooltip,Does.Contain(ClinicRules.AmenityUpgradeCost(state,ClinicAmenity.Parking)+" coins"));
+                Assert.That(parking.Query<Label>().ToList().Any(l=>l.text=="2 bays · 10 coins/car"),Is.True);
             }
         }
         [Test]

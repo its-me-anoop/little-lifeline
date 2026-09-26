@@ -176,10 +176,12 @@ namespace IdleClinic.Tests
             Assert.That(game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment).Success, Is.False);
             var wallet = game.State.Wallet;
             var completed = game.State.TotalTreatments;
+            var cost = ClinicRules.RenovationCost(game.State, ClinicRoom.FirstAid);
+            var seconds = ClinicRules.RenovationSeconds(game.State, ClinicRoom.FirstAid);
             Assert.That(game.Renovate(ClinicRoom.FirstAid).Success, Is.True);
-            Assert.That(game.State.Wallet, Is.EqualTo(wallet - 250));
+            Assert.That(game.State.Wallet, Is.EqualTo(wallet - cost));
             Assert.That(game.Renovate(ClinicRoom.FirstAid).Success, Is.False);
-            game.Advance(59.9);
+            game.Advance(seconds - .1);
             Assert.That(game.State.Room(ClinicRoom.FirstAid).Tier, Is.EqualTo(1));
             Assert.That(game.State.TotalTreatments, Is.GreaterThan(completed));
             Assert.That(game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment).Success, Is.False);
@@ -335,10 +337,11 @@ namespace IdleClinic.Tests
                 Valid(game);
             }
             TestContext.WriteLine("First upgrade " + firstUpgrade + "s; waiting room " + waitingBuilt + "s; second nurse " + secondNurse + "s; second receptionist " + secondReception + "s.");
-            Assert.That(firstUpgrade, Is.InRange(60, 120));
-            Assert.That(waitingBuilt, Is.InRange(120, 240));
-            Assert.That(secondNurse, Is.InRange(360, 600));
-            Assert.That(secondReception, Is.InRange(420, 600));
+            // Rules 4 pacing: something new to buy every minute or two, and a full early clinic in about six minutes.
+            Assert.That(firstUpgrade, Is.InRange(40, 100));
+            Assert.That(waitingBuilt, Is.InRange(80, 200));
+            Assert.That(secondNurse, Is.InRange(180, 400));
+            Assert.That(secondReception, Is.InRange(200, 480));
             Assert.That(stage, Is.EqualTo(8));
         }
 
@@ -417,15 +420,16 @@ namespace IdleClinic.Tests
             {
                 while (game.State.Room(kind).Tier < ClinicRules.MaximumRoomTier)
                 {
-                    Earn(game, ClinicRules.RenovationCost(game.State.Room(kind)));
+                    Earn(game, ClinicRules.RenovationCost(game.State, kind));
+                    var seconds = ClinicRules.RenovationSeconds(game.State, kind);
                     Assert.That(game.Renovate(kind).Success, Is.True);
-                    game.Advance(180);
+                    game.Advance(seconds);
                 }
                 foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
                 {
                     while (game.State.Room(kind).Level(track) < 6)
                     {
-                        Earn(game, ClinicRules.UpgradeCost(game.State.Room(kind), track));
+                        Earn(game, ClinicRules.UpgradeCost(game.State, kind, track));
                         Assert.That(game.Upgrade(kind, track).Success, Is.True);
                     }
                     Assert.That(game.Upgrade(kind, track).Success, Is.False);

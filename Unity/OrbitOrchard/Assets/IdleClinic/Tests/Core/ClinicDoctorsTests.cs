@@ -42,11 +42,11 @@ namespace IdleClinic.Tests
                 foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
                     Assert.That(ClinicRules.UpgradeCost(doctors, room.Kind, track), Is.EqualTo(2 * ClinicRules.UpgradeCost(starter, room.Kind, track)));
                 Assert.That(ClinicRules.RenovationCost(doctors, room.Kind), Is.EqualTo(2 * ClinicRules.RenovationCost(starter, room.Kind)));
-                Assert.That(ClinicRules.RenovationSeconds(doctors, room.Kind), Is.EqualTo(120));
+                Assert.That(ClinicRules.RenovationSeconds(doctors, room.Kind), Is.EqualTo(2 * ClinicRules.RenovationSeconds(starter, room.Kind)));
             }
             var durations = new List<int>();
             for (int tier = 1; tier <= 5; tier++) { doctors.Room(ClinicRoom.Reception).Tier = tier; durations.Add(ClinicRules.RenovationSeconds(doctors, ClinicRoom.Reception)); }
-            Assert.That(durations, Is.EqualTo(new[] { 120, 360, 1080, 3240, 9720 }));
+            Assert.That(durations, Is.EqualTo(new[] { 60, 240, 960, 3840, 14400 }), "Rules 4: a one-minute start, fourfold per tier, capped at four hours.");
             doctors.Room(ClinicRoom.Consultation).FacilitiesLevel++;
             Assert.That(ClinicRules.VisitFee(doctors), Is.EqualTo(110));
             doctors.Room(ClinicRoom.Pharmacy).FacilitiesLevel++;
@@ -201,7 +201,8 @@ namespace IdleClinic.Tests
         }
         [Test] public void V2MigrationRejectsInvalidLegacyBeforeChangingSchemaAndKeepsPaidCareAndCash()
         {
-            var legacy = DoctorsProgressionFixture.MaxStarter().State; legacy.SchemaVersion = legacy.RulesVersion = 2;
+            // A genuine v2 save was played under rules 2/3 pricing, before barrier parking charges existed.
+            var legacy = DoctorsProgressionFixture.MaxStarter(3).State; legacy.SchemaVersion = legacy.RulesVersion = 2;
             long wallet = legacy.Wallet, earned = legacy.TotalEarned;
             Assert.That(ClinicStateMigration.TryMigrateV2(legacy), Is.True); Assert.That(legacy.SchemaVersion, Is.EqualTo(3));
             Assert.That(legacy.Wallet, Is.EqualTo(wallet)); Assert.That(legacy.TotalEarned, Is.EqualTo(earned));
@@ -240,7 +241,8 @@ namespace IdleClinic.Tests
 
         [Test] public void PaidPatientsFinishAllCareThroughRenovationsAndTaxisKeepTheirDockAfterReload()
         {
-            var game = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic);
+            // Stress case: every room renovating at once, as a save from before the builder limit can hold.
+            var game = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic) ; game.ConstructionSlots = 5;
             DoctorsProgressionFixture.Earn(game, 3000);
             var paid = game.State.Patients.Where(p => p.Paid && p.HasAdmissionReservation).Select(p => p.Id).ToArray();
             foreach (var room in game.State.Rooms) Assert.That(game.Renovate(room.Kind).Success, Is.True);
@@ -392,20 +394,24 @@ namespace IdleClinic.Tests
     }
     public static class DoctorsProgressionFixture
     {
-        private static ClinicState cachedStarter, cachedDoctors;
-        public static ClinicSimulation MaxStarter()
+        private static readonly Dictionary<int, ClinicState> cachedStarters = new Dictionary<int, ClinicState>();
+        /// <summary>A fully built starter clinic, played under the given price rules.</summary>
+        public static ClinicSimulation MaxStarter(int rulesVersion = ClinicBalance.CurrentRulesVersion)
         {
-            if (cachedStarter != null) return new ClinicSimulation(ClinicDoctorsTests.Clone(cachedStarter));
-            var g = ClinicSimulation.CreateNew(); g.Advance(25); g.Collect(0); g.HireNurse(); g.Advance(30);
+            if (cachedStarters.TryGetValue(rulesVersion, out var cached)) return new ClinicSimulation(ClinicDoctorsTests.Clone(cached));
+            var g = ClinicSimulation.CreateNew(); g.State.RulesVersion = rulesVersion; g.Advance(25); g.Collect(0); g.HireNurse(); g.Advance(30);
             Earn(g, 160); Assert.That(g.BuildWaitingRoom().Success, Is.True); g.Advance(20);
             Maximise(g); Earn(g, 100000);
-            cachedStarter = ClinicDoctorsTests.Clone(g.State); return g;
+            cachedStarters[rulesVersion] = ClinicDoctorsTests.Clone(g.State);
+            return g;
         }
-        public static ClinicSimulation MaxDoctors()
+        private static readonly Dictionary<int, ClinicState> cachedDoctorsByRules = new Dictionary<int, ClinicState>();
+        /// <summary>A fully built doctors clinic, played under the given price rules.</summary>
+        public static ClinicSimulation MaxDoctors(int rulesVersion = ClinicBalance.CurrentRulesVersion)
         {
-            if (cachedDoctors != null) return new ClinicSimulation(ClinicDoctorsTests.Clone(cachedDoctors));
-            var g = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic); Maximise(g);
-            cachedDoctors = ClinicDoctorsTests.Clone(g.State); return g;
+            if (cachedDoctorsByRules.TryGetValue(rulesVersion, out var cached)) return new ClinicSimulation(ClinicDoctorsTests.Clone(cached));
+            var g = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic); g.State.RulesVersion = rulesVersion; Maximise(g);
+            cachedDoctorsByRules[rulesVersion] = ClinicDoctorsTests.Clone(g.State); return g;
         }
         private static void Maximise(ClinicSimulation g)
         {
