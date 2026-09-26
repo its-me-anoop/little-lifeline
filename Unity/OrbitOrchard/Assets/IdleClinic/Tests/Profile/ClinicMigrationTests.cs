@@ -38,7 +38,7 @@ namespace IdleClinic.Tests
         {
             var store = new ClinicProfileStore(directory);
             var loaded = store.LoadClinic(savedAt);
-            Assert.That(loaded.schemaVersion, Is.EqualTo(3));
+            Assert.That(loaded.schemaVersion, Is.EqualTo(ClinicProfile.CurrentSchemaVersion));
             Assert.That(loaded.state.SchemaVersion, Is.EqualTo(3));
             Assert.That(loaded.state.RulesVersion, Is.EqualTo(3));
             Assert.That(loaded.revision, Is.EqualTo(legacy.revision + 1));
@@ -122,7 +122,7 @@ namespace IdleClinic.Tests
             var store = new ClinicProfileStore(directory);
             var loaded = store.LoadClinic(savedAt);
             Assert.That(loaded.state.Wallet, Is.EqualTo(3807));
-            Assert.That(loaded.schemaVersion, Is.EqualTo(3));
+            Assert.That(loaded.schemaVersion, Is.EqualTo(ClinicProfile.CurrentSchemaVersion));
             Assert.That(store.Error, Does.Contain("backup"));
             Assert.That(Directory.GetFiles(directory, "*.unreadable-*").Any(f => File.ReadAllText(f) == changed), Is.True);
         }

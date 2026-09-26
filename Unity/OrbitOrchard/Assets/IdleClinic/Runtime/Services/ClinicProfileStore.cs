@@ -299,6 +299,14 @@ namespace IdleClinic.Services
                     candidate.Normalize();
                     candidate.preferences.music = candidate.preferences.sound;
                     candidate.schemaVersion = 3;
+                }
+                if (candidate.schemaVersion == 3)
+                {
+                    // Version 3 predates premium currency. Validate the clinics exactly as 3.3 did,
+                    // then start an empty ledger: no stored field can carry gems into version 4.
+                    if (!IsValidClinics(candidate, 3)) return false;
+                    candidate.premium = new ClinicPremiumState();
+                    candidate.schemaVersion = ClinicProfile.CurrentSchemaVersion;
                     migrated = true;
                 }
                 if (!IsValid(candidate)) { migrated = false; return false; }
@@ -354,8 +362,11 @@ namespace IdleClinic.Services
                 && profile.lastAccountedUtcTicks > 0 && profile.lastAccountedUtcTicks <= DateTime.MaxValue.Ticks && profile.state != null;
 
         private static bool IsValid(ClinicProfile profile)
+            => IsValidClinics(profile, ClinicProfile.CurrentSchemaVersion) && profile.premium != null && profile.premium.IsValid();
+
+        private static bool IsValidClinics(ClinicProfile profile, int version)
         {
-            if (!IsValidHeader(profile, 3) || profile.additionalClinics == null || profile.additionalClinics.Count > 1
+            if (!IsValidHeader(profile, version) || profile.additionalClinics == null || profile.additionalClinics.Count > 1
                 || (profile.additionalClinics.Count == 1 && profile.additionalClinics[0] == null)
                 || !ClinicSimulation.IsValidState(profile.state)
                 || profile.state.Location != ClinicLocation.StarterClinic
