@@ -1,7 +1,0 @@
-{
-  "name": "LittleLifeline.Core",
-  "rootNamespace": "LittleLifeline.Core",
-  "references": [],
-  "autoReferenced": true,
-  "noEngineReferences": true
-}

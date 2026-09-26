@@ -1,8 +1,0 @@
-{
-  "name": "LittleLifeline.Core.Tests",
-  "rootNamespace": "LittleLifeline.Core.Tests",
-  "references": ["LittleLifeline.Core"],
-  "includePlatforms": ["Editor"],
-  "optionalUnityReferences": ["TestAssemblies"],
-  "autoReferenced": false
-}

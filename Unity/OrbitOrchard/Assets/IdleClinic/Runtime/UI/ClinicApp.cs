@@ -66,7 +66,7 @@ namespace IdleClinic.App
         private IEnumerator Start()
         {
             var doc = GetComponent<UIDocument>() ?? gameObject.AddComponent<UIDocument>();
-            runtimePanel=Instantiate(Resources.Load<PanelSettings>("ClinicPanel") ?? Resources.Load<PanelSettings>("LifelinePanel"));
+            runtimePanel=Instantiate(Resources.Load<PanelSettings>("ClinicPanel"));
             runtimePanel.scaleMode=PanelScaleMode.ConstantPixelSize;
             runtimePanel.scale=Screen.width/Math.Max(1,apple.ScreenWidthPoints);
             doc.panelSettings = runtimePanel;

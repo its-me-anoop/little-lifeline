@@ -58,7 +58,6 @@ def main():
     repo = Path(__file__).resolve().parent.parent
     project = repo / "Unity/OrbitOrchard"
     orchard = project / "Assets/OrbitOrchard"
-    lifeline = project / "Assets/LittleLifeline"
     clinic = project / "Assets/IdleClinic"
     scripting = args.unity_app / "Contents/Resources/Scripting"
     managed = scripting / "Managed/UnityEngine"
@@ -107,18 +106,10 @@ def main():
         return destination
 
     engine_refs = sorted(managed.glob("UnityEngine*.dll")) + [netstandard] + packages
-    orchard_core = compile_assembly("OrbitOrchard.Core", (orchard / "Scripts/Core").glob("*.cs"))
-    lifeline_core = compile_assembly("LittleLifeline.Core", (lifeline / "Core").glob("*.cs"))
     clinic_core = compile_assembly("IdleClinic.Core", (clinic / "Core").glob("*.cs"))
-    orchard_sources = [p for p in (orchard / "Scripts").rglob("*.cs") if "Core" not in p.parts]
-    lifeline_sources = list((lifeline / "Runtime").rglob("*.cs"))
-    orchard_refs = engine_refs + [orchard_core]
-    orchard_runtime = compile_assembly("OrbitOrchard.Runtime", orchard_sources, orchard_refs)
-    orchard_ios = compile_assembly("OrbitOrchard.Runtime.iOS", orchard_sources, orchard_refs, ios_defines)
-    lifeline_refs = engine_refs + [orchard_core, lifeline_core, orchard_runtime]
-    lifeline_runtime = compile_assembly("LittleLifeline.Runtime", lifeline_sources, lifeline_refs)
-    compile_assembly("LittleLifeline.Runtime.iOS", lifeline_sources,
-                     engine_refs + [orchard_core, lifeline_core, orchard_ios], ios_defines)
+    orchard_sources = list((orchard / "Scripts").rglob("*.cs"))
+    orchard_runtime = compile_assembly("OrbitOrchard.Runtime", orchard_sources, engine_refs)
+    orchard_ios = compile_assembly("OrbitOrchard.Runtime.iOS", orchard_sources, engine_refs, ios_defines)
     clinic_sources = list((clinic / "Runtime").rglob("*.cs"))
     clinic_refs = engine_refs + [clinic_core, orchard_runtime]
     clinic_runtime = compile_assembly("IdleClinic.Runtime", clinic_sources, clinic_refs)
@@ -126,22 +117,9 @@ def main():
                      engine_refs + [clinic_core, orchard_ios], ios_defines)
     compile_assembly("IdleClinic.Runtime.iOS.Development", clinic_sources,
                      engine_refs + [clinic_core, orchard_ios], ios_defines + ",DEVELOPMENT_BUILD")
-    editor_refs = (lifeline_refs + [lifeline_runtime, clinic_core, clinic_runtime, xcode]
+    editor_refs = (engine_refs + [orchard_runtime, clinic_core, clinic_runtime, xcode]
                    + sorted(managed.glob("UnityEditor*.dll")))
     compile_assembly("OrbitOrchard.Editor", (orchard / "Editor").glob("*.cs"), editor_refs)
-
-    orchard_core_tests = compile_assembly("OrbitOrchard.Core.Tests",
-        (orchard / "Tests/EditMode").glob("*.cs"), [orchard_core, nunit])
-    orchard_profile_tests = compile_assembly("OrbitOrchard.Profile.Tests",
-        (orchard / "Tests/EditMode/Profile").glob("*.cs"), orchard_refs + [orchard_runtime, nunit])
-    compile_assembly("OrbitOrchard.PresentationTests", (orchard / "Tests/Editor").glob("*.cs"),
-                     orchard_refs + [orchard_runtime, nunit])
-    lifeline_core_tests = compile_assembly("LittleLifeline.Core.Tests",
-        (lifeline / "Tests/Core").glob("*.cs"), [lifeline_core, nunit])
-    lifeline_profile_tests = compile_assembly("LittleLifeline.Profile.Tests",
-        (lifeline / "Tests/Profile").glob("*.cs"), lifeline_refs + [lifeline_runtime, nunit])
-    compile_assembly("LittleLifeline.PresentationTests", (lifeline / "Tests/Editor").glob("*.cs"),
-                     lifeline_refs + [lifeline_runtime, nunit])
 
     clinic_core_tests = compile_assembly("IdleClinic.Core.Tests",
         (clinic / "Tests/Core").glob("*.cs"), [clinic_core, nunit])
@@ -166,27 +144,9 @@ def main():
         results.append(f"{assembly.stem}: {result.get('passed')} passed, {result.get('failed')} failed "
                        f"({filename})")
 
-    run_tests(orchard_core_tests, "core-nunit-results.xml")
-    run_tests(lifeline_core_tests, "lifeline-core-nunit-results.xml")
     run_tests(clinic_core_tests, "clinic-core-nunit-results.xml")
-    # Explicit allowlists: these rules use managed state and missing-file defaults.
+    # Explicit allowlist: these rules use managed state only.
     # Loading test assemblies is not permission to call Unity native JSON/UI APIs.
-    orchard_profile_names = [
-        "FirstLaunchHasUsableDefaultsAndNoSaveError",
-        "DailyAttemptsNeverChangeClassicBestOrRunCount",
-        "HistoryIsCappedAndKeepsTheMostRecentUTCDays",
-        "CallerCannotMutateTheRecordedHistoryAfterTheFact",
-        "InvalidRunsAreIgnoredAndTotalsCannotWrapNegative",
-        "UndatedRecordsAreDiscardedWhileValidZeroScoreRunsRemain",
-    ]
-    run_tests(orchard_profile_tests, "profile-managed-nunit-results.xml",
-        ["OrbitOrchard.App.Tests.OrchardProfileTests." + name for name in orchard_profile_names])
-    lifeline_profile_names = [
-        "WeeklyIdentityUsesMondayUtcDespiteLocalOffsets",
-        "WeeklyOccurrenceRejectsInvalidDatesAndEndsExclusively",
-    ]
-    run_tests(lifeline_profile_tests, "lifeline-profile-managed-nunit-results.xml",
-        ["LittleLifeline.Tests.LifelineProfileTests." + name for name in lifeline_profile_names])
     run_tests(clinic_profile_tests, "clinic-performance-nunit-results.xml",
         ["IdleClinic.Tests.ClinicPerformanceTests." + name for name in (
             "PercentilesUseRecordedFramesIncludingLongHitches",

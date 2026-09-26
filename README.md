@@ -1,46 +1,40 @@
 # Little Lifeline
 
-A travelling hospital, one carriage at a time.
+A miniature 3D clinic you grow one room at a time.
 
-Little Lifeline is a Unity 3D idle management game for iPhone and iPad. Build consultation, diagnostics and recovery carriages, assign a small crew, and arrange the train to shorten patient journeys. Care earns funds and reputation, opening new towns and restoring their gardens, schools, workshops and coastal landmarks.
+Little Lifeline is a Unity idle management game for iPhone and iPad. Patients arrive by car or taxi, check in at reception, see a doctor, receive first aid and collect medication. Collect their payments, hire staff and upgrade rooms, workstations and training. Fully upgrading the starter clinic opens a larger doctors clinic, with its own staff, six room tiers and a shared wallet.
 
-The diorama fills the screen. Carriage icons, queue badges and compact management docks keep the hospital visible while you make decisions. Tap the train, map, crew or trophy icons to move between the hospital, town route, crew planning and Weekly Call.
-
-- Three towns, four carriage slots, six recruitable crew members and six restoration projects.
-- The same deterministic simulation handles active play and up to 24 hours of offline work. Saves include a backup and matching time accounting.
-- The Weekly Call is a four-minute challenge with equal starting resources and arrivals. Paid finishes and campaign progress never affect its score. The first Game Center week is scheduled for 14 September 2026; earlier shifts are local practice.
-- The Founder’s Carriage Collection adds three permanent cosmetic finishes. Verified previous Plus owners retain access. Optional tips grant no gameplay benefit. There are no advertisements or subscriptions.
+- Progress saves atomically on the device, with a recoverable backup. Offline earnings accrue for up to eight hours; construction continues for the whole absence.
+- There are no advertisements or subscriptions.
 
 ## Open the game
 
-Use **Unity 6000.3.24f1**, with iOS Build Support and an activated license. Add `Unity/OrbitOrchard` in Unity Hub. Select **Little Lifeline → Prepare project**, then **Little Lifeline → Open game scene**, and enter Play mode.
+Use **Unity 6000.3.24f1**, with iOS Build Support and an activated license. Add `Unity/OrbitOrchard` in Unity Hub. Select **Idle Clinic → Prepare project**, then **Idle Clinic → Open game scene**, and enter Play mode.
 
-The active product is under `Assets/LittleLifeline`. The internal Unity project and Apple bridge retain their earlier Orbit Orchard names. The SwiftUI/RealityKit source under `Gravitile/` is preserved history; `Gravitile.xcodeproj` does not build this release.
-
-Unity owns the simulation, original Blender models, camera, input and UI Toolkit interface. Native Swift/Objective-C++ provides StoreKit 2, Game Center, haptics and system Reduce Motion support.
+The game lives in `Assets/IdleClinic`. `Assets/OrbitOrchard` holds the shared platform layer the clinic builds on: Apple services (StoreKit 2, Game Center), input setup, the iOS build and export scripts, and the native Swift/Objective-C++ bridge. The Unity project folder and Apple bridge keep their earlier Orbit Orchard names.
 
 ## Validate
 
-Run the Unity Test Runner’s **EditMode** suite, then exercise the game in Play mode. From the repository root, with no other Editor using this project:
+Run the Unity Test Runner's **EditMode** suite, then exercise the game in Play mode. From the repository root, with no other Editor using this project:
 
 ```bash
 LIFELINE_EDITOR='/Applications/Unity/Hub/Editor/6000.3.24f1/Unity.app/Contents/MacOS/Unity'
 mkdir -p build
 "$LIFELINE_EDITOR" -batchmode -projectPath "$PWD/Unity/OrbitOrchard" \
   -buildTarget iOS -runTests -testPlatform EditMode \
-  -testResults "$PWD/build/lifeline-tests.xml" -logFile "$PWD/build/lifeline-tests.log"
+  -testResults "$PWD/build/clinic-tests.xml" -logFile "$PWD/build/clinic-tests.log"
 ```
 
-The [verification record](docs/qa/little-lifeline.md) separates compilation, tests, observed gameplay, Apple services and release evidence. Editor builds clearly report purchases and rankings as unavailable. They never invent transactions or competing players.
+Release tooling has its own tests: `python3 -m unittest discover -s Tools/tests`.
 
 ## Release
 
-**3.0 (14) is available to the existing Internal TestFlight group** as of 12 September 2026. The shipped Unity source is `0c82dbf4b13db31812662f2d2b396e416066027e`, bundle `com.flutterly.gravitile`, minimum iOS 18. Export the committed Unity source, package its generated Xcode project with provenance and passing tests, then use the [release workflow](.github/workflows/release.yml). The unpublished transfer release carries the export; a hosted Mac creates the signed archive, which is promoted without rebuilding.
+Bundle `com.flutterly.gravitile`, minimum iOS 18. The latest verified delivery is **3.3 (17)** to Internal TestFlight; see the [doctors clinic release record](docs/doctors-clinic-release.md). Earlier clinic releases are recorded in [3.1](docs/idle-clinic-release.md) and [3.2](docs/idle-clinic32-release.md). Local signing is described in [clinic-local-signing.md](docs/clinic-local-signing.md), and App Store copy is in [docs/appstore](docs/appstore/README.md).
 
-Follow the [Little Lifeline release runbook](docs/little-lifeline-release.md). A successful upload command is separate from a processed, available TestFlight build.
+Export the committed Unity source, package its generated Xcode project, then use the [release workflow](.github/workflows/release.yml). A successful upload command is separate from a processed, available TestFlight build.
 
 ## Art and privacy
 
-Display type is Newsreader; body type is Atkinson Hyperlegible. Font licenses are bundled. Original models are generated by `Tools/create_lifeline_assets.py`; the Blender source is `assets/little-lifeline-game.blend`. Audio is synthesized locally.
+Display type is Baloo 2; body type is Atkinson Hyperlegible. Font licenses are bundled in `Assets/IdleClinic/Resources/Fonts`. Models come from `Tools/create_clinic_assets.py` and the Blender source `assets/idle-clinic-game.blend`; audio is synthesized by `Tools/create_clinic_audio.py`.
 
-Progress stays on the device. Apple handles purchases and optional Game Center participation. The iOS export preserves Unity’s privacy declarations and adds the app-local preferences declaration. The project includes no advertising or tracking SDK.
+Progress stays on the device. Apple handles purchases and optional Game Center participation. The project includes no advertising or tracking SDK.

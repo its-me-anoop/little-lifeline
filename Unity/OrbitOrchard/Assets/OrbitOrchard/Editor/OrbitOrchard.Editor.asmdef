@@ -3,7 +3,6 @@
   "rootNamespace": "OrbitOrchard.Editor",
   "references": [
     "OrbitOrchard.Runtime",
-    "OrbitOrchard.Core",
     "IdleClinic.Runtime",
     "IdleClinic.Core"
   ],
