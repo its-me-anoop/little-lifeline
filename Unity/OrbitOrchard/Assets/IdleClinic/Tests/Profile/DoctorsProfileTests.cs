@@ -61,7 +61,7 @@ namespace IdleClinic.Tests
             var store = new ClinicProfileStore(directory);
             var profile = store.LoadClinic(now);
             Assert.That(store.Error, Is.Null.Or.Empty);
-            Assert.That(profile.schemaVersion, Is.EqualTo(3));
+            Assert.That(profile.schemaVersion, Is.EqualTo(ClinicProfile.CurrentSchemaVersion));
             Assert.That(profile.state.SchemaVersion, Is.EqualTo(3));
             Assert.That(profile.state.Wallet, Is.EqualTo(original.state.Wallet));
             Assert.That(profile.state.TotalCollected, Is.EqualTo(original.state.TotalCollected));
@@ -173,6 +173,104 @@ namespace IdleClinic.Tests
             Directory.Delete(path + ".tmp");
             Assert.That(store.ApplyOffline(now.AddMinutes(8)).applied, Is.True, store.Error);
             Assert.That(store.ApplyOffline(now.AddMinutes(8)).applied, Is.False);
+        }
+
+        [Test] public void VersionThreeCampaignWithBothClinicsMigratesWithAnEmptyGemLedger()
+        {
+            var store = CompletedStarter(); Assert.That(store.OpenDoctorsClinic(now), Is.True, store.Error);
+            var envelope = WriteVersionThree(store.Profile);
+            var original = JsonUtility.FromJson<VersionThreeProfile>(JsonUtility.FromJson<Envelope>(envelope).payload);
+
+            var migrated = new ClinicProfileStore(directory);
+            var loaded = migrated.LoadClinic(now);
+            Assert.That(migrated.Error, Is.Null);
+            Assert.That(loaded.schemaVersion, Is.EqualTo(ClinicProfile.CurrentSchemaVersion));
+            Assert.That(loaded.revision, Is.EqualTo(original.revision + 1));
+            Assert.That(loaded.lastAccountedUtcTicks, Is.EqualTo(original.lastAccountedUtcTicks));
+            Assert.That(loaded.activeLocation, Is.EqualTo(original.activeLocation));
+            Assert.That(JsonUtility.ToJson(loaded.state), Is.EqualTo(JsonUtility.ToJson(original.state)), "Starter clinic money, staff and patients are untouched.");
+            Assert.That(JsonUtility.ToJson(loaded.doctorsState), Is.EqualTo(JsonUtility.ToJson(original.additionalClinics.Single())), "Doctors clinic is untouched.");
+            Assert.That(loaded.state.SchemaVersion, Is.EqualTo(3));
+            Assert.That(loaded.state.RulesVersion, Is.EqualTo(3), "Prices keep the rules the campaign was played under.");
+            AssertEmptyLedger(loaded.premium);
+            Assert.That(File.ReadAllText(path + ".v3-before-migration-" + original.revision), Is.EqualTo(envelope));
+            Assert.That(JsonUtility.ToJson(new ClinicProfileStore(directory).LoadClinic(now)), Is.EqualTo(JsonUtility.ToJson(loaded)));
+        }
+
+        [Test] public void VersionThreeFileCannotCarryGemsIntoVersionFour()
+        {
+            var store = new ClinicProfileStore(directory); store.LoadClinic(now);
+            var payload = JsonUtility.ToJson(ToVersionThree(store.Profile));
+            payload = payload.Substring(0, payload.Length - 1)
+                + ",\"premium\":{\"gems\":900,\"gemsEarned\":0,\"gemsPurchased\":900,\"gemsSpent\":0,\"processedTransactionIds\":[\"t1\"],\"milestonesClaimed\":[\"m1\"],\"decorationsOwned\":[\"d1\"]}}";
+            WriteEnvelope(payload);
+            var loaded = new ClinicProfileStore(directory).LoadClinic(now);
+            Assert.That(loaded.schemaVersion, Is.EqualTo(ClinicProfile.CurrentSchemaVersion));
+            AssertEmptyLedger(loaded.premium);
+        }
+
+        [Test] public void GemLedgerRoundTripsAndAnImbalancedSaveFallsBackToTheLastGoodCopy()
+        {
+            var store = new ClinicProfileStore(directory); var profile = store.LoadClinic(now);
+            profile.premium.gemsEarned = 25; profile.premium.gemsPurchased = 100; profile.premium.gemsSpent = 40; profile.premium.gems = 85;
+            profile.premium.processedTransactionIds.Add("2000000123456789");
+            profile.premium.milestonesClaimed.Add("reception.tier.2");
+            profile.premium.decorationsOwned.Add("fountain");
+            Assert.That(store.Save(profile, now), Is.True, store.Error);
+            Assert.That(store.Save(profile, now), Is.True, store.Error);
+            var reloaded = new ClinicProfileStore(directory).LoadClinic(now);
+            Assert.That(JsonUtility.ToJson(reloaded.premium), Is.EqualTo(JsonUtility.ToJson(profile.premium)));
+
+            var tampered = Clone(reloaded); tampered.premium.gems = 10000;
+            WriteEnvelope(JsonUtility.ToJson(tampered));
+            var recovered = new ClinicProfileStore(directory);
+            Assert.That(recovered.LoadClinic(now).premium.gems, Is.EqualTo(85));
+            Assert.That(recovered.Error, Does.Contain("backup"));
+        }
+
+        [Test] public void GemLedgerRejectsNegativeUnbalancedOrDuplicateRecords()
+        {
+            Assert.That(new ClinicPremiumState().IsValid(), Is.True);
+            Assert.That(new ClinicPremiumState { gems = 1 }.IsValid(), Is.False);
+            Assert.That(new ClinicPremiumState { gems = -5, gemsSpent = 5 }.IsValid(), Is.False);
+            Assert.That(new ClinicPremiumState { gemsEarned = 5, gemsSpent = 6, gems = -1 }.IsValid(), Is.False);
+            var duplicate = new ClinicPremiumState(); duplicate.processedTransactionIds.Add("1"); duplicate.processedTransactionIds.Add("1");
+            Assert.That(duplicate.IsValid(), Is.False);
+            var empty = new ClinicPremiumState(); empty.milestonesClaimed.Add("");
+            Assert.That(empty.IsValid(), Is.False);
+            var missing = new ClinicPremiumState { decorationsOwned = null };
+            Assert.That(missing.IsValid(), Is.False);
+        }
+
+        /// <summary>The exact 3.3 profile shape: identical to version 4 without the premium ledger.</summary>
+        [Serializable] private sealed class VersionThreeProfile
+        {
+            public int schemaVersion = 3;
+            public long revision;
+            public ClinicState state;
+            public System.Collections.Generic.List<ClinicState> additionalClinics = new System.Collections.Generic.List<ClinicState>();
+            public ClinicLocation activeLocation;
+            public ClinicPreferences preferences = new ClinicPreferences();
+            public long lastAccountedUtcTicks;
+        }
+        private static VersionThreeProfile ToVersionThree(ClinicProfile profile) => new VersionThreeProfile
+        {
+            revision = profile.revision, state = profile.state, additionalClinics = profile.additionalClinics,
+            activeLocation = profile.activeLocation, preferences = profile.preferences, lastAccountedUtcTicks = profile.lastAccountedUtcTicks
+        };
+        private string WriteVersionThree(ClinicProfile profile)
+        {
+            WriteEnvelope(JsonUtility.ToJson(ToVersionThree(profile)));
+            if (File.Exists(path + ".backup")) File.Delete(path + ".backup");
+            return File.ReadAllText(path);
+        }
+        private static void AssertEmptyLedger(ClinicPremiumState premium)
+        {
+            Assert.That(premium, Is.Not.Null);
+            Assert.That(premium.gems + premium.gemsEarned + premium.gemsPurchased + premium.gemsSpent, Is.Zero);
+            Assert.That(premium.processedTransactionIds, Is.Empty);
+            Assert.That(premium.milestonesClaimed, Is.Empty);
+            Assert.That(premium.decorationsOwned, Is.Empty);
         }
 
         private ClinicProfileStore CompletedStarter()

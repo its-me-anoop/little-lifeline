@@ -38,35 +38,36 @@ namespace IdleClinic.Core
             if (MaximumStaff(state, role) == 0) return 0;
             var count = state.Staff.Count(s => s.Role == role);
             if (count >= MaximumStaff(state, role)) return 0;
-            long basis = role == ClinicStaffRole.Receptionist ? 100 : role == ClinicStaffRole.Nurse ? 50 : role == ClinicStaffRole.Doctor ? 150 : 100;
-            return ScaleCost(basis * LocationMultiplier(state), role == ClinicStaffRole.Receptionist ? 3 : 9, 1, count);
+            var balance = ClinicBalance.For(state);
+            return ScaleCost(balance.HireBase[(int)role] * LocationMultiplier(state),
+                role == ClinicStaffRole.Receptionist ? balance.ReceptionistHireGrowth : balance.HireGrowth, count);
         }
         public static long AddStationCost(ClinicState state, ClinicStaffRole role)
         {
             var count = StationCount(state, role);
             if (role == ClinicStaffRole.Receptionist || count >= MaximumStaff(state, role)) return 0;
-            return ScaleCost((role == ClinicStaffRole.Nurse ? 180 : role == ClinicStaffRole.Doctor ? 240 : 200) * LocationMultiplier(state), 5, 2, Math.Max(0, count - 1));
+            var balance = ClinicBalance.For(state);
+            return ScaleCost(balance.AddStationBase[(int)role] * LocationMultiplier(state), balance.AddStationGrowth, Math.Max(0, count - 1));
         }
         public static long UpgradeCost(ClinicState state, ClinicRoom kind, UpgradeTrack track)
         {
             var room = state.Room(kind);
             if (room == null) return 0;
-            var basis = kind == ClinicRoom.Consultation ? (track == UpgradeTrack.Equipment ? 110 : track == UpgradeTrack.Facilities ? 90 : 40)
-                : kind == ClinicRoom.Pharmacy ? (track == UpgradeTrack.Equipment ? 95 : track == UpgradeTrack.Facilities ? 75 : 40) : UpgradeBase(kind, track);
-            return ScaleCost(basis * LocationMultiplier(state), 8, 5, room.Level(track) - 1);
+            var balance = ClinicBalance.For(state);
+            return ScaleCost(balance.UpgradeBase[(int)kind, (int)track] * LocationMultiplier(state), balance.UpgradeGrowth, room.Level(track) - 1);
         }
         public static long RenovationCost(ClinicState state, ClinicRoom kind)
         {
             var room = state.Room(kind);
-            var basis = kind == ClinicRoom.Reception ? 180 : kind == ClinicRoom.FirstAid ? 250 : kind == ClinicRoom.Waiting ? 120 : kind == ClinicRoom.Consultation ? 300 : 220;
-            return room == null ? 0 : ScaleCost(basis * LocationMultiplier(state), 5, 2, room.Tier - 1);
+            var balance = ClinicBalance.For(state);
+            return room == null ? 0 : ScaleCost(balance.RenovationBase[(int)kind] * LocationMultiplier(state), balance.RenovationGrowth, room.Tier - 1);
         }
         public static int RenovationSeconds(ClinicState state, ClinicRoom kind) => state.Room(kind) == null || state.Room(kind).Tier >= MaximumTier(state) ? 0
-            : (int)ScaleCost(60 * LocationMultiplier(state), 3, 1, state.Room(kind).Tier - 1);
+            : (int)ScaleCost(ClinicBalance.For(state).RenovationBaseSeconds * LocationMultiplier(state), ClinicBalance.For(state).RenovationTimeGrowth, state.Room(kind).Tier - 1);
         public static long StaffTrainingCost(ClinicState state, ClinicStaffState staff) => staff == null ? 0
-            : ScaleCost((staff.Role == ClinicStaffRole.Receptionist ? 80 : staff.Role == ClinicStaffRole.Nurse ? 100 : staff.Role == ClinicStaffRole.Doctor ? 140 : 110) * LocationMultiplier(state), 9, 5, staff.TrainingLevel - 1);
+            : ScaleCost(ClinicBalance.For(state).TrainingBase[(int)staff.Role] * LocationMultiplier(state), ClinicBalance.For(state).TrainingGrowth, staff.TrainingLevel - 1);
         public static long AmenityUpgradeCost(ClinicState state, ClinicAmenity kind) => state.Amenity(kind) == null || state.Amenity(kind).Level >= MaximumAmenityLevel(state, kind) ? 0
-            : ScaleCost((kind == ClinicAmenity.Parking ? 220 : kind == ClinicAmenity.Toilet ? 140 : kind == ClinicAmenity.Vending ? 180 : 260) * LocationMultiplier(state), 2, 1, state.Amenity(kind).Level);
+            : ScaleCost(ClinicBalance.For(state).AmenityBase[(int)kind] * LocationMultiplier(state), ClinicBalance.For(state).AmenityGrowth, state.Amenity(kind).Level);
         public static string StationPatientAnchor(ClinicStaffRole role, int id) => role == ClinicStaffRole.Receptionist ? DeskPatientAnchor(id)
             : role == ClinicStaffRole.Nurse ? TreatmentPatientAnchor(id) : (role == ClinicStaffRole.Doctor ? "consultation.station." : "pharmacy.station.") + id + ".patient";
         public static string StationStaffAnchor(ClinicStaffRole role, int id) => role == ClinicStaffRole.Receptionist ? DeskStaffAnchor(id)

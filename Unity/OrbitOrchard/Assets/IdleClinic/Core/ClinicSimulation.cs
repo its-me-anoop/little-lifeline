@@ -408,7 +408,7 @@ namespace IdleClinic.Core
                     : State.Patients.Where(p => p.Phase == ClinicPatientPhase.ReceptionQueue).OrderBy(p => p.Id).FirstOrDefault();
                 if (patient == null) break;
                 if (ClinicRules.IsDoctors(State) && !CanApproachDoctorsDesk(patient, desk.Id)) break;
-                var quote = ClinicRules.VisitFee(State) + (patient.ParkingBayId >= 0 ? 5L * ClinicRules.LocationMultiplier(State) * State.Amenity(ClinicAmenity.Parking).Level : 0);
+                var quote = ClinicRules.VisitFee(State) + (patient.ParkingBayId >= 0 ? ClinicRules.ParkingFee(State) : 0);
                 var committed = State.Patients.Where(p => !p.Paid && p.HasAdmissionReservation).Sum(p => p.Payment);
                 if (quote > MaximumMoney - State.TotalEarned - committed) break;
                 patient.HasAdmissionReservation = true;
