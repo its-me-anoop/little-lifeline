@@ -2,6 +2,8 @@
 
 Little Lifeline is a miniature 3D clinic management game for iPhone and iPad. Start with reception and first aid, improve your team and facilities, and work toward opening a larger doctors clinic.
 
+[Download Little Lifeline on the App Store](https://apps.apple.com/app/id6786840477)
+
 For private support, email [anoopjose.flutterly@gmail.com](mailto:anoopjose.flutterly@gmail.com). You can also [report a game issue](https://github.com/its-me-anoop/gravitile-support/issues). GitHub issues are public; do not include personal, payment or medical information.
 
 [Privacy policy](privacy.md)
