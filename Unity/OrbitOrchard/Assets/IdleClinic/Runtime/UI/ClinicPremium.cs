@@ -308,7 +308,7 @@ namespace IdleClinic.App
             row.Add(new ClinicIcon(ClinicGlyph.Upgrade, 24, LeafInk));
             var words = Box(row, "offer-words"); words.pickingMode = PickingMode.Ignore;
             Text(words, "Second builder", "offer-title", true);
-            Text(words, "Two rooms build at once, in both clinics", "offer-detail");
+            Text(words, "Two rooms build at once", "offer-detail");
             GemOffer(row, ClinicUnlocks.ExtraBuilder, ClinicGlyph.Gem, "Second builder", null, ClinicUnlocks.ExtraBuilderGems,
                 () => saves.UnlockExtraBuilderWithGems(DateTimeOffset.UtcNow), "Your second builder is ready. Two rooms can now build at once.", "offer-price-only");
             var product = apple?.Products.FirstOrDefault(p => p.id == ClinicUnlocks.ExtraBuilderProduct);
@@ -356,7 +356,7 @@ namespace IdleClinic.App
             clinicAudio.PlayEvent(ClinicEventKind.ConstructionCompleted);
             Feedback(1);
             Celebrate(world.GetRoomPoint(room), 2.6f, "Room ready!");
-            Notify(RoomName(room) + " is ready");
+            ShowRoomReady(room);
         }
 
         private void ClaimGoal(string id)

@@ -205,7 +205,7 @@ namespace IdleClinic.App
 
         private string TrackHeadline(ClinicRoom room,UpgradeTrack track)
         {
-            if(track==UpgradeTrack.Equipment)return UpgradeBenefit(room,track);
+            if(track==UpgradeTrack.Equipment)return room==ClinicRoom.Waiting?"Faster calls":UpgradeBenefit(room,track);
             if(track==UpgradeTrack.Decoration)return "A warmer welcome";
             return room==ClinicRoom.Waiting?"Two more seats":room==ClinicRoom.Reception?"One more queue place":"Better care";
         }
@@ -350,7 +350,10 @@ namespace IdleClinic.App
             readouts.Add(()=>
             {
                 fill.style.width=Length.Percent(100f*Mathf.Clamp01((State.Tick-job.StartedTick)/(float)Math.Max(1,job.EndsTick-job.StartedTick)));
-                time.text=TimeLabel((job.EndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond);
+                var left=Math.Max(0,(job.EndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond);
+                // Minutes and seconds under an hour, so the count visibly moves.
+                var whole=(long)Math.Ceiling(left);
+                time.text=whole>=3600||whole<60?TimeLabel(left):whole/60+"m "+(whole%60).ToString("00")+"s";
             });
             BuildSkipButton(card,job);
         }
@@ -358,7 +361,7 @@ namespace IdleClinic.App
         private void ToggleSettings(){locationsOpen=false;gemsOpen=false;settingsOpen=!settingsOpen;selectedRoom=null;selectedObject=null;dockKey="";UpdateReadouts();}
         private void BuildSettings()
         {
-            var content=new ScrollView(ScrollViewMode.Vertical){name="clinic-settings-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden};
+            var content=new ScrollView(ScrollViewMode.Vertical){name="clinic-settings-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden,verticalScrollerVisibility=ScrollerVisibility.Hidden};
             content.AddToClassList("bounded-dock-content");dock.Add(content);
             BindTouchCaptureLifecycle(content.contentContainer);BindTouchCaptureLifecycle(content.contentViewport);
             var row=Box(content,"settings-list");

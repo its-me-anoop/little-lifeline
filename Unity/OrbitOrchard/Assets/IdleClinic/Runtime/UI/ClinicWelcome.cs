@@ -51,7 +51,8 @@ namespace IdleClinic.App
         /// <summary>After time away: what was earned, where it is, and any building still under way.</summary>
         private void ShowWelcome(ClinicOfflineReport report)
         {
-            if (welcomeCard == null) return;
+            // A short gap only needs a line; the card is for real time away.
+            if (welcomeCard == null || report.elapsedSeconds < 120) { Notify(OfflineMessage(report), 6); return; }
             welcomeCard.Clear(); welcomeReadouts.Clear();
             var heading = Box(welcomeCard, "welcome-heading");
             var titles = Box(heading, "welcome-titles"); titles.pickingMode = PickingMode.Ignore;

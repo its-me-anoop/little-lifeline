@@ -47,7 +47,7 @@ namespace IdleClinic.App
         private void BuildLocationsDock()
         {
             dock.AddToClassList("locations-dock");
-            var body=new ScrollView(ScrollViewMode.Vertical){name="clinic-locations-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden};
+            var body=new ScrollView(ScrollViewMode.Vertical){name="clinic-locations-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden,verticalScrollerVisibility=ScrollerVisibility.Hidden};
             body.AddToClassList("bounded-dock-content");dock.Add(body);
             BindTouchCaptureLifecycle(body.contentContainer);BindTouchCaptureLifecycle(body.contentViewport);
             var unlocked=profile.doctorsState!=null;

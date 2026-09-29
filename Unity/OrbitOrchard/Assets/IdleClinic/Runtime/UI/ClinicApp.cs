@@ -322,6 +322,7 @@ namespace IdleClinic.App
             LayoutWelcome(safe,top);
             toast.style.top=top+132;
             root.EnableInClassList("compact",w<370 || h<700);
+            root.EnableInClassList("narrow",w<440);
         }
 
         private void LimitDockContent(float availableHeight)
