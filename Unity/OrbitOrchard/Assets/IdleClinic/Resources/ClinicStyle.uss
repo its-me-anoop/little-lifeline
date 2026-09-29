@@ -1,191 +1,376 @@
-/* Warm miniature clinic. Palette authored as ivory/sage/apricot/gold OKLCH tokens,
-   converted to sRGB for UI Toolkit's colour parser. */
-.clinic-root { flex-grow: 1; background-color: rgb(232,235,217); color: rgb(48,74,64); font-size: 16px; }
+/* Little Lifeline UI refresh. A warm miniature clinic: sage ground, ivory surfaces, gold for coins,
+   raspberry for gems, leaf green for the one action that moves the clinic forward.
+   UI Toolkit has no box-shadow or gap: raised surfaces use a darker bottom border, and spacing is margins.
+   Colours in sRGB for UI Toolkit's parser.
+     ink        rgb(36,58,49)    ink-soft  rgb(48,74,64)    muted  rgb(78,97,82)
+     ground     rgb(232,235,217) surface   rgb(251,250,240) panel  rgb(238,241,224)  line rgb(213,221,196)
+     leaf       rgb(47,107,79)   leaf-deep rgb(31,74,54)    leaf-tint rgb(221,231,204)
+     coin       rgb(245,200,76)  coin-ink  rgb(91,60,18)    gold-bar rgb(192,147,51) gold-tint rgb(243,238,220)
+     gem        rgb(158,52,90)   gem-deep  rgb(110,33,64)   gem-ink rgb(116,38,66)   gem-tint rgb(250,233,238) */
+
+.clinic-root { flex-grow: 1; background-color: rgb(232,235,217); color: rgb(36,58,49); font-size: 16px; }
 .unity-label { margin: 0; padding: 0; }
 .world,.overlay { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+Button { margin: 0; padding: 0; border-width: 0; border-radius: 0; background-color: rgba(0,0,0,0); background-image: none; color: rgb(36,58,49); font-size: 16px; -unity-text-align: middle-left; }
+Button:disabled { opacity: .5; }
+/* Buttons respond to the finger; less motion keeps them still. */
+Button { transition-property: scale; transition-duration: .09s; transition-timing-function: ease-out-cubic; }
+Button:active { scale: .96 .96; }
+.reduced-motion Button { transition-duration: 0s; }
+.reduced-motion Button:active { scale: 1 1; }
+
+/* ---------- Heads-up display ---------- */
 .header { position: absolute; left: 16px; right: 16px; flex-direction: row; justify-content: space-between; align-items: center; }
-.wallet { flex-direction: row; align-items: center; background-color: rgb(255,244,202); border-radius: 24px; padding: 8px 16px 8px 10px; min-height: 48px; border-bottom-width: 3px; border-bottom-color: rgb(218,196,133); }
-.wallet-value { font-size: 24px; margin-left: 8px; color: rgb(90,62,20); -unity-text-align: middle-left; }
-Button { margin: 0; padding: 0; color: rgb(48,74,64); border-width: 0; -unity-background-image-tint-color: rgb(248,247,233); background-image: none; }
-Button:hover { background-color: rgb(235,238,216); }
-Button:active { background-color: rgb(218,229,201); }
-Button:disabled { opacity: .48; }
-.round-control { width: 48px; height: 48px; min-width: 48px; min-height: 48px; justify-content: center; align-items: center; background-color: rgb(247,246,230); border-radius: 24px; border-bottom-width: 2px; border-bottom-color: rgb(197,210,189); }
-.camera-tools { position: absolute; left: 16px; height: 48px; flex-direction: row; }
-.camera-tools > Button { margin-right: 8px; }
+.balances { flex-direction: row; align-items: center; height: 52px; padding: 0 6px 0 8px; background-color: rgb(251,248,234); border-radius: 26px; border-bottom-width: 3px; border-bottom-color: rgb(217,207,168); }
+.wallet { flex-direction: row; align-items: center; padding-right: 12px; }
+.wallet-value { font-size: 24px; margin-left: 8px; color: rgb(91,60,18); -unity-text-align: middle-left; }
+.balance-divider { width: 1px; height: 26px; background-color: rgb(227,218,184); }
+.gem-balance { flex-direction: row; align-items: center; height: 44px; min-width: 44px; padding: 0 8px 0 10px; border-radius: 22px; }
+.gem-value { font-size: 20px; margin-left: 6px; color: rgb(116,38,66); -unity-text-align: middle-left; }
+.gem-badge { min-width: 22px; height: 22px; margin-left: 6px; padding: 0 6px; border-radius: 11px; background-color: rgb(158,52,90); color: rgb(255,245,248); font-size: 13px; -unity-text-align: middle-center; }
+.round-control { width: 48px; height: 48px; min-width: 48px; min-height: 48px; justify-content: center; align-items: center; background-color: rgb(251,248,234); border-radius: 24px; border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+
+.hud-chips { position: absolute; align-items: flex-start; }
+.hud-chip { flex-direction: row; align-items: center; height: 44px; min-height: 44px; padding: 0 12px 0 10px; margin-bottom: 8px; border-radius: 22px; background-color: rgb(251,248,234); border-bottom-width: 2px; border-bottom-color: rgb(200,211,188); }
+.hud-chip > ClinicIcon { width: 20px; height: 20px; }
+.chip-label { font-size: 15px; margin-left: 8px; color: rgb(48,74,64); }
+.location-multiplier { margin-left: 8px; padding: 2px 7px; border-radius: 8px; background-color: rgb(221,231,204); font-size: 13px; color: rgb(48,74,64); }
+.location-control > #location-chevron { margin-left: 6px; }
+.boost-chip { height: 40px; min-height: 40px; background-color: rgb(250,233,238); border-bottom-color: rgb(226,186,198); }
+.boost-chip .chip-label { color: rgb(116,38,66); font-size: 14px; }
+.boost-time { margin-left: 7px; font-size: 15px; color: rgb(116,38,66); }
+
+/* Camera and car park: thumb side, grouped. */
+.camera-tools { position: absolute; align-items: center; }
+.camera-tools > .round-control { margin-bottom: 10px; }
+.camera-stack { width: 48px; background-color: rgb(251,248,234); border-radius: 24px; border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); overflow: hidden; }
+.camera-button { height: 46px; justify-content: center; align-items: center; }
+.camera-button > ClinicIcon { width: 20px; height: 20px; }
+.camera-divider { height: 1px; margin: 0 10px; background-color: rgb(225,229,210); }
+
 .tutorial-hint { position: absolute; left: 20px; right: 20px; align-items: center; }
-.hint-label { background-color: rgb(247,246,230); color: rgb(48,74,64); border-radius: 16px; padding: 8px 14px; font-size: 15px; -unity-text-align: middle-center; white-space: normal; }
-.context-dock { position: absolute; left: 12px; right: 12px; background-color: rgb(248,247,234); border-radius: 22px; padding: 10px 12px 12px 12px; border-bottom-width: 4px; border-bottom-color: rgb(200,214,189); }
-.dock-heading { flex-direction: row; align-items: center; justify-content: space-between; }
-.dock-title { font-size: 25px; flex-grow: 1; }
-.close-control { width: 44px; height: 44px; min-width: 44px; min-height: 44px; background-color: transparent; border-bottom-width: 0; }
-.room-detail { font-size: 14px; color: rgb(83,103,82); margin: 0 2px 8px 2px; white-space: normal; }
-.upgrades { flex-direction: row; justify-content: space-between; margin-bottom: 8px; }
-.upgrade-button { flex-grow: 1; flex-basis: 0; min-height: 80px; margin-right: 6px; padding: 6px 8px; background-color: rgb(235,239,218); border-radius: 12px; align-items: flex-start; }
-.upgrade-top { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
-.level { font-size: 14px; color: rgb(76,104,66); }
-.upgrade-label { font-size: 14px; margin-top: 3px; }
-.upgrade-price { font-size: 16px; margin-top: 2px; }
-.action-row { flex-direction: row; align-items: stretch; }
-.purchase-button { flex-direction: row; align-items: center; flex-grow: 1; flex-basis: 0; min-height: 52px; padding: 8px 10px; margin-right: 6px; border-radius: 12px; background-color: rgb(232,235,215); }
-.primary-action { background-color: rgb(190,218,156); }
-.minor-action { background-color: rgb(242,222,192); }
-.purchase-words { margin-left: 8px; flex-shrink: 1; }
-.purchase-detail { font-size: 14px; }
-.cost-row { flex-direction: row; align-items: center; margin-top: 2px; }
-.purchase-price { font-size: 17px; margin-left: 5px; }
-.construction-readout { flex-direction: row; align-items: center; flex-grow: 1; min-height: 48px; padding-left: 4px; }
-.construction-time { font-size: 15px; margin-left: 8px; }
-.max-room { font-size: 14px; align-self: center; margin: 8px; }
-.toast { position: absolute; align-self: center; max-width: 88%; padding: 9px 14px; background-color: rgb(54,79,63); color: rgb(248,247,228); border-radius: 16px; font-size: 14px; white-space: normal; -unity-text-align: middle-center; }
-.cash-marker { position: absolute; flex-direction: row; align-items: center; justify-content: center; min-width: 56px; min-height: 44px; padding: 4px 9px; background-color: rgb(255,226,139); border-radius: 18px; border-bottom-width: 3px; border-bottom-color: rgb(192,147,51); }
-.cash-amount { margin-left: 3px; font-size: 16px; color: rgb(91,60,18); }
-.patient-ring { position: absolute; }
-.construction-marker { position: absolute; flex-direction: row; align-items: center; padding: 5px 8px; background-color: rgb(246,239,218); border-radius: 18px; }
-.construction-clock { margin-left: 5px; font-size: 14px; }
-.waiting-marker { position: absolute; flex-direction: row; min-width: 76px; min-height: 48px; align-items: center; justify-content: center; background-color: rgb(204,226,175); border-radius: 18px; padding: 6px 10px; }
-.waiting-cost { font-size: 17px; margin-left: 7px; }
-.settings-row { flex-direction: row; }
+.hint-label { background-color: rgb(251,250,240); color: rgb(36,58,49); border-radius: 16px; padding: 10px 16px; font-size: 15px; -unity-text-align: middle-center; white-space: normal; border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.toast { position: absolute; align-self: center; max-width: 88%; padding: 10px 16px; background-color: rgb(36,58,49); color: rgb(251,250,240); border-radius: 16px; font-size: 14px; white-space: normal; -unity-text-align: middle-center; }
+
+/* Shared pieces. */
+.icon-tile { width: 44px; height: 44px; min-width: 44px; border-radius: 14px; justify-content: center; align-items: center; background-color: rgb(221,231,204); flex-shrink: 0; }
+.icon-tile-large { width: 64px; height: 64px; min-width: 64px; border-radius: 16px; background-color: rgb(251,250,240); border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.icon-tile-small { width: 40px; height: 40px; min-width: 40px; border-radius: 12px; }
+.tile-light { background-color: rgb(251,250,240); }
+.tile-gold { background-color: rgb(251,250,240); }
+.eyebrow { font-size: 12px; letter-spacing: .7px; color: rgb(78,97,82); }
+.meter { height: 6px; border-radius: 3px; background-color: rgb(217,224,200); overflow: hidden; }
+.meter-fill { height: 100%; width: 0; border-radius: 3px; background-color: rgb(63,122,90); }
+.meter-gold { background-color: rgb(230,221,191); }
+.meter-gold > .meter-fill { background-color: rgb(192,147,51); }
+.meter-gem { background-color: rgb(240,207,218); }
+.meter-gem > .meter-fill { background-color: rgb(158,52,90); }
+.meter-thick { height: 10px; border-radius: 5px; }
+.need-more { font-size: 12px; color: rgb(138,75,18); -unity-text-align: middle-right; }
+.need-ready { color: rgb(47,94,71); }
+
+/* ---------- Guide: one next step, labelled, reward up front ---------- */
+.guide-card { position: absolute; flex-direction: row; align-items: center; min-height: 68px; padding: 12px; background-color: rgb(251,250,240); border-radius: 22px; border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
+.guide-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 12px; margin-right: 10px; }
+.guide-title { font-size: 18px; -unity-text-align: middle-left; white-space: normal; }
+.guide-why { font-size: 14px; color: rgb(78,97,82); -unity-text-align: middle-left; white-space: normal; }
+.guide-reward { flex-direction: row; align-items: center; flex-shrink: 0; height: 36px; padding: 0 10px 0 8px; border-radius: 14px; background-color: rgb(250,233,238); }
+.guide-reward-value { font-size: 16px; margin-left: 4px; color: rgb(116,38,66); }
+.guide-ready { background-color: rgb(253,241,244); border-bottom-color: rgb(226,186,198); }
+.guide-ready .guide-tile { background-color: rgb(246,214,224); }
+.guide-ready .eyebrow { color: rgb(138,58,88); }
+.guide-ready .guide-why { color: rgb(107,74,88); }
+.guide-ready .guide-reward { height: 48px; padding: 0 14px 0 10px; border-radius: 16px; background-color: rgb(158,52,90); border-bottom-width: 3px; border-bottom-color: rgb(110,33,64); }
+.guide-ready .guide-reward-value { color: rgb(255,245,248); font-size: 18px; }
+.guide-target { border-width: 3px; border-color: rgb(192,102,30); }
+.guide-pointer { position: absolute; width: 40px; height: 40px; border-radius: 20px; justify-content: center; align-items: center; background-color: rgb(192,102,30); border-width: 2px; border-color: rgb(255,246,234); }
+
+/* ---------- Panels ---------- */
+.sheet-scrim { position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: rgba(36,58,49,.38); }
+.context-dock { position: absolute; left: 12px; right: 12px; background-color: rgb(251,250,240); border-radius: 28px; padding: 16px 14px 14px 14px; border-bottom-width: 5px; border-bottom-color: rgb(200,211,188); }
+.sheet-dock { border-radius: 30px 30px 0 0; border-bottom-width: 0; padding-left: 16px; padding-right: 16px; padding-top: 18px; }
+.dock-handle { position: absolute; top: 7px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background-color: rgb(213,221,196); }
+.dock-heading { flex-direction: row; align-items: flex-start; justify-content: space-between; flex-shrink: 0; margin-bottom: 12px; padding-top: 4px; }
+.dock-titles { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.dock-title { font-size: 27px; color: rgb(36,58,49); -unity-text-align: middle-left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-meta { flex-direction: row; align-items: center; margin-top: 6px; }
+.meta-chip { padding: 3px 9px; border-radius: 9px; background-color: rgb(221,231,204); font-size: 13px; color: rgb(47,94,71); }
+.meta-chip-building { background-color: rgb(243,230,196); color: rgb(107,74,18); }
+.meta-note { font-size: 14px; margin-left: 8px; color: rgb(78,97,82); }
+.close-control { width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin-left: 4px; background-color: rgba(0,0,0,0); border-bottom-width: 0; border-radius: 22px; }
+.room-detail { font-size: 14px; color: rgb(78,97,82); margin: 0 2px 10px 2px; white-space: normal; }
 .bounded-dock-content { flex-shrink: 1; }
-.settings-links { flex-direction: row; margin-top: 8px; }
-.settings-link { flex-direction: row; flex-grow: 1; flex-basis: 0; min-width: 44px; min-height: 44px; align-items: center; background-color: transparent; padding: 4px; }
-.settings-link > ClinicIcon { width: 20px; height: 20px; min-width: 20px; flex-shrink: 0; }
-.settings-link-label { font-size: 14px; margin-left: 6px; white-space: normal; flex-shrink: 1; }
-.preference { flex-grow: 1; flex-basis: 0; min-height: 86px; margin-right: 7px; background-color: rgb(233,235,218); border-radius: 12px; padding: 10px; align-items: center; }
-.preference-on { background-color: rgb(210,228,189); }
-.preference-label { font-size: 14px; margin-top: 5px; }
-.preference-value { font-size: 14px; }
-.help-row { margin-top: 10px; }
-.help-text { font-size: 14px; white-space: normal; }
-.restore-button { flex-direction: row; align-items: center; margin-top: 8px; min-height: 44px; background-color: transparent; }
-.restore-label { font-size: 14px; margin-left: 8px; }
-.loading { flex-grow: 1; justify-content: center; align-items: center; }
-.loading-title { margin-top: 20px; font-size: 20px; }
-.loading ProgressBar { width: 180px; height: 8px; margin-top: 18px; }
-.compact .dock-title { font-size: 22px; }
+.max-room { font-size: 14px; color: rgb(78,97,82); margin: 12px 4px 4px 4px; -unity-text-align: middle-center; }
+.object-shortcut { width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex-shrink: 0; background-color: rgb(238,241,224); border-radius: 14px; justify-content: center; align-items: center; margin-left: 6px; }
+.object-shortcut > ClinicIcon { width: 22px; height: 22px; }
+.shortcut-number { position: absolute; right: 4px; bottom: 1px; font-size: 13px; color: rgb(48,74,64); }
+
+/* Segmented control: upgrade tracks and the gems sheet tabs. */
+.segmented { flex-direction: row; padding: 4px; border-radius: 16px; background-color: rgb(238,241,224); flex-shrink: 0; margin-bottom: 10px; }
+.segment { flex-grow: 1; flex-basis: 0; min-width: 0; height: 48px; margin: 0 2px; flex-direction: row; justify-content: center; align-items: center; border-radius: 12px; color: rgb(78,97,82); }
+.segment-selected { background-color: rgb(255,254,249); color: rgb(36,58,49); border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.segment-label { font-size: 14px; margin-left: 5px; color: rgb(78,97,82); }
+.segment-selected .segment-label { color: rgb(36,58,49); }
+.gem-tab .segment-label { font-size: 15px; margin-left: 0; }
+.level-pill { font-size: 13px; margin-left: 5px; padding: 0 5px; border-radius: 7px; background-color: rgb(221,231,204); color: rgb(47,94,71); }
+.level-pill-full { background-color: rgb(243,230,196); color: rgb(107,74,18); }
+.tab-badge { min-width: 20px; height: 20px; margin-left: 6px; padding: 0 6px; border-radius: 10px; background-color: rgb(158,52,90); color: rgb(255,245,248); font-size: 12px; -unity-text-align: middle-center; }
+.compact .segment-label { font-size: 13px; margin-left: 3px; }
+.compact .track-tab > ClinicIcon { display: none; }
+
+/* ---------- Room panel ---------- */
+.track-panel { padding: 12px; border-radius: 18px; background-color: rgb(238,241,224); margin-bottom: 12px; }
+.track-intro { flex-direction: row; align-items: flex-start; }
+.track-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 12px; }
+.track-title { font-size: 20px; margin-top: 2px; white-space: normal; }
+.track-description { font-size: 13px; color: rgb(78,97,82); margin-top: 2px; white-space: normal; }
+.effect-row { flex-direction: row; align-items: center; justify-content: space-between; margin-top: 10px; padding: 8px 10px; border-radius: 12px; background-color: rgb(251,250,240); }
+.effect-label { font-size: 14px; color: rgb(78,97,82); flex-shrink: 1; }
+.effect-values { flex-direction: row; align-items: center; flex-shrink: 0; }
+.effect-before { font-size: 16px; color: rgb(86,105,90); margin-right: 6px; }
+.effect-values > ClinicIcon { margin-right: 6px; }
+.effect-after { font-size: 17px; color: rgb(47,94,71); }
+.level-pips { flex-direction: row; margin-top: 10px; }
+.level-pip { flex-grow: 1; flex-basis: 0; height: 10px; margin: 0 2px; border-radius: 5px; background-color: rgb(221,227,206); }
+.pip-have { background-color: rgb(63,122,90); }
+.pip-next { background-color: rgb(251,250,240); border-width: 2px; border-color: rgb(63,122,90); }
+.pip-locked { background-color: rgba(0,0,0,0); border-width: 1px; border-color: rgb(169,181,151); }
+.track-action { flex-direction: row; justify-content: center; align-items: center; height: 48px; margin-top: 10px; border-radius: 14px; }
+.primary-action { background-color: rgb(47,107,79); color: rgb(251,250,240); border-bottom-width: 3px; border-bottom-color: rgb(31,74,54); }
+.action-label { font-size: 15px; color: rgb(251,250,240); margin-right: 8px; }
+.action-price { font-size: 18px; color: rgb(251,250,240); margin-left: 5px; }
+.blocked-action { background-color: rgb(226,230,211); }
+.blocked-label { font-size: 14px; color: rgb(78,97,82); margin-left: 8px; }
+
+.renovate-card { flex-direction: row; align-items: center; min-height: 64px; padding: 10px 12px; margin-bottom: 10px; border-radius: 18px; background-color: rgb(243,238,220); border-width: 1.5px; border-color: rgb(226,214,178); }
+.renovate-card:disabled { opacity: 1; }
+.renovate-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin: 0 10px 0 12px; }
+.renovate-title { font-size: 17px; }
+.renovate-detail { font-size: 13px; color: rgb(94,81,48); margin: 2px 0 6px 0; }
+.renovate-cost { align-items: flex-end; flex-shrink: 0; }
+
+.build-card { padding: 12px; margin-bottom: 10px; border-radius: 18px; background-color: rgb(243,238,220); }
+.build-top { flex-direction: row; align-items: center; margin-bottom: 10px; }
+.build-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 10px; }
+.construction-readout .build-words { margin-left: 0; }
+.build-title { font-size: 17px; white-space: normal; }
+.build-detail { font-size: 13px; color: rgb(94,81,48); margin-top: 1px; white-space: normal; }
+.construction-time { font-size: 22px; color: rgb(91,60,18); margin-left: 10px; }
+.build-choices { flex-direction: row; margin-top: 10px; }
+.build-choices > Button { flex-grow: 1; flex-basis: 0; margin: 0 4px; }
+
+.gem-action { flex-direction: row; justify-content: center; align-items: center; height: 48px; min-width: 96px; padding: 0 12px; border-radius: 14px; background-color: rgb(158,52,90); border-bottom-width: 3px; border-bottom-color: rgb(110,33,64); flex-shrink: 0; }
+.gem-action-wide { margin-top: 10px; }
+.gem-action-label { font-size: 15px; color: rgb(255,245,248); margin-right: 8px; }
+.gem-action-price { flex-direction: row; align-items: center; padding: 3px 9px 3px 6px; border-radius: 10px; background-color: rgb(179,82,117); }
+.gem-action-amount { font-size: 16px; margin-left: 4px; color: rgb(255,245,248); }
+.soft-action { flex-direction: row; justify-content: center; align-items: center; height: 48px; padding: 0 12px; border-radius: 14px; background-color: rgb(251,250,240); border-bottom-width: 2px; border-bottom-color: rgb(226,214,178); }
+.soft-action-label { font-size: 14px; margin-left: 6px; color: rgb(116,38,66); }
+
+/* Hiring and stations: a row of secondary buttons under the renovation. */
+.action-row { flex-direction: row; align-items: stretch; flex-shrink: 0; }
+.purchase-button { flex-direction: row; align-items: center; flex-grow: 1; flex-basis: 0; min-width: 0; min-height: 56px; padding: 8px 10px; margin-right: 6px; border-radius: 14px; background-color: rgb(238,241,224); }
+.purchase-button.primary-action { background-color: rgb(221,231,204); border-bottom-width: 3px; border-bottom-color: rgb(186,205,168); color: rgb(36,58,49); }
+.minor-action { background-color: rgb(238,241,224); border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.purchase-words { margin-left: 8px; flex-shrink: 1; min-width: 0; }
+.purchase-detail { font-size: 14px; color: rgb(36,58,49); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cost-row { flex-direction: row; align-items: center; margin-top: 2px; }
+.purchase-price { font-size: 17px; margin-left: 5px; color: rgb(91,60,18); }
+.room-shortcut { flex-direction: row; align-items: center; flex-grow: 1; min-height: 48px; padding: 6px 12px; border-radius: 14px; background-color: rgb(238,241,224); }
+.room-shortcut > .purchase-detail { margin-left: 9px; }
+.vending-collect { flex-direction: row; justify-content: center; align-items: center; min-width: 84px; min-height: 48px; margin-left: 6px; padding: 6px 10px; background-color: rgb(255,224,138); border-radius: 14px; border-bottom-width: 3px; border-bottom-color: rgb(192,147,51); }
+
+/* Workstations and amenities keep their fixed-height strip. */
+.upgrade-dock { padding: 12px 12px 12px 12px; }
+.upgrade-dock .dock-heading { height: 44px; min-height: 44px; max-height: 44px; margin-bottom: 4px; padding-top: 0; }
+.upgrade-dock .dock-title { height: 40px; font-size: 25px; }
+.upgrade-dock .room-detail { height: 20px; min-height: 20px; max-height: 20px; margin: 0 2px 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upgrades { flex-direction: row; justify-content: space-between; margin-bottom: 8px; }
+.upgrade-dock .upgrades { height: 80px; min-height: 80px; max-height: 80px; flex-shrink: 0; }
+.upgrade-button { flex-grow: 1; flex-basis: 0; min-width: 0; height: 80px; margin-right: 6px; padding: 6px 8px; background-color: rgb(238,241,224); border-radius: 14px; align-items: flex-start; border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.upgrade-top { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; height: 24px; flex-shrink: 0; }
+.level { font-size: 14px; color: rgb(47,94,71); }
+.upgrade-label { font-size: 14px; margin-top: 2px; height: 18px; white-space: nowrap; -unity-text-align: middle-left; }
+.upgrade-price { font-size: 16px; height: 20px; color: rgb(91,60,18); -unity-text-align: middle-left; }
+.upgrade-dock .action-row { height: 56px; min-height: 56px; max-height: 56px; }
+.upgrade-dock .purchase-button { height: 56px; min-height: 56px; max-height: 56px; padding: 4px 8px; }
+.management-dock .management-footer { flex-direction: row; min-height: 48px; margin-top: 8px; }
+.management-dock .action-row > .object-shortcut { align-self: center; }
+.management-dock .upgrades > .purchase-button { height: 80px; min-height: 80px; max-height: 80px; }
 .compact .context-dock { left: 8px; right: 8px; padding-left: 10px; padding-right: 10px; }
+.compact .dock-title { font-size: 23px; }
 .compact .upgrade-button { padding-left: 6px; padding-right: 6px; }
 .compact .purchase-button { padding-left: 7px; padding-right: 7px; }
 
-/* Keep the management strip at 230 points even when font metrics or Button
-   defaults would otherwise expand its rows. All three upgrades remain visible. */
-.upgrade-dock { padding: 8px 10px; }
-.upgrade-dock .dock-heading { height: 44px; min-height: 44px; max-height: 44px; flex-shrink: 0; }
-.upgrade-dock .dock-title { height: 36px; -unity-text-align: middle-left; }
-.upgrade-dock .room-detail { height: 20px; min-height: 20px; max-height: 20px; margin: 0 2px 4px 2px; white-space: nowrap; }
-.upgrade-dock .upgrades { height: 80px; min-height: 80px; max-height: 80px; margin-bottom: 6px; flex-shrink: 0; }
-.upgrade-dock .upgrade-button { height: 80px; min-height: 80px; max-height: 80px; min-width: 0; padding: 6px; }
-.upgrade-dock .upgrade-top { height: 24px; min-height: 24px; flex-shrink: 0; }
-.upgrade-dock .upgrade-label { height: 18px; min-height: 18px; margin-top: 2px; white-space: nowrap; -unity-text-align: middle-left; }
-.upgrade-dock .upgrade-price { height: 20px; min-height: 20px; margin-top: 0; -unity-text-align: middle-left; }
-.upgrade-dock .action-row { height: 56px; min-height: 56px; max-height: 56px; flex-shrink: 0; }
-.upgrade-dock .purchase-button { height: 56px; min-height: 56px; max-height: 56px; min-width: 0; padding: 4px 8px; }
-.upgrade-dock .purchase-words { height: 44px; min-width: 0; justify-content: center; }
-.upgrade-dock .purchase-detail { height: 18px; margin: 0; white-space: nowrap; -unity-text-align: middle-left; }
-.upgrade-dock .cost-row { height: 22px; margin-top: 2px; }
-.upgrade-dock .purchase-price { height: 22px; -unity-text-align: middle-left; }
-.upgrade-dock .construction-readout { height: 56px; min-height: 56px; max-height: 56px; }
-.upgrade-dock .construction-time { font-size: 14px; white-space: normal; flex-shrink: 1; }
+/* ---------- Settings ---------- */
+.settings-list { border-radius: 20px; background-color: rgb(238,241,224); overflow: hidden; margin-bottom: 12px; }
+.switch-row { flex-direction: row; align-items: center; min-height: 58px; padding: 0 14px; border-bottom-width: 1px; border-bottom-color: rgb(220,226,204); }
+.switch-last { border-bottom-width: 0; }
+.switch-row > ClinicIcon { width: 22px; height: 22px; }
+.switch-words { flex-grow: 1; flex-shrink: 1; margin-left: 12px; }
+.preference-label { font-size: 16px; }
+.switch-detail { font-size: 13px; color: rgb(78,97,82); }
+.preference-value { font-size: 13px; color: rgb(78,97,82); margin-right: 8px; }
+.switch-track { width: 52px; height: 32px; border-radius: 16px; background-color: rgb(217,224,200); border-width: 2px; border-color: rgb(169,181,151); padding: 1px; justify-content: center; }
+.switch-knob { width: 26px; height: 26px; border-radius: 13px; background-color: rgb(251,250,240); justify-content: center; align-items: center; }
+.preference-on .switch-track { background-color: rgb(47,107,79); border-color: rgb(47,107,79); align-items: flex-end; }
+.preference-on .preference-value { color: rgb(47,94,71); }
+.settings-note { flex-direction: row; align-items: center; padding: 12px 14px; margin-bottom: 8px; border-radius: 16px; background-color: rgb(251,243,214); }
+.settings-note > .help-text { margin-left: 10px; color: rgb(74,58,24); flex-shrink: 1; }
+.help-row { margin: 2px 4px 8px 4px; }
+.help-text { font-size: 14px; color: rgb(78,97,82); white-space: normal; }
+.settings-links { margin-top: 2px; }
+.settings-link { flex-direction: row; align-items: center; min-height: 48px; padding: 0 4px; border-bottom-width: 1px; border-bottom-color: rgb(229,233,215); }
+.settings-link > ClinicIcon { width: 20px; height: 20px; flex-shrink: 0; }
+.settings-link-label { flex-grow: 1; font-size: 15px; margin-left: 12px; white-space: normal; flex-shrink: 1; }
 
-/* Contextual object shortcuts keep the world visible as the clinic grows. */
-.object-shortcut { width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex-shrink: 0; background-color: rgb(224,233,207); border-radius: 12px; justify-content: center; align-items: center; margin-left: 4px; }
-.object-shortcut > ClinicIcon { width: 22px; height: 22px; }
-.shortcut-number { position: absolute; right: 4px; bottom: 1px; font-size: 14px; color: rgb(48,74,64); }
-.dock-heading > .dock-title { min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.room-shortcut { flex-direction: row; align-items: center; flex-grow: 1; min-height: 44px; padding: 6px 10px; background-color: rgb(229,235,214); border-radius: 12px; }
-.room-shortcut > .purchase-detail { margin-left: 9px; font-size: 14px; }
-.management-dock .room-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.management-dock .management-footer { flex-direction: row; min-height: 44px; margin-top: 8px; }
-.management-dock .action-row > .object-shortcut { align-self: center; }
-.vending-collect { flex-direction: row; justify-content: center; align-items: center; min-width: 84px; min-height: 44px; margin-left: 6px; padding: 6px 8px; background-color: rgb(250,222,149); border-radius: 12px; }
-.management-dock .upgrades > .purchase-button { height: 80px; min-height: 80px; max-height: 80px; }
-
-/* At neighbourhood scale, keep collection targets usable without covering rooms. */
-.compact-cash { padding: 0; border-radius: 22px; }
-.compact-construction { padding: 0; background-color: transparent; border-radius: 0; }
-
-/* Location travel remains a compact world control; requirements appear only on demand. */
-.location-control > ClinicIcon { margin-top: -6px; width: 22px; height: 22px; }
-.location-multiplier { position: absolute; bottom: 1px; font-size: 14px; color: rgb(48,74,64); }
-.locations-dock .room-detail { margin-bottom: 6px; }
-.location-preview { flex-direction: row; align-items: center; margin: 2px 0 8px 0; }
-.location-preview-copy { margin-left: 10px; flex-shrink: 1; }
-.location-name { font-size: 17px; white-space: normal; }
-.location-note { font-size: 14px; white-space: normal; margin-top: 3px; }
-.location-progress { font-size: 14px; margin: 4px 0 6px 0; white-space: normal; }
-.location-checklist { margin-bottom: 8px; }
-.unlock-requirement { min-height: 44px; flex-direction: row; align-items: center; background-color: transparent; padding: 5px 4px; }
-.unlock-name { flex-grow: 1; flex-shrink: 1; font-size: 14px; margin-left: 8px; }
-.unlock-status { font-size: 14px; margin-left: 8px; }
-.requirement-complete { color: rgb(79,103,72); }
-.location-open { min-height: 56px; flex-direction: row; align-items: center; border-radius: 12px; padding: 6px 12px; }
-.location-purchase-copy { margin-left: 12px; }
+/* ---------- Your clinics ---------- */
+.clinic-card { padding: 12px; margin-bottom: 12px; border-radius: 20px; background-color: rgb(238,241,224); }
+.clinic-card-current { flex-direction: row; align-items: center; border-width: 2px; border-color: rgb(63,122,90); }
+.clinic-card .icon-tile { width: 64px; height: 64px; min-width: 64px; border-radius: 14px; background-color: rgb(251,250,240); }
+.location-preview { flex-direction: row; align-items: center; margin-bottom: 8px; }
+.location-preview-copy { margin-left: 12px; flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.location-name { font-size: 20px; white-space: normal; }
+.location-note { font-size: 14px; color: rgb(78,97,82); white-space: normal; margin-top: 3px; }
+.here-pill { align-self: flex-start; padding: 4px 10px; border-radius: 10px; background-color: rgb(47,107,79); color: rgb(251,250,240); font-size: 13px; }
+.lock-badge { position: absolute; right: -6px; bottom: -6px; width: 28px; height: 28px; border-radius: 14px; background-color: rgb(251,250,240); justify-content: center; align-items: center; border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.location-progress { font-size: 14px; margin: 4px 2px 4px 2px; white-space: normal; }
+.location-checklist { margin-bottom: 6px; }
+.unlock-requirement { min-height: 44px; flex-direction: row; align-items: center; padding: 4px 2px; }
+.unlock-requirement > ClinicIcon { width: 20px; height: 20px; }
+.unlock-name { flex-grow: 1; flex-shrink: 1; font-size: 15px; margin-left: 10px; }
+.unlock-status { font-size: 13px; margin-left: 8px; color: rgb(138,75,18); }
+.requirement-complete .unlock-status { color: rgb(47,94,71); }
+.coin-requirement { flex-direction: row; align-items: center; min-height: 40px; padding: 0 2px; }
+.location-open { min-height: 56px; flex-direction: row; align-items: center; border-radius: 16px; padding: 6px 14px; margin-top: 10px; }
+.location-open:disabled { opacity: 1; background-color: rgb(226,230,211); border-bottom-color: rgb(213,221,196); }
+.location-open:disabled .purchase-detail { color: rgb(78,97,82); }
+.location-open .purchase-detail { color: rgb(251,250,240); }
+.location-open .purchase-price { color: rgb(251,250,240); }
+.location-open:disabled .purchase-price { color: rgb(91,60,18); }
+.location-purchase-copy { margin-left: 12px; flex-grow: 1; }
 .location-destinations { flex-direction: row; margin: 4px 0 6px 0; }
-.location-destination { flex-grow: 1; flex-basis: 0; min-height: 92px; padding: 8px; margin-right: 6px; align-items: flex-start; background-color: rgb(224,233,207); border-radius: 12px; }
-.location-destination .location-name { margin-top: 4px; }
-.settings-row .preference { min-width: 0; margin-right: 4px; padding: 8px 3px; }
-.settings-row .preference-label { font-size: 14px; white-space: normal; -unity-text-align: middle-center; }
-.upgrade-dock .dock-heading > .object-shortcut { margin-left: 2px; }
+.location-destination { flex-grow: 1; flex-basis: 0; min-height: 110px; padding: 12px; margin: 0 4px; align-items: flex-start; background-color: rgb(238,241,224); border-radius: 18px; }
+.location-destination:disabled { opacity: 1; }
+.location-current { border-width: 2px; border-color: rgb(63,122,90); }
+.location-destination .location-name { margin-top: 6px; font-size: 17px; }
+.location-destination .here-pill { position: absolute; top: 10px; right: 10px; }
 
-/* Gems and goals. Raspberry marks premium currency; coins keep the gold. */
-.balances { flex-direction: row; align-items: center; }
-.gem-balance { flex-direction: row; align-items: center; margin-left: 8px; min-height: 44px; padding: 6px 12px 6px 8px; background-color: rgb(250,236,238); border-radius: 22px; border-bottom-width: 2px; border-bottom-color: rgb(221,186,196); }
-.gem-value { font-size: 18px; margin-left: 5px; color: rgb(116,38,66); }
-.gem-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background-color: rgb(158,52,90); color: rgb(252,244,246); font-size: 14px; -unity-text-align: middle-center; }
-.gem-section { font-size: 14px; color: rgb(83,103,82); margin: 10px 2px 6px 2px; -unity-font-style: bold; }
-.gem-goal { flex-direction: row; align-items: center; min-height: 44px; padding: 6px 10px; margin-bottom: 4px; border-radius: 12px; background-color: rgb(238,240,224); }
-.gem-goal-ready { background-color: rgb(248,228,233); }
-.gem-goal-title { flex-grow: 1; flex-shrink: 1; margin-left: 9px; font-size: 15px; white-space: normal; -unity-text-align: middle-left; }
-.gem-amount { flex-direction: row; align-items: center; margin-left: 8px; flex-shrink: 0; }
-.gem-amount-value { font-size: 14px; margin-left: 4px; color: rgb(116,38,66); }
-.gem-shelf { flex-direction: row; flex-wrap: wrap; }
-.gem-pack { flex-grow: 1; flex-basis: 40%; min-height: 76px; margin: 0 6px 6px 0; padding: 8px 10px; border-radius: 12px; align-items: flex-start; background-color: rgb(250,236,238); }
-.gem-pack-amount { font-size: 20px; margin-top: 2px; color: rgb(116,38,66); }
-.gem-pack-price { font-size: 14px; }
-.gem-offer-title { font-size: 17px; white-space: normal; max-width: 100%; -unity-text-align: upper-left; }
-.gem-note { font-size: 14px; color: rgb(83,103,82); margin: 6px 2px 2px 2px; white-space: normal; }
-.skip-button { flex-direction: row; align-items: center; flex-shrink: 0; min-height: 44px; margin-left: 6px; padding: 6px 12px 6px 8px; border-radius: 12px; background-color: rgb(250,236,238); }
-.skip-label { font-size: 15px; margin-left: 5px; color: rgb(116,38,66); }
-.compact .gem-balance { margin-left: 6px; padding-right: 10px; }
+/* ---------- Gems & goals ---------- */
+.section-head { flex-direction: row; align-items: center; justify-content: space-between; margin: 12px 2px 8px 2px; }
+.gem-section { font-size: 15px; color: rgb(36,58,49); }
+.section-note { font-size: 13px; color: rgb(78,97,82); flex-shrink: 1; margin-left: 8px; -unity-text-align: middle-right; }
+.gem-note { font-size: 14px; color: rgb(78,97,82); margin: 6px 2px 2px 2px; white-space: normal; }
+.streak-row { flex-direction: row; margin-bottom: 8px; }
+.streak-day { flex-grow: 1; flex-basis: 0; height: 62px; margin: 0 2px; border-radius: 12px; align-items: center; justify-content: center; background-color: rgb(238,241,224); }
+.streak-done { background-color: rgb(221,231,204); }
+.streak-next { background-color: rgb(250,233,238); border-width: 2px; border-color: rgb(158,52,90); }
+.streak-week { background-color: rgb(246,227,176); }
+.streak-gems { font-size: 16px; color: rgb(116,38,66); }
+.streak-number { font-size: 12px; margin-top: 2px; color: rgb(78,97,82); }
+.streak-done .streak-number { color: rgb(47,94,71); }
+.collect-wide { flex-direction: row; justify-content: center; align-items: center; height: 52px; margin-bottom: 4px; border-radius: 16px; background-color: rgb(158,52,90); border-bottom-width: 3px; border-bottom-color: rgb(110,33,64); }
+.collect-label { font-size: 15px; color: rgb(255,245,248); }
+.collect-wide .collect-label { font-size: 16px; margin-right: 10px; }
+.reward-inline { flex-direction: row; align-items: center; }
+.reward-inline .reward-item { margin-left: 8px; }
+.reward-stack { align-items: flex-end; flex-shrink: 0; margin-left: 10px; }
+.reward-item { flex-direction: row; align-items: center; }
+.reward-on-button { font-size: 17px; margin-left: 4px; color: rgb(255,245,248); }
+.reward-gems { font-size: 14px; margin-left: 3px; color: rgb(116,38,66); }
+.reward-coins { font-size: 14px; margin-left: 3px; color: rgb(91,60,18); }
+.goal-row { flex-direction: row; align-items: center; min-height: 56px; padding: 10px 12px; margin-bottom: 8px; border-radius: 16px; background-color: rgb(238,241,224); }
+.goal-ready { background-color: rgb(250,233,238); padding-right: 8px; }
+.goal-words { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.goal-top { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.gem-goal-title { font-size: 15px; flex-shrink: 1; white-space: normal; -unity-text-align: middle-left; }
+.goal-fill { flex-grow: 1; margin-left: 10px; }
+.goal-count { font-size: 13px; color: rgb(78,97,82); margin-left: 8px; }
+.goal-row > ClinicIcon { flex-shrink: 0; }
+.collect-small { flex-direction: row; align-items: center; flex-shrink: 0; height: 44px; margin-left: 10px; padding: 0 12px 0 10px; border-radius: 14px; background-color: rgb(158,52,90); border-bottom-width: 3px; border-bottom-color: rgb(110,33,64); }
+.collect-small > .collect-label { margin-left: 4px; font-size: 16px; }
+.bonus-row { flex-direction: row; align-items: center; padding: 10px 12px; margin-bottom: 4px; border-radius: 16px; border-width: 1.5px; border-color: rgb(185,196,168); }
+.bonus-text { flex-grow: 1; flex-shrink: 1; font-size: 14px; color: rgb(78,97,82); white-space: normal; }
+.bonus-dots { flex-direction: row; margin-left: 8px; }
+.bonus-dot { width: 12px; height: 12px; margin-left: 4px; border-radius: 6px; background-color: rgb(217,224,200); }
+.bonus-dot-done { background-color: rgb(158,52,90); }
+.goals-done { flex-direction: row; align-items: center; margin: 6px 2px 2px 2px; }
+.goals-done > .gem-note { margin: 0 0 0 8px; }
 
-/* Guided play: one next step at a time, bottom-centre, out of the way of panels. */
-.guide-card { position: absolute; bottom: 20px; align-self: center; flex-direction: row; align-items: center; max-width: 440px; min-height: 56px; padding: 8px 14px 8px 10px; background-color: rgb(248,247,234); border-radius: 18px; border-bottom-width: 3px; border-bottom-color: rgb(200,214,189); }
-.guide-card > ClinicIcon { width: 26px; height: 26px; }
-.guide-words { flex-shrink: 1; margin-left: 10px; margin-right: 10px; }
-.guide-title { font-size: 16px; -unity-text-align: middle-left; white-space: normal; }
-.guide-why { font-size: 14px; color: rgb(83,103,82); -unity-text-align: middle-left; white-space: normal; }
-.guide-reward { flex-direction: row; align-items: center; flex-shrink: 0; padding: 4px 8px; border-radius: 12px; background-color: rgb(250,236,238); }
-.guide-reward-value { font-size: 14px; margin-left: 4px; color: rgb(116,38,66); }
-.guide-ready { background-color: rgb(250,236,238); border-bottom-color: rgb(221,186,196); }
-.guide-ready .guide-reward { background-color: rgb(158,52,90); }
-.guide-ready .guide-reward-value { color: rgb(252,244,246); }
-.guide-target { border-width: 3px; border-color: rgb(192,147,51); }
-.guide-pointer { position: absolute; width: 40px; height: 40px; border-radius: 20px; justify-content: center; align-items: center; background-color: rgb(192,120,40); border-width: 2px; border-color: rgb(252,244,230); }
+.shop-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.shop-grid-1 > Button { width: 100%; }
+.shop-grid-2 > Button { width: 48.5%; }
+.shop-grid-3 > Button { width: 32%; }
+.gem-pack { flex-direction: row; align-items: center; height: 64px; padding: 0 12px; margin-bottom: 8px; border-radius: 16px; background-color: rgb(250,233,238); border-bottom-width: 3px; border-bottom-color: rgb(232,196,208); }
+.gem-pack-best { border-width: 2px; border-color: rgb(158,52,90); border-bottom-width: 3px; }
+.pack-words { margin-left: 10px; }
+.gem-pack-amount { font-size: 22px; color: rgb(116,38,66); }
+.gem-pack-price { font-size: 14px; color: rgb(74,51,64); }
+.best-value { position: absolute; top: -10px; right: 8px; padding: 2px 8px; border-radius: 8px; background-color: rgb(158,52,90); color: rgb(255,245,248); font-size: 12px; }
+.offer-card { flex-direction: row; align-items: center; min-height: 58px; padding: 8px 10px; margin-bottom: 8px; border-radius: 16px; background-color: rgb(238,241,224); border-bottom-width: 3px; border-bottom-color: rgb(213,221,196); }
+.offer-card > ClinicIcon { width: 22px; height: 22px; }
+.offer-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 8px; }
+.offer-title { font-size: 14px; white-space: normal; }
+.offer-detail { font-size: 13px; color: rgb(78,97,82); white-space: normal; }
+.offer-coins { flex-direction: column; align-items: flex-start; background-color: rgb(251,243,214); border-bottom-color: rgb(230,214,162); }
+.offer-coins .offer-words { margin-left: 0; margin-bottom: 6px; }
+.offer-coins .offer-title { font-size: 19px; color: rgb(91,60,18); }
+.offer-boost { background-color: rgb(250,233,238); border-bottom-color: rgb(232,196,208); }
+.offer-boost .offer-detail { color: rgb(107,74,88); }
+.offer-confirm { background-color: rgb(126,37,71); border-bottom-color: rgb(90,24,49); }
+.offer-confirm .offer-title { color: rgb(255,245,248); font-size: 13px; }
+.price-chip { flex-direction: row; align-items: center; flex-shrink: 0; padding: 3px 8px 3px 5px; margin-left: 6px; border-radius: 9px; background-color: rgb(255,254,249); }
+.offer-coins .price-chip { margin-left: 0; }
+.price-chip-value { font-size: 14px; margin-left: 4px; color: rgb(116,38,66); }
+.builder-row { flex-direction: row; align-items: center; padding: 8px 8px 8px 12px; margin: 4px 0 8px 0; border-radius: 16px; background-color: rgb(238,241,224); }
+.builder-row > .offer-words { margin-left: 10px; }
+.offer-price-only { min-height: 44px; height: 44px; margin: 0 0 0 6px; padding: 0 6px; background-color: rgb(255,254,249); border-radius: 12px; border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.offer-price-only > .price-chip { margin-left: 0; padding: 0 4px; }
+.store-price > .price-chip-value { color: rgb(36,58,49); margin-left: 4px; margin-right: 4px; }
+.offer-price-only.offer-confirm { background-color: rgb(126,37,71); }
+.shop-footer { flex-direction: row; align-items: center; justify-content: space-between; margin-top: 4px; }
+.shop-footer > .gem-note { flex-shrink: 1; margin: 0; font-size: 13px; }
+.text-link { height: 44px; padding: 0 4px; margin-left: 10px; justify-content: center; flex-shrink: 0; }
+.text-link-label { font-size: 14px; color: rgb(47,94,71); }
+
+/* ---------- Welcome back and room ready ---------- */
+.welcome-card { position: absolute; padding: 16px; background-color: rgb(251,250,240); border-radius: 24px; border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
+.welcome-heading { flex-direction: row; align-items: flex-start; margin-bottom: 12px; }
+.welcome-titles { flex-grow: 1; flex-shrink: 1; }
+.welcome-title { font-size: 26px; }
+.welcome-detail { font-size: 14px; color: rgb(78,97,82); margin-top: 2px; }
+.welcome-heading > .close-control { margin: -8px -8px 0 0; }
+.welcome-coins { flex-direction: row; align-items: center; padding: 10px 12px; margin-bottom: 10px; border-radius: 16px; background-color: rgb(251,243,214); }
+.welcome-coin-words { flex-grow: 1; flex-shrink: 1; margin-left: 12px; }
+.welcome-amount { font-size: 22px; color: rgb(91,60,18); }
+.welcome-note { font-size: 13px; color: rgb(94,81,48); white-space: normal; }
+.welcome-job { flex-direction: row; align-items: center; padding: 8px 8px 8px 12px; margin-bottom: 10px; border-radius: 16px; background-color: rgb(243,238,220); }
+.welcome-job-words { flex-grow: 1; flex-shrink: 1; margin-left: 12px; }
+.welcome-job-title { font-size: 15px; }
+.welcome-job .gem-action { height: 44px; min-width: 0; }
+.welcome-footnote { font-size: 13px; color: rgb(78,97,82); white-space: normal; }
+.ready-banner { position: absolute; flex-direction: row; align-items: center; padding: 12px 14px; background-color: rgb(47,107,79); border-radius: 22px; border-bottom-width: 4px; border-bottom-color: rgb(31,74,54); }
+.ready-badge { width: 44px; height: 44px; border-radius: 22px; background-color: rgb(251,250,240); justify-content: center; align-items: center; flex-shrink: 0; }
+.ready-words { margin-left: 12px; flex-shrink: 1; }
+.ready-title { font-size: 22px; color: rgb(251,250,240); }
+.ready-detail { font-size: 14px; color: rgb(220,235,221); white-space: normal; }
+
+/* ---------- World markers ---------- */
+.cash-marker { position: absolute; flex-direction: row; align-items: center; justify-content: center; min-width: 56px; min-height: 44px; padding: 4px 12px 4px 6px; background-color: rgb(255,224,138); border-radius: 22px; border-bottom-width: 3px; border-bottom-color: rgb(192,147,51); }
+.cash-amount { margin-left: 4px; font-size: 18px; color: rgb(91,60,18); }
+.patient-ring { position: absolute; }
+.construction-marker { position: absolute; flex-direction: row; align-items: center; height: 46px; padding: 0 14px 0 5px; background-color: rgb(251,250,240); border-radius: 23px; border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.construction-clock { margin-left: 8px; font-size: 16px; color: rgb(91,60,18); }
+.waiting-marker { position: absolute; flex-direction: row; min-width: 76px; min-height: 48px; align-items: center; justify-content: center; background-color: rgb(221,231,204); border-radius: 22px; padding: 6px 12px; border-bottom-width: 3px; border-bottom-color: rgb(186,205,168); }
+.waiting-cost { font-size: 17px; margin-left: 7px; color: rgb(36,58,49); }
+.compact-cash { padding: 0; border-radius: 22px; }
+.compact-construction { padding: 0; background-color: rgba(0,0,0,0); border-radius: 0; border-bottom-width: 0; }
 
 /* Feedback that names what just happened. */
 .float-text { font-size: 20px; width: 80px; -unity-text-align: middle-center; -unity-text-outline-width: 1px; }
 .float-coins { color: rgb(120,78,12); -unity-text-outline-color: rgb(255,244,202); }
 .float-good { color: rgb(38,92,58); -unity-text-outline-color: rgb(244,248,236); }
 
-/* Buttons respond to the finger; less motion keeps them still. */
-Button { transition-property: scale; transition-duration: .09s; transition-timing-function: ease-out-cubic; }
-Button:active { scale: .95 .95; }
-.reduced-motion Button { transition-duration: 0s; }
-.reduced-motion Button:active { scale: 1 1; }
-
-/* Shop tabs, the daily streak and goal progress. */
-.gem-tabs { flex-direction: row; margin: 2px 0 6px 0; }
-.gem-tab { flex-grow: 1; flex-basis: 0; min-height: 40px; margin-right: 6px; border-radius: 12px; background-color: rgb(238,240,224); font-size: 15px; -unity-font-style: bold; }
-.gem-tab-selected { background-color: rgb(250,236,238); color: rgb(116,38,66); }
-.tab-badge { position: absolute; top: -6px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background-color: rgb(158,52,90); color: rgb(252,244,246); font-size: 13px; -unity-text-align: middle-center; }
-.streak-row { flex-direction: row; margin-bottom: 6px; }
-.streak-day { flex-grow: 1; flex-basis: 0; min-height: 52px; margin-right: 4px; border-radius: 10px; align-items: center; justify-content: center; background-color: rgb(238,240,224); }
-.streak-done { background-color: rgb(210,228,189); }
-.streak-next { background-color: rgb(250,236,238); border-width: 2px; border-color: rgb(158,52,90); }
-.streak-number { font-size: 15px; }
-.streak-gems { font-size: 13px; color: rgb(116,38,66); }
-.daily-bar { height: 6px; margin-top: 4px; border-radius: 3px; background-color: rgb(221,226,206); overflow: hidden; }
-.daily-fill { height: 6px; border-radius: 3px; background-color: rgb(92,140,98); }
-.best-value { position: absolute; top: -8px; right: 6px; padding: 2px 7px; border-radius: 8px; background-color: rgb(192,120,40); color: rgb(252,246,236); font-size: 13px; }
-.gem-confirm { background-color: rgb(158,52,90); }
-.gem-confirm .gem-pack-amount { color: rgb(252,244,246); }
+.loading { flex-grow: 1; justify-content: center; align-items: center; }
+.loading-title { margin-top: 20px; font-size: 20px; }
+.loading ProgressBar { width: 180px; height: 8px; margin-top: 18px; }

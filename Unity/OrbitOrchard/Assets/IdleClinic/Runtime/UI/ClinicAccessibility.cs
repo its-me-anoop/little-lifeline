@@ -132,6 +132,8 @@ namespace IdleClinic.App
         private bool WorldPointIsCovered(Vector2 point)
         {
             if(CoversWorldPoint(dock,point)||CoversWorldPoint(hintLabel,point)||CoversWorldPoint(toast,point))return true;
+            if(CoversWorldPoint(scrim,point)||CoversWorldPoint(guideCard,point)||CoversWorldPoint(welcomeCard,point)||CoversWorldPoint(banner,point))return true;
+            if(hudChips!=null)foreach(var control in hudChips.Children())if(CoversWorldPoint(control,point))return true;
             // The header and camera row themselves are transparent. Only their
             // visible children block the world, leaving gaps available for taps.
             if(header!=null)foreach(var control in header.Children())if(CoversWorldPoint(control,point))return true;

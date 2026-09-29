@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace IdleClinic.App
 {
-    public enum ClinicGlyph { Coin, Nurse, Reception, Bed, Chair, Equipment, Facility, Plant, Upgrade, Clock, Home, Plus, Minus, Close, Check, Settings, Sound, Haptic, Motion, Help, Arrow, Restore, Parking, Toilet, Vending, Training, Room, Doctor, Pharmacy, Taxi, Music, Locations, Gem, Goal }
+    public enum ClinicGlyph { Coin, Nurse, Reception, Bed, Chair, Equipment, Facility, Plant, Upgrade, Clock, Home, Plus, Minus, Close, Check, Settings, Sound, Haptic, Motion, Help, Arrow, Restore, Parking, Toilet, Vending, Training, Room, Doctor, Pharmacy, Taxi, Music, Locations, Gem, Goal, Chevron, Lock, External, Bolt }
 
     public sealed class ClinicIcon : VisualElement
     {
@@ -79,6 +79,10 @@ namespace IdleClinic.App
                 case ClinicGlyph.Arrow:Line(4,12,20,12,14,6);Line(20,12,14,18);break;
                 case ClinicGlyph.Gem:Shape(6,4,18,4,22,9,12,21,2,9,6,4);Line(2,9,22,9);Line(9,4,7,9,12,21,17,9,15,4);break;
                 case ClinicGlyph.Goal:Line(5,22,5,3);Shape(5,4,18,4,15,8,18,12,5,12,5,4);break;
+                case ClinicGlyph.Chevron:Line(9,5,16,12,9,19);break;
+                case ClinicGlyph.Lock:Box(5,11,14,10);Line(8,11,8,8,10,5,14,5,16,8,16,11);break;
+                case ClinicGlyph.External:Line(14,4,20,4,20,10);Line(20,4,11,13);Line(17,14,17,20,4,20,4,7,10,7);break;
+                case ClinicGlyph.Bolt:Shape(13,2,5,14,11,14,10,22,19,10,13,10,13,2);break;
                 case ClinicGlyph.Restore:Circle(12,12,8);Line(3,3,3,10,9,10);Line(12,7,12,12,16,15);break;
                 default:Circle(12,12,9);Line(9,8,10,6,14,6,16,9,12,12,12,14);Circle(12,18,.8f,true);break;
             }

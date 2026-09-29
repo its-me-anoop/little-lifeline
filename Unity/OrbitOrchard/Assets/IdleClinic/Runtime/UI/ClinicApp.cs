@@ -20,7 +20,9 @@ namespace IdleClinic.App
         private ClinicProfile profile;
         private ClinicWorld world;
         private AppleServices apple;
-        private VisualElement root, overlay, header, dock, cameraTools, hint, wallet, particles;
+        private static readonly Color CoinInk = new Color(.54f, .39f, .09f);
+        private static readonly Color LeafInk = new Color(.18f, .37f, .28f);
+        private VisualElement root, overlay, header, dock, cameraTools, hint, wallet, particles, hudChips, scrim;
         private Image board;
         private Label walletLabel, hintLabel, toast;
         private Font bodyFont, boldFont, displayFont;
@@ -102,7 +104,7 @@ namespace IdleClinic.App
             ApplyQALaunchArguments();
 #endif
             if(saves.LastOfflineReport.applied && saves.LastOfflineReport.tillEarned>0)
-                Notify(OfflineMessage(saves.LastOfflineReport),8);
+                ShowWelcome(saves.LastOfflineReport);
             if(!string.IsNullOrEmpty(saves.Error)) Notify(saves.Error,10);
         }
 
@@ -113,27 +115,40 @@ namespace IdleClinic.App
             BindWorldInput();
             overlay=Box(root,"overlay");overlay.pickingMode=PickingMode.Ignore;
             particles=Box(overlay,"overlay");particles.pickingMode=PickingMode.Ignore;
+            // Sheets (gems, clinics, settings) dim the world behind them; tapping the dimmed world closes them.
+            scrim=Box(root,"sheet-scrim");scrim.style.display=DisplayStyle.None;
+            scrim.RegisterCallback<ClickEvent>(_=>CloseContext());
             header=Box(root,"header");header.pickingMode=PickingMode.Ignore;
-            var balances=Box(header,"balances");balances.pickingMode=PickingMode.Ignore;
+            // One capsule holds both balances: coins, a hairline, then the gem button with its badge beside the number.
+            var balances=Box(header,"balances");balances.name="clinic-balances";balances.pickingMode=PickingMode.Ignore;
             wallet=Box(balances,"wallet");wallet.pickingMode=PickingMode.Ignore;
-            wallet.Add(new ClinicIcon(ClinicGlyph.Coin,28,new Color(.55f,.36f,.08f)));
-            walletLabel=Text(wallet,"0","wallet-value",true);walletLabel.name="clinic-wallet";
+            wallet.Add(new ClinicIcon(ClinicGlyph.Coin,30,CoinInk));
+            walletLabel=Text(wallet,"0","wallet-value",true);walletLabel.name="clinic-wallet";Display(walletLabel);
+            Box(balances,"balance-divider").pickingMode=PickingMode.Ignore;
             BuildGemControl(balances);
             var settings=IconButton(header,ClinicGlyph.Settings,"Settings",ToggleSettings,"round-control");settings.name="clinic-settings";
+            // Where you are, and any running speed-up, sit under the balances.
+            hudChips=Box(root,"hud-chips");hudChips.pickingMode=PickingMode.Ignore;
+            BuildLocationControl(hudChips);
+            BuildBoostChip(hudChips);
             hint=Box(root,"tutorial-hint");hint.pickingMode=PickingMode.Ignore;
             hintLabel=Text(hint,"","hint-label");
+            // Camera and car park live on the thumb side, grouped, above the guide.
             cameraTools=Box(root,"camera-tools");cameraTools.pickingMode=PickingMode.Ignore;
-            IconButton(cameraTools,ClinicGlyph.Home,"Return to reception",()=>world.Home(ReducedMotion),"round-control").name="camera-home";
-            IconButton(cameraTools,ClinicGlyph.Plus,"Zoom in",()=>world.Zoom(.82f,new Vector2(.5f,.5f)),"round-control").name="camera-zoom-in";
-            IconButton(cameraTools,ClinicGlyph.Minus,"Zoom out",()=>world.Zoom(1.22f,new Vector2(.5f,.5f)),"round-control").name="camera-zoom-out";
             parkingControl=IconButton(cameraTools,ClinicGlyph.Parking,"Manage car park",()=>SelectObject(new ClinicHit(ClinicHitKind.Parking)),"round-control");
-            BuildLocationControl(cameraTools);
+            var cameraStack=Box(cameraTools,"camera-stack");cameraStack.pickingMode=PickingMode.Ignore;
+            IconButton(cameraStack,ClinicGlyph.Home,"Return to reception",()=>world.Home(ReducedMotion),"camera-button").name="camera-home";
+            Box(cameraStack,"camera-divider").pickingMode=PickingMode.Ignore;
+            IconButton(cameraStack,ClinicGlyph.Plus,"Zoom in",()=>world.Zoom(.82f,new Vector2(.5f,.5f)),"camera-button").name="camera-zoom-in";
+            IconButton(cameraStack,ClinicGlyph.Minus,"Zoom out",()=>world.Zoom(1.22f,new Vector2(.5f,.5f)),"camera-button").name="camera-zoom-out";
             dock=Box(root,"context-dock");dock.style.display=DisplayStyle.None;
             dock.RegisterCallback<GeometryChangedEvent>(_=>ApplySafeArea());
             BuildGuide();
+            BuildWelcome();
             toast=Text(root,"","toast");toast.style.display=DisplayStyle.None;toast.pickingMode=PickingMode.Ignore;
             root.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
             ApplySafeArea();RebuildDock();UpdateReadouts();
+            Unstyle(root);
             InitializeAccessibility();
         }
 
@@ -172,7 +187,7 @@ namespace IdleClinic.App
                 : State.Tutorial==ClinicTutorialStep.HireFirstNurse ? "A nurse makes all the difference"
                 : State.Tutorial==ClinicTutorialStep.FirstTreatment ? "A little care. A fresh start." : "";
             hint.style.display=string.IsNullOrEmpty(hintLabel.text)?DisplayStyle.None:DisplayStyle.Flex;
-            var key=simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom.ToString())+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
+            var key=simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom+":"+upgradeTrack)+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
                 string.Join(";",State.Rooms.Select(r=>$"{r.Built}:{r.Tier}:{r.EquipmentLevel}:{r.FacilitiesLevel}:{r.DecorationLevel}:{r.StationCount}"))+":"+
                 string.Join(";",State.Construction.Select(c=>c.Id))+":"+
                 string.Join(";",State.ReceptionDesks.Select(d=>$"{d.Id}:{d.EquipmentLevel}"))+":"+
@@ -185,6 +200,7 @@ namespace IdleClinic.App
             foreach(var update in readouts.ToArray())update();
             root.EnableInClassList("reduced-motion",ReducedMotion);
             UpdateGuide();
+            UpdateWelcome();
             UpdateAccessibilityValues();
         }
 
@@ -204,7 +220,7 @@ namespace IdleClinic.App
         private void Select(ClinicRoom room)
         {
             if(!ClinicSelectionPolicy.CanSelectRoom(State,room))return;
-            settingsOpen=false;gemsOpen=false;locationsOpen=false;selectedObject=null;selectedRoom=room;world.SelectRoom(room);dockKey="";UpdateReadouts();
+            settingsOpen=false;gemsOpen=false;locationsOpen=false;selectedObject=null;selectedRoom=room;upgradeTrackRoom=null;world.SelectRoom(room);dockKey="";UpdateReadouts();
         }
         private void CloseContext()
         {
@@ -247,7 +263,7 @@ namespace IdleClinic.App
                 else if(e.Kind==ClinicEventKind.TreatmentCompleted)Feedback(-1);
                 else if(e.Kind==ClinicEventKind.NurseHired || e.Kind==ClinicEventKind.ReceptionistHired || e.Kind==ClinicEventKind.DoctorHired || e.Kind==ClinicEventKind.PharmacistHired || e.Kind==ClinicEventKind.EquipmentUpgraded || e.Kind==ClinicEventKind.StationAdded || e.Kind==ClinicEventKind.StaffTrained || e.Kind==ClinicEventKind.StationUpgraded || e.Kind==ClinicEventKind.AmenityUpgraded)
                     Feedback(1);
-                else if(e.Kind==ClinicEventKind.ConstructionCompleted){Feedback(1);Notify(RoomName(e.Room)+" is ready");}
+                else if(e.Kind==ClinicEventKind.ConstructionCompleted){Feedback(1);ShowRoomReady(e.Room);}
                 else if(e.Kind==ClinicEventKind.WaitingRoomUnlocked)Notify("A waiting room is ready to build",5);
             }
         }
@@ -273,35 +289,45 @@ namespace IdleClinic.App
             var top=safe.yMin;
             var bottom=h-safe.yMax;
             var dockArea=ClinicViewportLayout.DockArea(safe);
+            var dockOpen=dock.style.display==DisplayStyle.Flex;
+            // Gems, clinics and settings rise as a full-width sheet over a dimmed world; rooms and objects stay a floating card.
+            var sheet=dockOpen&&(gemsOpen||locationsOpen||settingsOpen);
             header.style.left=safe.xMin+16;header.style.right=w-safe.xMax+16;
             header.style.top=top+12;hint.style.top=top+72;
             hint.style.left=safe.xMin+20;hint.style.right=w-safe.xMax+20;
-            cameraTools.style.left=safe.xMin+16;
-            dock.style.left=dockArea.xMin;dock.style.right=StyleKeyword.Auto;dock.style.width=dockArea.width;
-            dock.style.bottom=bottom+12;
-            if(guideCard!=null){guideCard.style.bottom=bottom+14;guideCard.style.maxWidth=Math.Min(440,dockArea.width);}
-            // Keep a tall dock below the camera buttons (top+76, about 56 tall) instead of sliding under them.
-            LimitDockContent(Math.Min(dockArea.height,h-bottom-12-(top+76+56+10)));
-            var dockHeight=dock.resolvedStyle.height;
-            if(simulation!=null&&State.Tutorial==ClinicTutorialStep.Complete)
+            hudChips.style.left=safe.xMin+16;hudChips.style.top=top+76;
+            hudChips.style.display=dockOpen?DisplayStyle.None:DisplayStyle.Flex;
+            scrim.style.display=sheet?DisplayStyle.Flex:DisplayStyle.None;
+            dock.EnableInClassList("sheet-dock",sheet);
+            if(sheet)
             {
-                cameraTools.style.top=top+76;
-                cameraTools.style.bottom=StyleKeyword.Auto;
+                var sheetWidth=Math.Min(560,w);
+                dock.style.left=(w-sheetWidth)/2;dock.style.right=StyleKeyword.Auto;dock.style.width=sheetWidth;
+                dock.style.bottom=0;dock.style.paddingBottom=bottom+20;
             }
             else
             {
-                cameraTools.style.top=StyleKeyword.Auto;
-                cameraTools.style.bottom=bottom+(selectedRoom.HasValue||selectedObject.HasValue||settingsOpen?
-                    (float.IsNaN(dockHeight)?236:Math.Max(0,dockHeight)+24):20);
+                dock.style.left=dockArea.xMin;dock.style.right=StyleKeyword.Auto;dock.style.width=dockArea.width;
+                dock.style.bottom=bottom+12;dock.style.paddingBottom=StyleKeyword.Null;
             }
-            toast.style.top=top+112;
+            var guideWidth=Math.Min(520,safe.width-32);
+            if(guideCard!=null){guideCard.style.bottom=bottom+16;guideCard.style.left=safe.xMin+(safe.width-guideWidth)/2;guideCard.style.width=guideWidth;}
+            // The camera tools hide while a panel is open, so a panel may rise to just below the balances.
+            LimitDockContent(sheet?h-(top+76)-bottom-20:h-bottom-12-(top+76));
+            cameraTools.style.right=w-safe.xMax+16;
+            cameraTools.style.display=dockOpen?DisplayStyle.None:DisplayStyle.Flex;
+            var guideHeight=guideCard==null||guideCard.style.display==DisplayStyle.None?0:
+                float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
+            cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32:20);
+            LayoutWelcome(safe,top);
+            toast.style.top=top+132;
             root.EnableInClassList("compact",w<370 || h<700);
         }
 
         private void LimitDockContent(float availableHeight)
         {
-            // Heading, padding and border remain fixed while the one body scrolls.
-            const float fixedHeadingAndInsets=70;
+            // Heading, padding and border remain fixed while the one body scrolls. A room's heading carries a second line.
+            var fixedHeadingAndInsets=dock.ClassListContains("room-dock")?92f:70f;
             // Docks with a tab row (Gems & goals) keep it fixed above the body too.
             var tabs=dock.Q(className:"gem-tabs");
             var tabHeight=tabs==null?0:float.IsNaN(tabs.resolvedStyle.height)||tabs.resolvedStyle.height<1?56:tabs.resolvedStyle.height+tabs.resolvedStyle.marginTop+tabs.resolvedStyle.marginBottom;
@@ -368,7 +394,7 @@ namespace IdleClinic.App
             var report=saves.ApplyOffline(DateTimeOffset.UtcNow);profile=saves.Profile;BindSimulations();
             world.ConfigureLocation(profile.activeLocation);world.ResetActorPlacement();RefreshAudioPreferences();
             skipNextDelta=true;
-            if(report.applied && report.tillEarned>0)Notify(OfflineMessage(report),7);
+            if(report.applied && report.tillEarned>0)ShowWelcome(report);
             if(!string.IsNullOrEmpty(saves.Error))Notify(saves.Error,10);
             dockKey="";if(ready)UpdateReadouts();
         }
@@ -441,6 +467,17 @@ namespace IdleClinic.App
         private static VisualElement Box(VisualElement parent,string classes)
         {
             var box=new VisualElement();foreach(var name in classes.Split(' '))box.AddToClassList(name);parent.Add(box);return box;
+        }
+        /// <summary>The clinic draws its own buttons; the default theme's grey fill, border and pressed tint would fight every colour here.</summary>
+        private static void Unstyle(VisualElement scope)
+        {
+            if(scope!=null)scope.Query<Button>().ForEach(button=>button.RemoveFromClassList(Button.ussClassName));
+        }
+        /// <summary>Numbers and headings use the rounded display face once it has loaded.</summary>
+        private Label Display(Label label)
+        {
+            if(displayFont!=null)label.style.unityFontDefinition=FontDefinition.FromFont(displayFont);
+            return label;
         }
         private Label Text(VisualElement parent,string value,string classes,bool bold=false)
         {

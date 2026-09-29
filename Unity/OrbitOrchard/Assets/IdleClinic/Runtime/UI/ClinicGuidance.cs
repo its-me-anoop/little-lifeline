@@ -12,19 +12,25 @@ namespace IdleClinic.App
     {
         private Button guideCard;
         private VisualElement guidePointer;
-        private Label guideTitle, guideWhy, guideReward;
+        private Label guideEyebrow, guideTitle, guideWhy, guideReward;
+        private ClinicIcon guideGlyph, guideRewardGem;
         private Button guideHighlighted;
 
         private void BuildGuide()
         {
             guideCard = IconButton(root, ClinicGlyph.Goal, "Next step", OnGuideTap, "guide-card", GuideAccessibleValue);
             guideCard.name = "clinic-guide";
+            // The flag sits in its own tile; the reward is shown up front and becomes the button once the step is done.
+            guideGlyph = guideCard.Q<ClinicIcon>(); guideGlyph.RemoveFromHierarchy();
+            var tile = Box(guideCard, "icon-tile guide-tile"); tile.pickingMode = PickingMode.Ignore;
+            guideGlyph.Tint = LeafInk; guideGlyph.style.width = 22; guideGlyph.style.height = 22; tile.Add(guideGlyph);
             var words = Box(guideCard, "guide-words"); words.pickingMode = PickingMode.Ignore;
-            guideTitle = Text(words, "", "guide-title", true);
+            guideEyebrow = Text(words, "NEXT STEP", "eyebrow", true);
+            guideTitle = Display(Text(words, "", "guide-title", true));
             guideWhy = Text(words, "", "guide-why");
             var reward = Box(guideCard, "guide-reward"); reward.pickingMode = PickingMode.Ignore;
-            reward.Add(new ClinicIcon(ClinicGlyph.Gem, 16, GemInk));
-            guideReward = Text(reward, "", "guide-reward-value", true);
+            guideRewardGem = new ClinicIcon(ClinicGlyph.Gem, 18, GemInk); reward.Add(guideRewardGem);
+            guideReward = Display(Text(reward, "", "guide-reward-value", true));
             guideCard.style.display = DisplayStyle.None;
             guidePointer = Box(overlay, "guide-pointer"); guidePointer.pickingMode = PickingMode.Ignore;
             var arrow = new ClinicIcon(ClinicGlyph.Arrow, 26, new Color(.98f, .96f, .90f)); arrow.style.rotate = new Rotate(90);
@@ -48,13 +54,20 @@ namespace IdleClinic.App
             var step = CurrentGuide();
             var dockOpen = dock.style.display == DisplayStyle.Flex;
             var done = step != null && saves.IsGuideStepDone(step);
-            guideCard.style.display = step == null || dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            var display = step == null || dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            if (guideCard.style.display != display) { guideCard.style.display = display; ApplySafeArea(); }
             if (step != null)
             {
+                guideEyebrow.text = done ? "DONE" : "NEXT STEP";
                 guideTitle.text = step.Title;
-                guideWhy.text = done ? "Done! Tap to collect your reward." : step.Why;
-                guideReward.text = done ? "Collect +" + step.GemReward : "+" + step.GemReward;
-                guideCard.EnableInClassList("guide-ready", done);
+                guideWhy.text = done ? "Tap to collect your reward." : step.Why;
+                guideReward.text = "+" + step.GemReward;
+                if (guideCard.ClassListContains("guide-ready") != done)
+                {
+                    guideCard.EnableInClassList("guide-ready", done);
+                    guideGlyph.Tint = done ? GemInk : LeafInk; guideGlyph.MarkDirtyRepaint();
+                    guideRewardGem.Tint = done ? GemOnInk : GemInk; guideRewardGem.MarkDirtyRepaint();
+                }
             }
             // Point at the exact control once its room or object is open.
             var target = step != null && !done && step.Control != null && dockOpen ? dock.Q<Button>(step.Control) : null;

@@ -19,19 +19,24 @@ namespace IdleClinic.App
     {
         private bool locationsOpen;
         private Button locationControl;
-        private Label locationMultiplier;
+        private Label locationName,locationMultiplier;
 
+        /// <summary>A labelled chip says where you are and what it earns; tap it to travel.</summary>
         private void BuildLocationControl(VisualElement parent)
         {
-            locationControl=IconButton(parent,ClinicGlyph.Locations,"Locations",ToggleLocations,"round-control location-control",
+            locationControl=IconButton(parent,ClinicGlyph.Locations,"Locations",ToggleLocations,"hud-chip location-control",
                 ()=>ClinicLocationReadout.Name(State.Location)+", "+ClinicLocationReadout.Income(State.Location));
             locationControl.name="clinic-locations";
+            locationName=Text(locationControl,"Starter clinic","chip-label",true);
             locationMultiplier=Text(locationControl,"1×","location-multiplier",true);
+            locationControl.Add(new ClinicIcon(ClinicGlyph.Chevron,14){name="location-chevron"});
+            locationControl.Q<ClinicIcon>("location-chevron").style.rotate=new Rotate(90);
         }
         private void UpdateLocationReadouts()
         {
             if(locationControl==null)return;
             locationControl.style.display=State.Tutorial==ClinicTutorialStep.Complete?DisplayStyle.Flex:DisplayStyle.None;
+            locationName.text=ClinicLocationReadout.Name(State.Location);
             locationMultiplier.text=State.Location==ClinicLocation.DoctorsClinic?"2×":"1×";
         }
         private void ToggleLocations()
@@ -46,25 +51,34 @@ namespace IdleClinic.App
             body.AddToClassList("bounded-dock-content");dock.Add(body);
             BindTouchCaptureLifecycle(body.contentContainer);BindTouchCaptureLifecycle(body.contentViewport);
             var unlocked=profile.doctorsState!=null;
-            Text(body,ClinicLocationReadout.Name(State.Location)+" · "+ClinicLocationReadout.Income(State.Location),"room-detail");
+            Text(body,"Both clinics keep caring while you travel.","room-detail");
             if(unlocked)
             {
                 var row=Box(body,"location-destinations");
                 LocationDestination(row,ClinicLocation.StarterClinic,ClinicGlyph.Home);
                 LocationDestination(row,ClinicLocation.DoctorsClinic,ClinicGlyph.Doctor);
-                Text(body,"Both clinics keep caring while you travel.","location-note");
                 return;
             }
             var starter=profile.state;
             var remaining=ClinicRules.StarterCompletion(starter).Count;
-            var top=Box(body,"location-preview");top.Add(new ClinicIcon(ClinicGlyph.Doctor,30));
+            // Where you are now, then what the next clinic takes and how close you are.
+            var here=Box(body,"clinic-card clinic-card-current");
+            var hereTile=Box(here,"icon-tile");hereTile.Add(new ClinicIcon(ClinicGlyph.Home,28,LeafInk));
+            var hereWords=Box(here,"location-preview-copy");
+            Display(Text(hereWords,"Starter clinic","location-name",true));
+            Text(hereWords,"Reception, first aid, waiting room · 1× income","location-note");
+            Text(here,"Here","here-pill",true);
+            var next=Box(body,"clinic-card");
+            var top=Box(next,"location-preview");
+            var tile=Box(top,"icon-tile");tile.Add(new ClinicIcon(ClinicGlyph.Doctor,28,LeafInk));
+            var lockBadge=Box(tile,"lock-badge");lockBadge.Add(new ClinicIcon(ClinicGlyph.Lock,16));
             var words=Box(top,"location-preview-copy");
-            Text(words,"Small Doctors Clinic","location-name",true);
+            Display(Text(words,"Doctors clinic","location-name",true));
             Text(words,"2× income · 4 doctors · pharmacy","location-note");
             if(remaining>0)
             {
-                Text(body,remaining+" improvements left to unlock","location-progress",true);
-                var checklist=Box(body,"location-checklist");checklist.name="clinic-unlock-checklist";
+                Text(next,remaining+" improvements left to unlock","location-progress",true);
+                var checklist=Box(next,"location-checklist");checklist.name="clinic-unlock-checklist";
                 foreach(var room in starter.Rooms)
                 {
                     var kind=room.Kind;
@@ -94,13 +108,28 @@ namespace IdleClinic.App
                         ()=>{if(amenity==ClinicAmenity.Parking||starter.Room(ClinicRoom.Waiting).Built)SelectObject(AmenityHit(amenity));else Select(ClinicRoom.Waiting);});
                 }
             }
-            else Text(body,"Everything is ready for your next clinic.","location-progress",true);
-            var open=IconButton(body,ClinicGlyph.Locations,"Open doctors clinic for 100,000 coins",()=>TryOpenDoctorsClinic(),"location-open primary-action");
+            else Text(next,"Every improvement is done.","location-progress",true);
+            // The coin requirement shows the gap as well as the goal.
+            var coinsRow=Box(next,"coin-requirement");
+            var coinIcon=new ClinicIcon(ClinicGlyph.Coin,22,CoinInk);coinsRow.Add(coinIcon);
+            Text(coinsRow,ClinicRules.DoctorsClinicUnlockCost.ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins","unlock-name");
+            var have=Text(coinsRow,"","unlock-status",true);
+            var bar=Box(next,"meter meter-gold");var fill=Box(bar,"meter-fill");
+            var open=IconButton(next,ClinicGlyph.Locations,"Open doctors clinic for 100,000 coins",()=>TryOpenDoctorsClinic(),"location-open primary-action");
             open.name="open-doctors-clinic";
             var purchaseWords=Box(open,"location-purchase-copy");
-            Text(purchaseWords,remaining==0?"Open doctors clinic":"Complete the starter clinic","purchase-detail");
-            var cost=Box(purchaseWords,"cost-row");cost.Add(new ClinicIcon(ClinicGlyph.Coin,17));Text(cost,"100,000","purchase-price",true);
-            readouts.Add(()=>open.SetEnabled(ClinicLocationReadout.CanOpen(profile.state,State.Wallet,profile.doctorsState!=null)));
+            Text(purchaseWords,remaining==0?"Open doctors clinic":"Complete the starter clinic","purchase-detail",true);
+            var cost=Box(purchaseWords,"cost-row");cost.Add(new ClinicIcon(ClinicGlyph.Coin,17,CoinInk));Text(cost,"100,000","purchase-price",true);
+            var need=Text(open,"","need-more",true);
+            readouts.Add(()=>
+            {
+                var canOpen=ClinicLocationReadout.CanOpen(profile.state,State.Wallet,profile.doctorsState!=null);
+                open.SetEnabled(canOpen);
+                var wallet=Math.Min(State.Wallet,ClinicRules.DoctorsClinicUnlockCost);
+                have.text=Money(State.Wallet);
+                fill.style.width=Length.Percent(100f*wallet/ClinicRules.DoctorsClinicUnlockCost);
+                need.text=State.Wallet>=ClinicRules.DoctorsClinicUnlockCost?"":"Need "+Money(ClinicRules.DoctorsClinicUnlockCost-State.Wallet)+" more";
+            });
         }
         private void LocationDestination(VisualElement parent,ClinicLocation location,ClinicGlyph glyph)
         {
@@ -108,7 +137,9 @@ namespace IdleClinic.App
             var button=IconButton(parent,glyph,"Travel to "+ClinicLocationReadout.Name(location),()=>TrySelectLocation(location),"location-destination");
             button.name=location==ClinicLocation.StarterClinic?"travel-starter-clinic":"travel-doctors-clinic";
             Text(button,location==ClinicLocation.StarterClinic?"Starter clinic":"Doctors clinic","location-name",true);
-            Text(button,current?"Here · "+ClinicLocationReadout.Income(location):ClinicLocationReadout.Income(location),"location-note");
+            Text(button,ClinicLocationReadout.Income(location),"location-note");
+            if(current)Text(button,"Here","here-pill",true);
+            button.EnableInClassList("location-current",current);
             button.SetEnabled(!current);
         }
         private void UnlockRequirement(VisualElement parent,string name,bool complete,Action action)

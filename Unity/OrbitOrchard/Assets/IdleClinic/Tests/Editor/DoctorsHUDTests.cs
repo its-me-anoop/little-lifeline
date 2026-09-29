@@ -75,7 +75,7 @@ namespace IdleClinic.Tests
                 var room=ui.Simulation.State.Room(kind);room.Tier=5;room.EquipmentLevel=10;
                 var dock=ui.RoomDock(kind);
                 var expand=dock.Q<Button>("expand-room");Assert.That(expand,Is.Not.Null);
-                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Room 6 · 4h"),Is.True);
+                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Upgrade limit 12 · 4h build"),Is.True);
                 Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment").tooltip,Does.Contain("Requires room 6"));
                 room.Tier=6;
                 Assert.That(ui.RoomDock(kind).Q<Button>("expand-room"),Is.Null);
@@ -151,7 +151,9 @@ namespace IdleClinic.Tests
                 Assert.That(dock.Q<Button>("travel-starter-clinic").enabledSelf,Is.True);
                 Assert.That(dock.Q<Button>("travel-doctors-clinic").enabledSelf,Is.False);
                 Assert.That(dock.Q<Button>("open-doctors-clinic"),Is.Null);
-                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Here · 2× income"),Is.True);
+                var current=dock.Q<Button>("travel-doctors-clinic");
+                Assert.That(current.Query<Label>().ToList().Any(l=>l.text=="Here"),Is.True);
+                Assert.That(current.Query<Label>().ToList().Any(l=>l.text=="2× income"),Is.True);
             }
         }
         [TestCase(667,375)]
