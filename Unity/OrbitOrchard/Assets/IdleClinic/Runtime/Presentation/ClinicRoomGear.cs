@@ -54,9 +54,13 @@ namespace IdleClinic.Presentation
             d[Key(false,ClinicRoom.FirstAid)]=new Layout(Wall(0,1,9,11,14),
                 new[]{new Lane(-5.0f,4.40f,-.75f,4.40f,0,5),new Lane(-5.15f,.75f,-5.15f,3.7f,-90,3),new Lane(-.50f,2.9f,-.50f,4.1f,90,3),new Lane(-4.9f,.50f,-2.4f,.50f,180,4)},
                 new[]{new Lane(-5.0f,4.79f,-2.4f,4.79f,0,4),new Lane(-5.42f,1.5f,-5.42f,1.5f,-90,1)},1f);
+            // The waiting room reaches the front wall. Seats keep both side walls and the walking spine down the middle; the pieces
+            // stand in four rows of the lobby end (clear of the second west doorway, the walk to the vending machine at -3.4 and
+            // the vending patient's spot) and by the back wall beside the toilet door.
             d[Key(false,ClinicRoom.Waiting)]=new Layout(Wall(11),
-                new[]{new Lane(2.95f,-1.2f,2.95f,4.2f,0,10),new Lane(3.85f,-1.2f,3.85f,4.2f,0,9)},
-                new[]{new Lane(2.3f,4.79f,2.3f,4.79f,0,1)},.8f);
+                new[]{new Lane(2.95f,-4.55f,5.30f,-4.55f,180,5),new Lane(2.95f,-3.95f,4.50f,-3.95f,180,3),new Lane(2.30f,-2.85f,4.20f,-2.85f,180,4),
+                      new Lane(2.30f,-2.05f,4.20f,-2.05f,180,4),new Lane(4.25f,4.50f,5.30f,4.50f,0,3)},
+                new[]{new Lane(4.65f,4.79f,4.65f,4.79f,0,1)},.62f);
             // Doctors clinic: rooms twice the size, so the same pieces spread along longer walls.
             d[Key(true,ClinicRoom.Reception)]=new Layout(Wall(7,8,11,16),
                 new[]{new Lane(-11.6f,-3.6f,-2.3f,-3.6f,0,11),new Lane(-11.8f,-4.2f,-11.8f,-7.0f,-90,5)},
@@ -65,14 +69,16 @@ namespace IdleClinic.Presentation
                 new[]{new Lane(-11.6f,2.55f,-2.3f,2.55f,0,10),new Lane(-11.8f,-1.2f,-11.8f,2.0f,-90,5)},
                 new[]{new Lane(-12.15f,-1.4f,-12.15f,2.4f,-90,5)},1f);
             d[Key(true,ClinicRoom.Waiting)]=new Layout(Wall(11),
-                new[]{new Lane(2.2f,-1.75f,9.6f,-1.75f,0,10),new Lane(2.2f,-7.3f,9.6f,-7.3f,180,9)},
+                new[]{new Lane(2.2f,-1.75f,9.6f,-1.75f,0,10),new Lane(2.2f,-6.85f,9.6f,-6.85f,180,9)},
                 new[]{new Lane(9.95f,-4.5f,9.95f,-4.5f,90,1)},1f);
             d[Key(true,ClinicRoom.Consultation)]=new Layout(Wall(3,4,6,8,9),
                 new[]{new Lane(-11.6f,8.55f,-7.2f,8.55f,0,4),new Lane(-6.0f,8.55f,-1.6f,8.55f,0,4),new Lane(-.4f,8.55f,4.0f,8.55f,0,4),new Lane(5.2f,8.55f,9.6f,8.55f,0,3)},
                 new[]{new Lane(-11.6f,8.98f,-7.6f,8.98f,0,2),new Lane(-6.0f,8.98f,-6.0f,8.98f,0,1),new Lane(-.4f,8.98f,-.4f,8.98f,0,1),new Lane(5.2f,8.98f,5.2f,8.98f,0,1)},1f);
+            // The pharmacy's front strip is where patients stand at the counters, so its pieces stand in the gaps between them.
             d[Key(true,ClinicRoom.Pharmacy)]=new Layout(Wall(),
-                new[]{new Lane(2.0f,.40f,9.6f,.40f,180,12),new Lane(9.9f,.7f,9.9f,2.3f,90,4),new Lane(1.75f,.7f,1.75f,2.3f,-90,4)},
-                new Lane[0],1f);
+                new[]{new Lane(1.95f,.14f,3.35f,.14f,180,3),new Lane(4.75f,.14f,6.85f,.14f,180,4),new Lane(8.25f,.14f,9.45f,.14f,180,2),
+                      new Lane(9.9f,.5f,9.9f,2.5f,90,6),new Lane(1.75f,.5f,1.75f,2.5f,-90,5)},
+                new Lane[0],.85f);
             return d;
         }
         internal static Vector3 Point(bool doctors,ClinicRoom room,int item)

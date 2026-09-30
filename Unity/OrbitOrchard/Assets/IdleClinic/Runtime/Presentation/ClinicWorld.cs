@@ -96,7 +96,7 @@ namespace IdleClinic.Presentation
                 upgrades=new ClinicUpgrades(art,scene);amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);
                 careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
                 waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
-                refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(3.40f,Floor,-1.66f),openingWidth:1.30f,name:"Waiting refreshment doorway");
+                refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,-3.40f),yaw:90,openingWidth:1.30f,name:"Waiting lobby doorway");
                 BuildRoomStyles();
             }
             actors=new ClinicActors(art,scene,this);Home(true);
@@ -114,7 +114,7 @@ namespace IdleClinic.Presentation
             actors=new ClinicActors(art,scene,this);upgrades=new ClinicUpgrades(art,scene);effects=new ClinicUpgradeEffects(art,scene);
             amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
             waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
-            refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(3.40f,Floor,-1.66f),openingWidth:1.30f,name:"Waiting refreshment doorway");
+            refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,-3.40f),yaw:90,openingWidth:1.30f,name:"Waiting lobby doorway");
             BuildRoomStyles();
             SetRenderSize(393,852);Home(true);
         }
@@ -264,11 +264,11 @@ namespace IdleClinic.Presentation
             if(p.x>=4.5f&&p.x<=5.8f&&p.z>=-3.0f&&p.z<=-2.0f)return new ClinicHit(ClinicHitKind.Vending,(int)ClinicAmenity.Vending);
             if(p.x>=-5.6f&&p.x<=-.25f&&p.z>=-4.6f&&p.z<=-.05f)return new ClinicHit(ClinicHitKind.Reception,(int)ClinicRoom.Reception);
             if(p.x>=-5.6f&&p.x<=-.25f&&p.z>-.05f&&p.z<=4.9f)return new ClinicHit(ClinicHitKind.Treatment,(int)ClinicRoom.FirstAid);
-            if(p.x>=1.35f&&p.x<=5.6f&&p.z>=-1.7f&&p.z<=4.9f)return new ClinicHit(waitingBuilt?ClinicHitKind.Waiting:ClinicHitKind.Expansion,(int)ClinicRoom.Waiting);
+            if(p.x>=1.35f&&p.x<=5.6f&&p.z>=-5.05f&&p.z<=4.9f)return new ClinicHit(waitingBuilt?ClinicHitKind.Waiting:ClinicHitKind.Expansion,(int)ClinicRoom.Waiting);
             return default;
         }
         public void SelectRoom(ClinicRoom room)
-        { if(doctors!=null){doctors.Select(new ClinicHit(room==ClinicRoom.Reception?ClinicHitKind.Reception:room==ClinicRoom.FirstAid?ClinicHitKind.Treatment:room==ClinicRoom.Waiting?ClinicHitKind.Waiting:room==ClinicRoom.Consultation?ClinicHitKind.Consultation:ClinicHitKind.Pharmacy,(int)room));return;}selection.gameObject.SetActive(true);selection.position=roomRoots[(int)room].position+new Vector3(0,.17f,0);selection.localScale=room==ClinicRoom.Waiting?new Vector3(4.4f,1,6.5f):new Vector3(5.35f,1,4.8f); }
+        { if(doctors!=null){doctors.Select(new ClinicHit(room==ClinicRoom.Reception?ClinicHitKind.Reception:room==ClinicRoom.FirstAid?ClinicHitKind.Treatment:room==ClinicRoom.Waiting?ClinicHitKind.Waiting:room==ClinicRoom.Consultation?ClinicHitKind.Consultation:ClinicHitKind.Pharmacy,(int)room));return;}selection.gameObject.SetActive(true);selection.position=roomRoots[(int)room].position+new Vector3(0,.17f,0);selection.localScale=room==ClinicRoom.Waiting?new Vector3(4.4f,1,9.9f):new Vector3(5.35f,1,4.8f); }
         public void SelectRoom(ClinicHit hit)
         {
             if(doctors!=null){doctors.Select(hit);return;}
@@ -332,10 +332,12 @@ namespace IdleClinic.Presentation
             art.Box("Clinic foundation",scene,new Vector3(0,-.01f,-.35f),new Vector3(11.7f,.27f,11.1f),"Clay");
             roomRoots[0]=art.Group("Reception",scene,new Vector3(-2.9f,0,-2.35f));
             roomRoots[1]=art.Group("First aid",scene,new Vector3(-2.9f,0,2.45f));
-            roomRoots[2]=art.Group("Waiting room",scene,new Vector3(3.45f,0,1.6f));
+            roomRoots[2]=art.Group("Waiting room",scene,new Vector3(3.45f,0,-.09f));
             for(int room=0;room<3;room++)
             {
-                float width=room==2?4.35f:5.35f,depth=room==2?6.55f:4.70f;
+                float width=room==2?4.35f:5.35f,depth=room==2?9.93f:4.70f;
+                // The waiting room root sits mid-way along its long room; its back-wall fittings keep their old absolute places.
+                float back=room==2?1.69f:0;
                 // Each room's floor, walls and furniture colours come from its room style (built once the room is furnished).
                 var root=roomRoots[room];
                 // Supplies stay in the forecourt while rooms continue to treat and seat visitors.
@@ -351,16 +353,16 @@ namespace IdleClinic.Presentation
                     {
                         if(room==2)
                         {
-                            art.Box("Lounge oak window pelmet",details,new Vector3(0,2.05f,3.20f),new Vector3(4.05f,.14f,.18f),"Wood");
-                            for(int n=0;n<3;n++)art.Box("Lounge shade valance",details,new Vector3(-1.34f+n*1.34f,1.90f,3.20f),new Vector3(1.17f,.20f,.08f),"Sage");
+                            art.Box("Lounge oak window pelmet",details,new Vector3(0,2.05f,3.20f+back),new Vector3(4.05f,.14f,.18f),"Wood");
+                            for(int n=0;n<3;n++)art.Box("Lounge shade valance",details,new Vector3(-1.34f+n*1.34f,1.90f,3.20f+back),new Vector3(1.17f,.20f,.08f),"Sage");
                         }
                         else { art.Model("Plant",details,new Vector3(-width*.39f,Floor,depth*.31f));art.Model("Cupboard",details,new Vector3(-width*.20f,Floor,depth*.39f)); }
                     }
                     else
                     {
-                        for(int i=0;i<4;i++)art.Box("Decorative wall slat",details,new Vector3(-width*.46f,1.14f,-.7f+i*.45f),new Vector3(.035f,1.30f,.08f),"Gold");
+                        for(int i=0;i<4;i++)art.Box("Decorative wall slat",details,new Vector3(-width*.46f,1.14f,-.7f+i*.45f+back),new Vector3(.035f,1.30f,.08f),"Gold");
                         if(room!=2)art.Model("Plant",details,new Vector3(width*.35f,Floor,depth*.38f));
-                        else art.Box("Gold lounge cornice",details,new Vector3(0,2.17f,3.24f),new Vector3(4.20f,.06f,.10f),"Gold");
+                        else art.Box("Gold lounge cornice",details,new Vector3(0,2.17f,3.24f+back),new Vector3(4.20f,.06f,.10f),"Gold");
                     }
                     details.gameObject.SetActive(false);
                 }
@@ -420,11 +422,12 @@ namespace IdleClinic.Presentation
             styles[1]=new ClinicRoomStyle(art,scene,"First aid",new Rect(-5.575f,.10f,5.35f,4.70f),top,new[]{
                 new RoomWall(-5.57f,-.075f,-5.57f,4.89f,2.05f),new RoomWall(-5.57f,4.89f,-.225f,4.89f,2.05f),new RoomWall(-5.57f,-.075f,-.235f,-.075f,.84f)},1,"TileBlue",10,
                 new[]{new Vector3(-5.5f,.9f,2.45f),new Vector3(-4.2f,.6f,4.9f),new Vector3(-3.3f,.6f,4.9f)});
-            styles[2]=new ClinicRoomStyle(art,scene,"Waiting room",new Rect(1.275f,-1.675f,4.35f,6.55f),top,new[]{
-                new RoomWall(1.74f,1.235f,1.74f,4.89f,.84f),new RoomWall(1.74f,-1.59f,1.74f,-.235f,.84f),
+            styles[2]=new ClinicRoomStyle(art,scene,"Waiting room",new Rect(1.275f,-5.05f,4.35f,9.925f),top,new[]{
+                new RoomWall(1.74f,1.235f,1.74f,4.89f,.84f),new RoomWall(1.74f,-2.75f,1.74f,-.235f,.84f),new RoomWall(1.74f,-5.05f,1.74f,-4.05f,.84f),
                 new RoomWall(1.74f,4.89f,2.905f,4.89f,2.05f),new RoomWall(3.97f,4.89f,5.615f,4.89f,2.05f),
-                new RoomWall(5.615f,-1.59f,5.615f,4.89f,.68f),new RoomWall(1.74f,-1.59f,2.665f,-1.59f,.68f),new RoomWall(4.135f,-1.59f,5.615f,-1.59f,.68f)},2,"TileSage",10,
-                new[]{new Vector3(2.45f,.6f,4.75f)});
+                new RoomWall(5.615f,-5.05f,5.615f,4.89f,.68f),new RoomWall(1.74f,-5.05f,5.615f,-5.05f,.60f)},2,"TileSage",10,
+                // Decor keeps clear of the toilet door, both west doorways and the vending patient's spot.
+                new[]{new Vector3(3.43f,.9f,4.75f),new Vector3(1.74f,.9f,-3.4f),new Vector3(1.74f,.9f,.5f),new Vector3(5.05f,.8f,-3.4f)});
             foreach(var style in styles)style.Adopt(scene);
         }
         private void BuildPrivacy()

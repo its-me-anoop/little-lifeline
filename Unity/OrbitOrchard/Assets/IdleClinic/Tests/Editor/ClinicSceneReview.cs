@@ -44,7 +44,7 @@ namespace IdleClinic.Tests
             if(string.IsNullOrEmpty(output))throw new InvalidOperationException("Set a new CLINIC_REVIEW_OUTPUT directory.");
             Directory.CreateDirectory(output);
             int version=int.TryParse(Environment.GetEnvironmentVariable("CLINIC_REVIEW_VERSION"),out var v)?v:8;
-            ClinicWorld.PreviewGear=version;
+            ClinicWorld.PreviewGear=version;ClinicWorld.PreviewDecor=int.TryParse(Environment.GetEnvironmentVariable("CLINIC_REVIEW_DECOR"),out var d)?d:0;ClinicWorld.PreviewTier=int.TryParse(Environment.GetEnvironmentVariable("CLINIC_REVIEW_TIER"),out var t)?t:0;
             var host=new GameObject("Scripted equipment inspection");
             try
             {
@@ -55,7 +55,8 @@ namespace IdleClinic.Tests
                 Save(world,new Vector3(-.4f,.14f,-.4f),9.5f,1200,1200,Path.Combine(output,"starter.png"));
                 Save(world,new Vector3(-2.9f,.14f,-2.4f),4.2f,1200,1000,Path.Combine(output,"starter-reception.png"));
                 Save(world,new Vector3(-2.9f,.14f,2.3f),4.2f,1200,1000,Path.Combine(output,"starter-firstaid.png"));
-                Save(world,new Vector3(3.4f,.14f,1.6f),4.6f,1200,1200,Path.Combine(output,"starter-waiting.png"));
+                Save(world,new Vector3(3.4f,.14f,2.0f),3.6f,1200,1200,Path.Combine(output,"starter-waiting.png"));
+                Save(world,new Vector3(3.4f,.14f,-3.0f),3.6f,1200,1200,Path.Combine(output,"starter-waiting-front.png"));
                 world.ConfigureLocation(ClinicLocation.DoctorsClinic);
                 var doctors=ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic).State;
                 foreach(var r in doctors.Rooms){r.Built=true;r.Tier=40;}
@@ -68,7 +69,7 @@ namespace IdleClinic.Tests
                     Save(world,b.center,Mathf.Max(b.size.x,b.size.z*1.2f)*.42f,1400,1000,Path.Combine(output,"doctors-"+names[i]+".png"));
                 }
             }
-            finally{ClinicWorld.PreviewGear=0;UnityEngine.Object.DestroyImmediate(host);}
+            finally{ClinicWorld.PreviewGear=0;ClinicWorld.PreviewDecor=0;ClinicWorld.PreviewTier=0;UnityEngine.Object.DestroyImmediate(host);}
         }
         private static Bounds DoctorsRoomBounds(int room)
         {

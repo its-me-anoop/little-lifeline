@@ -16,10 +16,11 @@ namespace IdleClinic.Presentation
             Wall(art,root,"Reception front wall",new Vector2(-5.73f,-5.13f),new Vector2(-.235f,-5.13f),.60f,.08f);
             Wall(art,root,"Lobby front wall",new Vector2(1.585f,-5.13f),new Vector2(5.765f,-5.13f),.60f,.08f);
             Wall(art,root,"Reception back partition",new Vector2(-5.73f,-.15f),new Vector2(-.235f,-.15f),.84f,.15f);
-            Wall(art,root,"Waiting south return",new Vector2(1.67f,-1.70f),new Vector2(1.67f,-.235f),.84f,.14f);
+            // The waiting room now reaches the front wall: its west partition runs the whole way, with the corridor doorway
+            // at 0.5 and a second doorway from the entrance lobby at -3.4.
+            Wall(art,root,"Waiting south return",new Vector2(1.67f,-2.75f),new Vector2(1.67f,-.235f),.84f,.14f);
+            Wall(art,root,"Waiting lobby partition",new Vector2(1.67f,-5.13f),new Vector2(1.67f,-4.05f),.84f,.14f);
             Wall(art,root,"Waiting corridor partition",new Vector2(1.67f,1.235f),new Vector2(1.67f,5.05f),.84f,.14f);
-            Wall(art,root,"Waiting front west wall",new Vector2(1.60f,-1.66f),new Vector2(2.665f,-1.66f),.68f,.14f);
-            Wall(art,root,"Waiting front east wall",new Vector2(4.135f,-1.66f),new Vector2(5.765f,-1.66f),.68f,.14f);
             for(int side=0;side<2;side++)
                 art.Box("Toilet doorway jamb",root,new Vector3(side==0?2.955f:3.92f,1.11f,4.97f),new Vector3(.10f,1.94f,.18f),"SageDark");
             art.Box("Toilet doorway lintel",root,new Vector3(3.4375f,2.15f,4.97f),new Vector3(1.065f,.14f,.18f),"Ivory");
