@@ -27,17 +27,22 @@ namespace IdleClinic.App
     {
         public int EquipmentLevel,TrainingLevel,StaffId,ServiceTicks,NextEquipmentTicks,NextTrainingTicks;
         public long EquipmentPrice,TrainingPrice;
-        public bool EquipmentCapped,TrainingCapped;
+        public bool EquipmentCapped,TrainingCapped,EquipmentAtTop,TrainingAtTop;
+        /// <summary>The room size that opens the next level of each, when it is capped below the top.</summary>
+        public int EquipmentUnlockTier,TrainingUnlockTier;
         public static ClinicWorkstationReadout Create(ClinicState state,ClinicStaffRole role,int stationId)
         {
             var staff=state.Staff.FirstOrDefault(s=>s.Role==role&&s.StationId==stationId);
             var cap=ClinicRules.ComponentCap(state,ClinicRules.RoomForRole(role));
+            var trainingCap=ClinicRules.TrainingCap(state,ClinicRules.RoomForRole(role));
             var level=ClinicRules.StationLevel(state,role,stationId);
             return new ClinicWorkstationReadout
             {
                 EquipmentLevel=level,TrainingLevel=staff?.TrainingLevel??0,StaffId=staff?.Id??-1,
                 EquipmentPrice=ClinicRules.StationUpgradeCost(state,role,stationId),TrainingPrice=staff==null?0:ClinicRules.StaffTrainingCost(state,staff),
-                EquipmentCapped=level>=cap,TrainingCapped=staff!=null&&staff.TrainingLevel>=cap,
+                EquipmentCapped=level>=cap,TrainingCapped=staff!=null&&staff.TrainingLevel>=trainingCap,
+                EquipmentAtTop=level>=ClinicRules.MaximumTrackLevel(state),TrainingAtTop=staff!=null&&staff.TrainingLevel>=ClinicRules.MaximumTrainingLevel(state),
+                EquipmentUnlockTier=ClinicRules.TierUnlocking(state,level+1),TrainingUnlockTier=staff==null?0:ClinicRules.TierUnlocking(state,staff.TrainingLevel+1,true),
                 ServiceTicks=ClinicRules.StationServiceTicks(state,role,stationId),
                 NextEquipmentTicks=ClinicRules.StationServiceTicks(state,role,stationId,equipmentLevelsAdded:1),
                 NextTrainingTicks=ClinicRules.StationServiceTicks(state,role,stationId,trainingLevelsAdded:1)
@@ -115,10 +120,10 @@ namespace IdleClinic.App
             var view=ClinicWorkstationReadout.Create(State,role,hit.Id);
             Text(dock,ServiceTime(view.ServiceTicks)+" per patient · Room "+room.Tier,"room-detail");
             var upgrades=Box(dock,"upgrades");
-            WorkstationUpgrade(upgrades,ClinicGlyph.Equipment,"Equipment",view.EquipmentLevel,view.EquipmentPrice,view.EquipmentCapped,
+            WorkstationUpgrade(upgrades,ClinicGlyph.Equipment,"Equipment",view.EquipmentLevel,view.EquipmentPrice,view.EquipmentCapped,view.EquipmentAtTop,view.EquipmentUnlockTier,
                 view.NextEquipmentTicks,room,()=>simulation.UpgradeStation(role,hit.Id),"station-equipment-"+role+"-"+hit.Id);
             if(view.StaffId>=0)
-                WorkstationUpgrade(upgrades,ClinicGlyph.Training,"Staff training",view.TrainingLevel,view.TrainingPrice,view.TrainingCapped,
+                WorkstationUpgrade(upgrades,ClinicGlyph.Training,"Staff training",view.TrainingLevel,view.TrainingPrice,view.TrainingCapped,view.TrainingAtTop,view.TrainingUnlockTier,
                     view.NextTrainingTicks,room,()=>simulation.TrainStaff(view.StaffId),"staff-training-"+view.StaffId);
             else
                 Purchase(upgrades,RoleGlyph(role),"Hire "+RoleName(role),ClinicRules.HireCost(State,role),
@@ -128,15 +133,15 @@ namespace IdleClinic.App
             var other=StationIds(State,role);
             foreach(var id in other.Where(id=>id!=hit.Id))ObjectShortcut(actions,new ClinicHit(hit.Kind,id),RoleGlyph(role),id+1);
         }
-        private void WorkstationUpgrade(VisualElement parent,ClinicGlyph glyph,string label,int level,long price,bool capped,
+        private void WorkstationUpgrade(VisualElement parent,ClinicGlyph glyph,string label,int level,long price,bool capped,bool atTop,int unlockTier,
             int nextTicks,ClinicRoomState room,Func<ClinicCommandResult> action,string controlName)
         {
             Action activate=()=>{if(capped){Select(room.Kind);FocusRenovation(room);}else Run(action);};
             var button=new Button(activate){name=controlName};button.AddToClassList("upgrade-button");
             var top=Box(button,"upgrade-top");top.Add(new ClinicIcon(glyph,24));Text(top,level.ToString(),"level",true);
             Text(button,capped?label:ServiceTime(nextTicks)+" / patient","upgrade-label");
-            Text(button,capped?(room.Tier<ClinicRules.MaximumTier(State)?"Room "+(room.Tier+1):"Max"):Money(price),"upgrade-price",true);
-            button.tooltip=label+" level "+level+". "+(capped?(room.Tier<ClinicRules.MaximumTier(State)?"Requires room "+(room.Tier+1):"Fully improved"):
+            Text(button,capped?(!atTop&&unlockTier>0?"Room "+unlockTier:"Max"):Money(price),"upgrade-price",true);
+            button.tooltip=label+" level "+level+". "+(capped?(!atTop&&unlockTier>0?"Requires room "+unlockTier:"Fully improved"):
                 Money(price)+" coins. Next service "+ServiceTime(nextTicks));
             parent.Add(button);readouts.Add(()=>button.SetEnabled(capped||State.Wallet>=price));
             RegisterAccessibleButton(button,button.tooltip,activate);

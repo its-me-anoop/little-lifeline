@@ -221,7 +221,9 @@ namespace IdleClinic.Core
             if (!TutorialComplete() || !Defined(kind) || !Defined(track)) return No("Finish the first treatment before upgrading.");
             var room = State.Room(kind);
             if (room == null || !room.Built) return No("Build this room first.");
-            if (room.Level(track) >= ClinicRules.TrackCap(room.Tier)) return No("Upgrade the room tier to unlock more improvements.");
+            if (track == UpgradeTrack.Decoration && ClinicRules.Deep(State)) return No("Decor is added with gems.");
+            if (room.Level(track) >= ClinicRules.TrackCap(State, kind, track))
+                return No(room.Level(track) >= ClinicRules.MaximumTrackLevel(State) ? "This improvement is at its top level." : "Renovate the room to unlock more improvements.");
             var cost = ClinicRules.UpgradeCost(State, kind, track);
             if (!CanSpend(cost)) return No("Save " + cost + " coins for this improvement.");
             Spend(cost);
@@ -230,6 +232,19 @@ namespace IdleClinic.Core
             else room.DecorationLevel++;
             Emit(ClinicEventKind.EquipmentUpgraded, kind, amount: cost, source: RoomAnchor(kind));
             return Yes("Room improved.", cost);
+        }
+
+        /// <summary>Add one decor level (rules 5). Decor is optional and bought with gems; payment is the caller's.</summary>
+        public ClinicCommandResult Decorate(ClinicRoom kind)
+        {
+            if (!TutorialComplete() || !Defined(kind)) return No("Finish the first treatment before decorating.");
+            if (!ClinicRules.Deep(State)) return No("Decor is bought with coins in this clinic.");
+            var room = State.Room(kind);
+            if (room == null || !room.Built) return No("Build this room first.");
+            if (room.DecorationLevel >= ClinicRules.DecorationCap(State, kind)) return No("This room is fully decorated.");
+            room.DecorationLevel++;
+            Emit(ClinicEventKind.EquipmentUpgraded, kind, source: RoomAnchor(kind));
+            return Yes("Room decorated.", 0);
         }
 
         public ClinicCommandResult Renovate(ClinicRoom kind)
@@ -685,7 +700,7 @@ namespace IdleClinic.Core
         private static bool IsValidState(ClinicState state, bool legacy, bool v2 = false)
         {
             if (state == null || state.SchemaVersion != (legacy ? 1 : v2 ? 2 : 3)
-                || (legacy || v2 ? state.RulesVersion != (legacy ? 1 : 2) : state.RulesVersion != 3 && state.RulesVersion != ClinicBalance.CurrentRulesVersion) || !Defined(state.Tutorial)
+                || (legacy || v2 ? state.RulesVersion != (legacy ? 1 : 2) : !ClinicRules.KnownRules(state.RulesVersion)) || !Defined(state.Tutorial)
                 || state.Location != ClinicLocation.StarterClinic
                 || state.TotalTransferredIn < 0 || state.TotalTransferredIn > MaximumMoney || state.TotalTransferredOut < 0 || state.TotalTransferredOut > MaximumMoney
                 || (legacy || v2) && (state.TotalTransferredIn != 0 || state.TotalTransferredOut != 0 || state.DoctorsClinicUnlocked)
@@ -701,15 +716,15 @@ namespace IdleClinic.Core
                 || state.TotalTreatments < 0 || state.TotalPayments < state.TotalTreatments || state.TotalPayments > state.NextPatientId
                 || !ValidParkingLedger(state, legacy || v2)
                 || state.TotalEarned < 50 * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)
-                || state.TotalEarned > (legacy ? 125 : 140) * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)) return false;
+                || state.TotalEarned > (legacy ? 125 : ClinicRules.MaximumVisitFee(state)) * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)) return false;
             if (state.Rooms == null || state.Rooms.Count != 3 || state.ReceptionDesks == null || state.ReceptionDesks.Count < 1 || state.ReceptionDesks.Count > 2
                 || state.Staff == null || state.Patients == null || state.Patients.Count > ClinicRules.MaximumPatients || state.Construction == null || state.Construction.Count > 3) return false;
             var roomKinds = new HashSet<ClinicRoom>();
             foreach (var room in state.Rooms)
-                if (room == null || !Defined(room.Kind) || (int)room.Kind > 2 || !roomKinds.Add(room.Kind) || room.Tier < 1 || room.Tier > 3
-                    || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.TrackCap(room.Tier)
-                    || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.TrackCap(room.Tier)
-                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.TrackCap(room.Tier)
+                if (room == null || !Defined(room.Kind) || (int)room.Kind > 2 || !roomKinds.Add(room.Kind) || room.Tier < 1 || room.Tier > (legacy || v2 ? 3 : ClinicRules.MaximumTier(state))
+                    || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
+                    || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
+                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)
                     || room.StationCount < 0 || room.StationCount > 2) return false;
             var reception = state.Room(ClinicRoom.Reception);
             var firstAid = state.Room(ClinicRoom.FirstAid);
@@ -726,7 +741,7 @@ namespace IdleClinic.Core
                 if (desk == null || desk.Id < 0 || desk.Id >= state.ReceptionDesks.Count || !deskIds.Add(desk.Id)
                     || desk.Till < 0 || desk.Till > MaximumMoney || desk.PatientId < -1
                     || desk.LastStartedTick < -1 || desk.LastStartedTick > state.Tick
-                    || (!legacy && (desk.EquipmentLevel < 1 || desk.EquipmentLevel > ClinicRules.TrackCap(reception.Tier)))) return false;
+                    || (!legacy && (desk.EquipmentLevel < 1 || desk.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, reception.Tier, UpgradeTrack.Equipment)))) return false;
                 till += desk.Till;
             }
             if (till != state.TotalEarned - state.TotalCollected || (decimal)state.Wallet != state.TotalCollected - (decimal)state.TotalSpent + state.TotalTransferredIn - state.TotalTransferredOut + state.TotalRewards) return false;
@@ -737,7 +752,7 @@ namespace IdleClinic.Core
             foreach (var staff in state.Staff)
             {
                 if (staff == null || !Defined(staff.Role) || (int)staff.Role > 1 || !staffIds.Add(staff.Id) || staff.PatientId < -1
-                    || (!legacy && (staff.TrainingLevel < 1 || staff.TrainingLevel > ClinicRules.TrackCap(state.Room(staff.Role == ClinicStaffRole.Nurse ? ClinicRoom.FirstAid : ClinicRoom.Reception).Tier)))
+                    || (!legacy && (staff.TrainingLevel < 1 || staff.TrainingLevel > ClinicRules.OwnedTrainingLimit(state, state.Room(staff.Role == ClinicStaffRole.Nurse ? ClinicRoom.FirstAid : ClinicRoom.Reception).Tier)))
                     || string.IsNullOrEmpty(staff.FromAnchor) || string.IsNullOrEmpty(staff.ToAnchor)
                     || staff.MoveStartedTick < 0 || staff.MoveStartedTick > state.Tick || staff.MoveEndsTick < staff.MoveStartedTick
                     || staff.MoveEndsTick - staff.MoveStartedTick > 40
@@ -832,7 +847,7 @@ namespace IdleClinic.Core
                     if (job.Room != ClinicRoom.Waiting || room.Built || !state.WaitingRoomUnlocked || job.TargetTier != 1
                         || job.PaidCost != ClinicRules.WaitingRoomCost || job.EndsTick - job.StartedTick != 200) return false;
                 }
-                else if (!room.Built || room.Tier >= 3 || job.TargetTier != room.Tier + 1
+                else if (!room.Built || room.Tier >= ClinicRules.MaximumTier(state) || job.TargetTier != room.Tier + 1
                     || job.PaidCost != ClinicRules.RenovationCost(state, room.Kind)
                     || job.EndsTick - job.StartedTick != ClinicRules.RenovationSeconds(state, room.Kind) * 10L) return false;
             }

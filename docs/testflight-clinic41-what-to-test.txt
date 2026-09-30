@@ -1,0 +1,15 @@
+Little Lifeline 4.1 — A longer climb and rooms that change as they grow
+
+Your existing clinic, coins and upgrades carry over. Please update over 4.0 rather than reinstalling, so the save upgrade is tested too.
+
+Please try:
+• Rooms now grow to 20 sizes (40 in the doctors clinic). Renovate a room and watch its floor, walls and furniture restyle at every size.
+• Equipment and facilities go to level 10 (20 in the doctors clinic), and staff training to level 25 (50). Each size opens a few more levels; every level adds something you can see.
+• Decor is now optional and bought with gems. Open a room, choose the Decor tab and add a piece. It adds a little to every visit fee but is never needed to progress.
+• Train a member of staff a few times and look for the dots, stars and shoulder boards on their uniform.
+• Try the refreshed screens: the balance capsule, clinic chip, next-step card, room panel tabs, and the gems, clinics and settings sheets.
+• After a longer break, check the welcome-back card and the Finish buttons for any building still under way.
+
+Opening the doctors clinic now needs every starter room at size 20, so expect this to take a good while.
+
+Please report balances or prices that look wrong, anything that overlaps or vanishes, rooms that do not change when renovated, and any screen that is hard to read or tap.

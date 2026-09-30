@@ -47,6 +47,13 @@ namespace IdleClinic.Presentation
             if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:0); }
             materials.Add(role,material);return material;
         }
+        /// <summary>A separately coloured copy of a role's material, kept under its own key (for example one room's floor).</summary>
+        internal Material Instance(string key,string baseRole)
+        {
+            if(materials.TryGetValue(key,out var material)) return material;
+            material=new Material(Material(baseRole)){name="Clinic "+key};
+            materials.Add(key,material);return material;
+        }
         private static float Glossiness(string role)
         {
             if(role=="Glass")return .82f;

@@ -15,7 +15,11 @@ namespace IdleClinic.Presentation
         private readonly GameObject[] variants=new GameObject[12];
         private readonly Renderer skin;
         private readonly Material[][] materials=new Material[12][];
-        private readonly GameObject[] training=new GameObject[11];
+        // Training shows on the uniform: a dot for each level within a band of five, a star for each full band,
+        // and shoulder boards whose colour steps up every ten levels, so every one of the fifty levels looks different.
+        private readonly GameObject[] trainingDots=new GameObject[4],trainingStars=new GameObject[9];
+        private readonly GameObject[] shoulderRanks=new GameObject[4];
+        private static readonly string[] RankColours={"Chrome","Gold","SignBlue","Rose"};
         private readonly bool patient;
         private int current=-1;
         private const float HeadScale=.66f;
@@ -81,7 +85,18 @@ namespace IdleClinic.Presentation
             }
             else
             {
-                for(int level=2;level<=12;level++)training[level-2]=art.Box("Staff training pin "+level,bodywear,new Vector3(-.125f+((level-2)%6)*.04f,1.165f-((level-2)/6)*.045f,.112f),new Vector3(.026f,.032f,.014f),"Gold");
+                for(int i=0;i<trainingDots.Length;i++)trainingDots[i]=art.Box("Staff training dot",bodywear,new Vector3(-.125f+i*.035f,1.165f,.112f),new Vector3(.024f,.024f,.014f),"Gold");
+                for(int i=0;i<trainingStars.Length;i++)
+                {
+                    var star=art.Box("Staff training star",bodywear,new Vector3(.02f+(i%5)*.032f,1.19f-(i/5)*.036f,.113f),new Vector3(.022f,.022f,.012f),"Gold");
+                    star.transform.localRotation=Quaternion.Euler(0,0,45);trainingStars[i]=star;
+                }
+                for(int rank=0;rank<shoulderRanks.Length;rank++)
+                {
+                    var boards=art.Group("Shoulder boards rank "+(rank+1),bodywear);shoulderRanks[rank]=boards.gameObject;
+                    for(int side=-1;side<=1;side+=2)art.Box("Shoulder board",boards,new Vector3(side*.135f,1.235f,0),new Vector3(.07f,.018f,.12f),RankColours[rank]);
+                    boards.gameObject.SetActive(false);
+                }
                 if(role==ClinicStaffRole.Doctor)
                 {
                     for(int side=-1;side<=1;side+=2)art.Box("Doctor coat lapel",bodywear,new Vector3(side*.06f,1.10f,.112f),new Vector3(.05f,.22f,.014f),"Linen");
@@ -103,7 +118,13 @@ namespace IdleClinic.Presentation
                 root.localScale=patient?new Vector3(Widths[appearance],Heights[appearance],Widths[appearance]):Vector3.one;
                 if(patient)bodywear.gameObject.SetActive(appearance==6||appearance==7);
             }
-            if(!patient)for(int i=0;i<training.Length;i++)training[i].SetActive(i+2<=trainingLevel);
+            if(!patient)
+            {
+                int earned=Math.Max(0,trainingLevel-1),dots=earned%5,stars=Math.Min(trainingStars.Length,earned/5),rank=Math.Min(shoulderRanks.Length,earned/10);
+                for(int i=0;i<trainingDots.Length;i++)trainingDots[i].SetActive(i<dots);
+                for(int i=0;i<trainingStars.Length;i++)trainingStars[i].SetActive(i<stars);
+                for(int i=0;i<shoulderRanks.Length;i++)shoulderRanks[i].SetActive(i==rank-1);
+            }
         }
         internal void AfterPose(bool seated)
         {

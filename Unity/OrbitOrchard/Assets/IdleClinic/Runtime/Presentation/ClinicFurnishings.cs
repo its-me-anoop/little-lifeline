@@ -9,8 +9,7 @@ namespace IdleClinic.Presentation
         {
             var root=art.Group("Clinic interior details",parent);
             Rug(art,root,"Reception welcome rug",new Vector3(-2.9f,.15f,-3.92f),new Vector3(4.5f,.009f,.56f),"TilePeach");
-            Rug(art,root,"Care floor inlay",new Vector3(-2.9f,.15f,2.4f),new Vector3(4.55f,.009f,3.9f),"TileBlue");
-            Rug(art,root,"Waiting woven rug",new Vector3(3.4f,.15f,1.7f),new Vector3(1.65f,.009f,5.8f),"TilePeach");
+            // First aid and the waiting room take their rugs from the room style, so the floor pattern shows.
             // The circulation line is flush with the floor; nothing occupies a walking socket.
             art.Box("Corridor sage runner",root,new Vector3(.68f,.15f,-.15f),new Vector3(.40f,.008f,8.3f),"TileSage");
             for(int i=0;i<5;i++)

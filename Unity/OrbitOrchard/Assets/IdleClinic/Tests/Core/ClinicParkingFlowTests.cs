@@ -170,7 +170,7 @@ namespace IdleClinic.Tests
 
         private static ClinicSimulation ParkingClinic()
         {
-            var game=ClinicSimulation.CreateNew();game.Advance(25);game.Collect(0);game.HireNurse();game.Advance(30);
+            var game=ClinicSimulation.CreateNew();game.State.RulesVersion=4;game.Advance(25);game.Collect(0);game.HireNurse();game.Advance(30);
             for(int i=0;i<400&&game.State.Wallet<1600;i++){game.Advance(10,false);game.Collect(0);}
             game.UpgradeAmenity(ClinicAmenity.Parking);game.UpgradeAmenity(ClinicAmenity.Parking);game.UpgradeAmenity(ClinicAmenity.Parking);Valid(game);return game;
         }

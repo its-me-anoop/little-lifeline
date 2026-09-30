@@ -25,6 +25,7 @@ namespace IdleClinic.Presentation
         private readonly GameObject[,] cash=new GameObject[2,6];
         private readonly Transform[] roomRoots=new Transform[3];
         private readonly GameObject[,] tierDetails=new GameObject[3,2];
+        private readonly ClinicRoomStyle[] styles=new ClinicRoomStyle[3];
         private readonly GameObject[] renovations=new GameObject[3];
         private readonly long[] tills=new long[2];
         private static readonly string[] CashAnchors={"reception.desk.0.cash","reception.desk.1.cash"};
@@ -52,6 +53,32 @@ namespace IdleClinic.Presentation
         public RenderTexture SceneTexture=>Texture;
         public Vector3 CashPoint=>GetCashPoint(0);
 
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>Development QA only: show every room styled as this room size and decor level (zero keeps the real ones).</summary>
+        public static int PreviewTier,PreviewDecor;
+#endif
+        internal static int StyleTier(int tier,int maximum,bool doctors)
+        {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if(PreviewTier>0)return Mathf.Min(PreviewTier,StyleMaximum(maximum,doctors));
+#endif
+            return tier;
+        }
+        /// <summary>A preview always uses the full rules 5 range, whatever rules the save is on.</summary>
+        internal static int StyleMaximum(int maximum,bool doctors)
+        {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if(PreviewTier>0)return doctors?40:20;
+#endif
+            return maximum;
+        }
+        internal static int StyleDecor(int level)
+        {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if(PreviewDecor>0)return PreviewDecor;
+#endif
+            return level;
+        }
         public void Initialize(ClinicLocation location) { Initialize();ConfigureLocation(location); }
         public void ResetActorPlacement() => actors?.ResetPlacement();
         public void ConfigureLocation(ClinicLocation location)
@@ -68,6 +95,7 @@ namespace IdleClinic.Presentation
                 careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
                 waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
                 refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(3.40f,Floor,-1.66f),openingWidth:1.30f,name:"Waiting refreshment doorway");
+                BuildRoomStyles();
             }
             actors=new ClinicActors(art,scene,this);Home(true);
         }
@@ -85,6 +113,7 @@ namespace IdleClinic.Presentation
             amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
             waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
             refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(3.40f,Floor,-1.66f),openingWidth:1.30f,name:"Waiting refreshment doorway");
+            BuildRoomStyles();
             SetRenderSize(393,852);Home(true);
         }
 
@@ -124,11 +153,13 @@ namespace IdleClinic.Presentation
             receptionDivider.SetActive(desks[0].activeSelf&&desks[1].activeSelf);treatmentDivider.SetActive(stationCount>=2);
             var waiting=roomState[2];waitingBuilt=waiting!=null&&waiting.Built;
             waitingClosed.SetActive(!waitingBuilt);
-            int capacity=waitingBuilt?Mathf.Clamp(4+2*(waiting.FacilitiesLevel-1),0,14):0;
+            int capacity=waitingBuilt?Mathf.Clamp(ClinicRules.WaitingCapacity(state),0,14):0;
             for(int i=0;i<14;i++)ClinicUpgradeEffects.Show(seats[i],i<capacity);
+            int maximumTier=ClinicRules.MaximumTier(state);
             for(int i=0;i<3;i++)
             {
                 var room=roomState[i];int tier=room==null?1:room.Tier;
+                styles[i]?.Render(StyleTier(tier,maximumTier,false),StyleMaximum(maximumTier,false),room!=null&&room.Built,StyleDecor(room==null?1:room.DecorationLevel));
                 for(int j=0;j<2;j++)ClinicUpgradeEffects.Show(tierDetails[i,j],(i!=2||waitingBuilt)&&tier>=j+2);
                 bool building=false;for(int j=0;j<state.Construction.Count;j++)if((int)state.Construction[j].Room==i)building=true;
                 renovations[i].SetActive(building);
@@ -296,9 +327,8 @@ namespace IdleClinic.Presentation
             for(int room=0;room<3;room++)
             {
                 float width=room==2?4.35f:5.35f,depth=room==2?6.55f:4.70f;
-                var root=roomRoots[room];art.Box("Terrazzo floor",root,new Vector3(0,.11f,0),new Vector3(width,.05f,depth),room==0?"TilePeach":room==1?"TileBlue":"TileSage");
-                for(float z=-depth*.5f+.48f;z<depth*.5f;z+=.65f)
-                    art.Box("Tile seam",root,new Vector3(0,.142f,z),new Vector3(width,.004f,.008f),"Ivory");
+                // Each room's floor, walls and furniture colours come from its room style (built once the room is furnished).
+                var root=roomRoots[room];
                 // Supplies stay in the forecourt while rooms continue to treat and seat visitors.
                 var workArea=room==2?new Vector3(4.9f,0,-2.8f):new Vector3(2.2f+room*1.4f,0,-3.9f);
                 renovations[room]=art.Group("Renovation at work",scene,workArea).gameObject;
@@ -370,6 +400,23 @@ namespace IdleClinic.Presentation
                 art.Box("Selection edge",selection,new Vector3(0,0,side*.49f),new Vector3(.98f,.014f,.007f),"Gold");
             }
             selection.gameObject.SetActive(false);
+        }
+        /// <summary>Room styles: every room size restyles the floor, walls and furniture; decor adds pieces per level.</summary>
+        private void BuildRoomStyles()
+        {
+            const float top=.135f;
+            styles[0]=new ClinicRoomStyle(art,scene,"Reception",new Rect(-5.575f,-4.70f,5.35f,4.70f),top,new[]{
+                new RoomWall(-5.57f,-4.70f,-5.57f,-.225f,2.05f),new RoomWall(-5.57f,-.225f,-.235f,-.225f,.84f)},0,"TilePeach",10,
+                new[]{new Vector3(-5.53f,.7f,-1.45f)});
+            styles[1]=new ClinicRoomStyle(art,scene,"First aid",new Rect(-5.575f,.10f,5.35f,4.70f),top,new[]{
+                new RoomWall(-5.57f,-.075f,-5.57f,4.89f,2.05f),new RoomWall(-5.57f,4.89f,-.225f,4.89f,2.05f),new RoomWall(-5.57f,-.075f,-.235f,-.075f,.84f)},1,"TileBlue",10,
+                new[]{new Vector3(-5.5f,.9f,2.45f),new Vector3(-4.2f,.6f,4.9f),new Vector3(-3.3f,.6f,4.9f)});
+            styles[2]=new ClinicRoomStyle(art,scene,"Waiting room",new Rect(1.275f,-1.675f,4.35f,6.55f),top,new[]{
+                new RoomWall(1.74f,1.235f,1.74f,4.89f,.84f),new RoomWall(1.74f,-1.59f,1.74f,-.235f,.84f),
+                new RoomWall(1.74f,4.89f,2.905f,4.89f,2.05f),new RoomWall(3.97f,4.89f,5.615f,4.89f,2.05f),
+                new RoomWall(5.615f,-1.59f,5.615f,4.89f,.68f),new RoomWall(1.74f,-1.59f,2.665f,-1.59f,.68f),new RoomWall(4.135f,-1.59f,5.615f,-1.59f,.68f)},2,"TileSage",10,
+                new[]{new Vector3(2.45f,.6f,4.75f)});
+            foreach(var style in styles)style.Adopt(scene);
         }
         private void BuildPrivacy()
         {

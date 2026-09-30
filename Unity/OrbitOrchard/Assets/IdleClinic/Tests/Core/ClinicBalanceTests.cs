@@ -19,7 +19,8 @@ namespace IdleClinic.Tests
                 Assert.That(ClinicBalance.For(version), Is.SameAs(ClinicBalanceTable.V3));
             Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(0));
             Assert.That(ClinicBalance.For(4), Is.SameAs(ClinicBalanceTable.V4));
-            Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(5));
+            Assert.That(ClinicBalance.For(5), Is.SameAs(ClinicBalanceTable.V5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ClinicBalance.For(6));
         }
 
         [Test] public void StarterOverloadsMatchTheFrozenFormulas()
@@ -150,11 +151,79 @@ namespace IdleClinic.Tests
 
         [Test] public void RulesFourRenovationTimesGrowFourfoldUpToFourHours()
         {
-            var starter = Sweepable(ClinicLocation.StarterClinic);
-            var doctors = Sweepable(ClinicLocation.DoctorsClinic);
+            var starter = Sweepable(ClinicLocation.StarterClinic); starter.RulesVersion = 4;
+            var doctors = Sweepable(ClinicLocation.DoctorsClinic); doctors.RulesVersion = 4;
             int Seconds(ClinicState state, int tier) { state.Room(ClinicRoom.Reception).Tier = tier; return ClinicRules.RenovationSeconds(state, ClinicRoom.Reception); }
             Assert.That(new[] { Seconds(starter, 1), Seconds(starter, 2), Seconds(starter, 3) }, Is.EqualTo(new[] { 30, 120, 0 }));
             Assert.That(Enumerable.Range(1, 6).Select(tier => Seconds(doctors, tier)), Is.EqualTo(new[] { 60, 240, 960, 3840, 14400, 0 }));
+        }
+
+        [Test] public void RulesFiveHasTheLongClimbAndDoublesItInTheDoctorsClinic()
+        {
+            var starter = Sweepable(ClinicLocation.StarterClinic);
+            var doctors = Sweepable(ClinicLocation.DoctorsClinic);
+            Assert.That(starter.RulesVersion, Is.EqualTo(5));
+            Assert.That(new[] { ClinicRules.MaximumTier(starter), ClinicRules.MaximumTrackLevel(starter), ClinicRules.MaximumTrainingLevel(starter), ClinicRules.MaximumDecorationLevel(starter) },
+                Is.EqualTo(new[] { 20, 10, 25, 10 }));
+            Assert.That(new[] { ClinicRules.MaximumTier(doctors), ClinicRules.MaximumTrackLevel(doctors), ClinicRules.MaximumTrainingLevel(doctors), ClinicRules.MaximumDecorationLevel(doctors) },
+                Is.EqualTo(new[] { 40, 20, 50, 20 }));
+            foreach (var state in new[] { starter, doctors })
+            {
+                int previous = 0, previousTraining = 0;
+                for (var tier = 1; tier <= ClinicRules.MaximumTier(state); tier++)
+                {
+                    state.Room(ClinicRoom.Reception).Tier = tier;
+                    var cap = ClinicRules.TrackCap(state, tier); var training = ClinicRules.TrainingCap(state, ClinicRoom.Reception);
+                    Assert.That(cap, Is.GreaterThanOrEqualTo(previous)); Assert.That(training, Is.GreaterThanOrEqualTo(previousTraining));
+                    previous = cap; previousTraining = training;
+                    if (tier > 1) Assert.That(ClinicRules.TierUnlocking(state, cap), Is.LessThanOrEqualTo(tier));
+                }
+                state.Room(ClinicRoom.Reception).Tier = 1;
+                Assert.That(ClinicRules.TrackCap(state, 1), Is.EqualTo(2), "Every new room already allows one improvement.");
+                Assert.That(previous, Is.EqualTo(ClinicRules.MaximumTrackLevel(state)), "The last size opens the top level.");
+                Assert.That(previousTraining, Is.EqualTo(ClinicRules.MaximumTrainingLevel(state)));
+                foreach (var kind in RoomKinds.Where(k => state.Room(k) != null))
+                {
+                    Assert.That(ClinicRules.UpgradeCost(state, kind, UpgradeTrack.Decoration), Is.Zero, "Decor is not sold for coins.");
+                    Assert.That(ClinicRules.DecorationGemCost(state, kind), Is.GreaterThan(0), "Decor is sold for gems.");
+                    Assert.That(ClinicRules.DecorationCap(state, kind), Is.EqualTo(ClinicRules.MaximumDecorationLevel(state)), "Decor never waits for a bigger room.");
+                }
+            }
+        }
+
+        [Test] public void RulesFiveKeepsIncomeAndServiceForEveryOwnedLevel([Values] ClinicLocation location)
+        {
+            var v4 = Sweepable(location); v4.RulesVersion = 4;
+            var v5 = Sweepable(location);
+            for (var level = 1; level <= 12; level++)
+            {
+                foreach (var state in new[] { v4, v5 })
+                {
+                    foreach (var room in state.Rooms) { room.Tier = Math.Min(6, (level + 1) / 2); room.EquipmentLevel = room.FacilitiesLevel = room.DecorationLevel = level; }
+                    foreach (var staff in state.Staff) staff.TrainingLevel = level;
+                    foreach (var desk in state.ReceptionDesks) desk.EquipmentLevel = level;
+                }
+                Assert.That(ClinicRules.VisitFee(v5), Is.EqualTo(ClinicRules.VisitFee(v4)), "No clinic earns less.");
+                foreach (var role in Roles)
+                    Assert.That(ClinicRules.StationServiceTicks(v5, role, 0), Is.EqualTo(ClinicRules.StationServiceTicks(v4, role, 0)), "Service speed is unchanged.");
+            }
+        }
+
+        [Test] public void AFinishedFourPointOhStarterClinicMovesToRulesFiveKeepingEveryLevel()
+        {
+            var state = DoctorsProgressionFixture.MaxStarter(4).State;
+            var before = state.Rooms.Select(r => (r.Tier, r.EquipmentLevel, r.FacilitiesLevel, r.DecorationLevel)).ToList();
+            var training = state.Staff.Select(s => s.TrainingLevel).ToList();
+            Assert.That(ClinicStateMigration.TryAdoptCurrentRules(state), Is.True);
+            Assert.That(state.RulesVersion, Is.EqualTo(5));
+            Assert.That(state.Rooms.Select(r => (r.Tier, r.EquipmentLevel, r.FacilitiesLevel, r.DecorationLevel)), Is.EqualTo(before));
+            Assert.That(state.Staff.Select(s => s.TrainingLevel), Is.EqualTo(training));
+            Assert.That(ClinicSimulation.IsValidState(state), Is.True);
+            Assert.That(ClinicRules.StarterCompletion(state), Is.Not.Empty, "Seventeen more room sizes are now waiting.");
+            var game = new ClinicSimulation(state);
+            Assert.That(game.Upgrade(ClinicRoom.Reception, UpgradeTrack.Decoration).Success, Is.False, "Decor is bought with gems now.");
+            Assert.That(game.Decorate(ClinicRoom.Reception).Success, Is.True);
+            Assert.That(ClinicSimulation.IsValidState(state), Is.True);
         }
 
         private static ClinicState Sweepable(ClinicLocation location)

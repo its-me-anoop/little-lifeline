@@ -26,7 +26,7 @@ namespace IdleClinic.Core
             var stationIds = new HashSet<int>();
             foreach (var station in state.TreatmentStations)
                 if (station == null || station.Id < 0 || station.Id >= state.TreatmentStations.Count || !stationIds.Add(station.Id)
-                    || station.EquipmentLevel < 1 || station.EquipmentLevel > ClinicRules.TrackCap(state.Room(ClinicRoom.FirstAid).Tier)) return false;
+                    || station.EquipmentLevel < 1 || station.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, state.Room(ClinicRoom.FirstAid).Tier, UpgradeTrack.Equipment)) return false;
             var bays = new HashSet<int>();
             var visitors = new HashSet<ClinicAmenity>();
             int movingVehicles=0;

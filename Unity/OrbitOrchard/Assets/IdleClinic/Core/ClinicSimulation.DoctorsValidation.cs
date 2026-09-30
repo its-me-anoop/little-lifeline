@@ -8,7 +8,7 @@ namespace IdleClinic.Core
     {
         private static bool IsValidDoctorsState(ClinicState state)
         {
-            if (state == null || state.SchemaVersion != 3 || (state.RulesVersion != 3 && state.RulesVersion != ClinicBalance.CurrentRulesVersion) || state.Location != ClinicLocation.DoctorsClinic
+            if (state == null || state.SchemaVersion != 3 || !ClinicRules.KnownRules(state.RulesVersion) || state.Location != ClinicLocation.DoctorsClinic
                 || state.DoctorsClinicUnlocked || state.Tutorial != ClinicTutorialStep.Complete || !state.WaitingRoomUnlocked
                 || state.Tick < 0 || state.Tick >= MaximumTick || state.PausedTrafficTicks < 0 || state.PausedTrafficTicks > state.Tick
                 || double.IsNaN(state.SubTick) || state.SubTick < 0 || state.SubTick >= 1
@@ -20,7 +20,7 @@ namespace IdleClinic.Core
                 || state.TotalCollected > state.TotalEarned || state.TotalTips < 0 || state.TotalTips > 84L * state.TotalPayments
                 || !ValidParkingLedger(state, false)
                 || state.TotalEarned < 100L * state.TotalPayments + state.TotalTips + state.TotalParkingFees
-                || state.TotalEarned > 820L * state.TotalPayments + state.TotalTips + state.TotalParkingFees
+                || state.TotalEarned > ClinicRules.MaximumVisitFee(state) * state.TotalPayments + state.TotalTips + state.TotalParkingFees
                 || !MoneyRange(state.TotalRewards)
                 || (decimal)state.Wallet != state.TotalCollected - (decimal)state.TotalSpent + state.TotalTransferredIn - state.TotalTransferredOut + state.TotalRewards
                 || state.Rooms == null || state.Rooms.Count != 5 || state.ReceptionDesks == null || state.TreatmentStations == null
@@ -30,10 +30,10 @@ namespace IdleClinic.Core
             var roomKinds = new HashSet<ClinicRoom>();
             foreach (var room in state.Rooms)
             {
-                if (room == null || !Defined(room.Kind) || !roomKinds.Add(room.Kind) || !room.Built || room.Tier < 1 || room.Tier > 6
-                    || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.TrackCap(room.Tier)
-                    || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.TrackCap(room.Tier)
-                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.TrackCap(room.Tier)) return false;
+                if (room == null || !Defined(room.Kind) || !roomKinds.Add(room.Kind) || !room.Built || room.Tier < 1 || room.Tier > ClinicRules.MaximumTier(state)
+                    || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
+                    || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
+                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)) return false;
                 var role = room.Kind == ClinicRoom.Reception ? ClinicStaffRole.Receptionist : room.Kind == ClinicRoom.FirstAid ? ClinicStaffRole.Nurse
                     : room.Kind == ClinicRoom.Consultation ? ClinicStaffRole.Doctor : ClinicStaffRole.Pharmacist;
                 if (room.Kind == ClinicRoom.Waiting ? room.StationCount != 0 : room.StationCount < 1 || room.StationCount > ClinicRules.MaximumStaff(state, role)) return false;
@@ -58,7 +58,7 @@ namespace IdleClinic.Core
                         till += desk.Till;
                     }
                     else if (ClinicRules.Stations(state, role)[id] == null || ClinicRules.Stations(state, role)[id].Id != id) return false;
-                    if (ClinicRules.StationLevel(state, role, id) < 1 || ClinicRules.StationLevel(state, role, id) > ClinicRules.TrackCap(room.Tier)) return false;
+                    if (ClinicRules.StationLevel(state, role, id) < 1 || ClinicRules.StationLevel(state, role, id) > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)) return false;
                 }
                 var staffCount = state.Staff.Count(s => s != null && s.Role == role);
                 if (staffCount < 1 || staffCount > count || role == ClinicStaffRole.Receptionist && staffCount != count) return false;
@@ -69,7 +69,7 @@ namespace IdleClinic.Core
             foreach (var staff in state.Staff)
                 if (staff == null || !Defined(staff.Role) || !staffIds.Add(staff.Id) || staff.Id != ClinicRules.StaffId(staff.Role, staff.StationId)
                     || staff.StationId < 0 || staff.StationId >= ClinicRules.StationCount(state, staff.Role)
-                    || staff.TrainingLevel < 1 || staff.TrainingLevel > ClinicRules.ComponentCap(state, ClinicRules.RoomForRole(staff.Role))
+                    || staff.TrainingLevel < 1 || staff.TrainingLevel > ClinicRules.OwnedTrainingLimit(state, state.Room(ClinicRules.RoomForRole(staff.Role)).Tier)
                     || staff.PatientId < -1 || staff.ToAnchor != ClinicRules.StationStaffAnchor(staff.Role, staff.StationId)
                     || staff.FromAnchor != "entrance" && staff.FromAnchor != staff.ToAnchor
                     || staff.MoveStartedTick < 0 || staff.MoveStartedTick > state.Tick || staff.MoveEndsTick < staff.MoveStartedTick || staff.MoveEndsTick - staff.MoveStartedTick > ClinicDoctorsNavigation.WalkTicks("entrance", staff.ToAnchor, true)
@@ -172,7 +172,7 @@ namespace IdleClinic.Core
             foreach (var job in state.Construction)
                 if (job == null || job.Id < 0 || job.Id >= state.NextConstructionId || !jobIds.Add(job.Id) || !Defined(job.Room) || !jobRooms.Add(job.Room)
                     || job.Kind != ClinicConstructionKind.RoomRenovation || job.StartedTick < 0 || job.StartedTick > state.Tick || job.EndsTick <= state.Tick
-                    || state.Room(job.Room).Tier >= 6 || job.TargetTier != state.Room(job.Room).Tier + 1
+                    || state.Room(job.Room).Tier >= ClinicRules.MaximumTier(state) || job.TargetTier != state.Room(job.Room).Tier + 1
                     || job.PaidCost != ClinicRules.RenovationCost(state, job.Room)
                     || job.EndsTick - job.StartedTick != 10L * ClinicRules.RenovationSeconds(state, job.Room)) return false;
             return true;

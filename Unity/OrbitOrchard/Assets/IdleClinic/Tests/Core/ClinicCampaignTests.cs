@@ -9,16 +9,17 @@ namespace IdleClinic.Tests
     public sealed class ClinicCampaignTests
     {
         /// <summary>Play time to finish each clinic, earned through ordinary play and collection.</summary>
-        [Test] public void TheNewRulesFinishTheStarterClinicSoonerAndKeepTheDoctorsClinicALongGoal()
+        [Test] public void RulesFiveMakeBothClinicsALongClimb()
         {
             double Hours(ClinicState state) => state.Tick / (double)ClinicRules.TicksPerSecond / 3600;
-            var starter3 = Hours(DoctorsProgressionFixture.MaxStarter(3).State);
             var starter4 = Hours(DoctorsProgressionFixture.MaxStarter(4).State);
-            var doctors3 = Hours(DoctorsProgressionFixture.MaxDoctors(3).State);
+            var starter5 = Hours(DoctorsProgressionFixture.MaxStarter(5).State);
             var doctors4 = Hours(DoctorsProgressionFixture.MaxDoctors(4).State);
-            TestContext.WriteLine($"Starter clinic complete: rules 3 {starter3:0.0}h, rules 4 {starter4:0.0}h. Doctors clinic maxed: rules 3 {doctors3:0.0}h, rules 4 {doctors4:0.0}h.");
-            Assert.That(starter4, Is.LessThan(starter3), "The first clinic is quicker to finish.");
-            Assert.That(doctors4, Is.GreaterThan(4), "The doctors clinic stays a long-term goal.");
+            var doctors5 = Hours(DoctorsProgressionFixture.MaxDoctors(5).State);
+            TestContext.WriteLine($"Starter clinic complete: rules 4 {starter4:0.0}h, rules 5 {starter5:0.0}h. Doctors clinic maxed: rules 4 {doctors4:0.0}h, rules 5 {doctors5:0.0}h.");
+            Assert.That(starter5, Is.GreaterThan(10 * starter4), "The starter clinic is a much longer climb.");
+            Assert.That(starter5, Is.InRange(40, 120), "About two to three days of continuous play: weeks of ordinary sessions.");
+            Assert.That(doctors5, Is.GreaterThan(2 * starter5), "The doctors clinic, with twice the levels, takes far longer again.");
         }
 
         [Test] public void EveryLevelOfBothClinicsIsReachableAndEveryGoalCanBeEarned()
@@ -38,8 +39,9 @@ namespace IdleClinic.Tests
             foreach (var room in d.Rooms)
             {
                 Assert.That(room.Tier, Is.EqualTo(ClinicRules.MaximumTier(d)), room.Kind + " tier");
-                foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
-                    Assert.That(room.Level(track), Is.EqualTo(ClinicRules.ComponentCap(d, room.Kind)), room.Kind + " " + track);
+                foreach (UpgradeTrack track in new[] { UpgradeTrack.Equipment, UpgradeTrack.Facilities })
+                    Assert.That(room.Level(track), Is.EqualTo(ClinicRules.MaximumTrackLevel(d)), room.Kind + " " + track);
+                Assert.That(room.DecorationLevel, Is.EqualTo(1), "Decor is optional: bought with gems, never needed.");
             }
             foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
             {
@@ -48,9 +50,8 @@ namespace IdleClinic.Tests
             }
             foreach (var staff in d.Staff)
             {
-                var cap = ClinicRules.ComponentCap(d, ClinicRules.RoomForRole(staff.Role));
-                Assert.That(staff.TrainingLevel, Is.EqualTo(cap));
-                Assert.That(ClinicRules.StationLevel(d, staff.Role, staff.StationId), Is.EqualTo(cap));
+                Assert.That(staff.TrainingLevel, Is.EqualTo(ClinicRules.MaximumTrainingLevel(d)));
+                Assert.That(ClinicRules.StationLevel(d, staff.Role, staff.StationId), Is.EqualTo(ClinicRules.MaximumTrackLevel(d)));
             }
             foreach (var amenity in d.Amenities)
                 Assert.That(amenity.Level, Is.EqualTo(ClinicRules.MaximumAmenityLevel(d, amenity.Kind)), amenity.Kind.ToString());

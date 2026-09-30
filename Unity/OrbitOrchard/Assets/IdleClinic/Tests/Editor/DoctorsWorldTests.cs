@@ -18,7 +18,10 @@ namespace IdleClinic.Tests
         [TestCase(ClinicRoom.FirstAid,5.35f*4.70f)]
         [TestCase(ClinicRoom.Waiting,4.35f*6.55f)]
         public void CorrespondingRoomsHaveExactlyTwiceFloorArea(ClinicRoom room,float starterArea)
-        {var floor=Find(room+" room footprint").Find("Doctors room floor");Assert.That(floor.localScale.x*floor.localScale.z,Is.EqualTo(starterArea*2).Within(.001f));}
+        {
+            var style=Find(room==ClinicRoom.Reception?"Doctors reception style":room==ClinicRoom.FirstAid?"Doctors first aid style":"Doctors waiting room style");
+            var floor=style.Find("Room floor/Styled floor");Assert.That(floor.localScale.x*floor.localScale.z,Is.EqualTo(starterArea*2).Within(.001f));
+        }
         [Test] public void NormalScaleWorkstationsHaveFourDistinctConsultingRoomsAndFourNursingStations()
         {
             foreach(var role in new[]{ClinicStaffRole.Receptionist,ClinicStaffRole.Nurse,ClinicStaffRole.Doctor,ClinicStaffRole.Pharmacist})
@@ -51,14 +54,16 @@ namespace IdleClinic.Tests
             world.ConfigureLocation(ClinicLocation.StarterClinic);Assert.That(world.Texture,Is.SameAs(texture));Assert.That(host.GetComponentsInChildren<Transform>().Any(t=>t.name=="Staff 200"),Is.False);
             world.ConfigureLocation(ClinicLocation.DoctorsClinic);world.Render(state,0);Assert.That(world.Texture,Is.SameAs(texture));Assert.That(host.GetComponentsInChildren<Transform>().Count(t=>t.name=="Staff 200"),Is.EqualTo(1));
         }
-        [Test] public void UpgradingEveryTrackAndStationShowsTwelfthLevelAndKeepsSockets()
+        [Test] public void UpgradingEveryTrackAndStationShowsTheTopLevelAndKeepsSockets()
         {
             var point=world.GetAnchorPoint("consultation.station.0.patient");world.Render(state,0);
-            foreach(var r in state.Rooms){r.Built=true;r.Tier=6;r.EquipmentLevel=r.FacilitiesLevel=r.DecorationLevel=12;}
-            foreach(var s in state.ConsultationStations)s.EquipmentLevel=12;
+            int top=ClinicRules.MaximumTrackLevel(state);
+            foreach(var r in state.Rooms){r.Built=true;r.Tier=ClinicRules.MaximumTier(state);r.EquipmentLevel=r.FacilitiesLevel=r.DecorationLevel=top;}
+            foreach(var s in state.ConsultationStations)s.EquipmentLevel=top;
             foreach(var a in state.Amenities)a.Level=6;
             world.Render(state,0);
-            Assert.That(Find("Consultation Equipment level 12").gameObject.activeSelf,Is.True);Assert.That(Find("Doctor station 0 equipment 12").gameObject.activeSelf,Is.True);
+            Assert.That(Find("Consultation Equipment level "+top).gameObject.activeSelf,Is.True);Assert.That(Find("Doctor station 0 equipment "+top).gameObject.activeSelf,Is.True);
+            Assert.That(Find("Doctors consultations style").Find("Decor level "+top).gameObject.activeSelf,Is.True);
             Assert.That(Find("Taxi stand tier 6").gameObject.activeSelf,Is.True);Assert.That(world.GetAnchorPoint("consultation.station.0.patient"),Is.EqualTo(point));
             Assert.That(host.GetComponentsInChildren<Transform>().Count(t=>t.name=="Seat"),Is.GreaterThanOrEqualTo(30));
         }

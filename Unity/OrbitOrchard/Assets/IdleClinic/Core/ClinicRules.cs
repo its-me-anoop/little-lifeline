@@ -46,9 +46,24 @@ namespace IdleClinic.Core
                 V3.RenovationGrowth, room.Tier - 1);
         public static int RenovationSeconds(int currentTier) => currentTier == 1 || currentTier == 2
             ? (int)ScaleCost(V3.RenovationBaseSeconds, V3.RenovationTimeGrowth, currentTier - 1) : 0;
-        public static int UnpaidQueueCapacity(ClinicState state) => (IsDoctors(state) ? 12 : 6) + state.Room(ClinicRoom.Reception).FacilitiesLevel - 1;
+        // Under rules 5 the longer facilities tracks spread the same queue places and seats over more levels,
+        // so the top level still fills exactly the places the building has.
+        public static int UnpaidQueueCapacity(ClinicState state) => (IsDoctors(state) ? 12 : 6)
+            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, IsDoctors(state) ? 11 : 5, 1);
         public static int WaitingCapacity(ClinicState state) => state.Room(ClinicRoom.Waiting).Built
-            ? (IsDoctors(state) ? 8 : 4) + 2 * (state.Room(ClinicRoom.Waiting).FacilitiesLevel - 1) : 2;
+            ? (IsDoctors(state) ? 8 : 4) + SpreadLevels(state, state.Room(ClinicRoom.Waiting).FacilitiesLevel, IsDoctors(state) ? 22 : 10, 2) : 2;
+        /// <summary>Places added by a facilities level: a fixed step per level under earlier rules, and the same total
+        /// spread evenly over the whole track under rules 5.</summary>
+        private static int SpreadLevels(ClinicState state, int level, int totalPlaces, int legacyStep)
+        {
+            if (!Deep(state)) return legacyStep * (level - 1);
+            var steps = Math.Max(1, MaximumTrackLevel(state) - 1);
+            return Math.Min(totalPlaces, (int)((long)Math.Max(0, level - 1) * totalPlaces / steps));
+        }
+        /// <summary>No nurse treats faster than this; parking relies on it. Rules 5 raise the speed ceiling.</summary>
+        public static int FastestTreatment(ClinicState state) => Deep(state) ? 29 : FastestTreatmentTicks;
+        public static int EarliestCalledPatientCompletion(ClinicState state)
+            => FastestTreatment(state) + EarliestCalledPatientCompletionTicks - FastestTreatmentTicks;
         public static long VisitFee(ClinicState state)
         {
             var balance = ClinicBalance.For(state);
@@ -105,7 +120,7 @@ namespace IdleClinic.Core
         {
             var level = StationLevel(state, role, stationId);
             var balance = ClinicBalance.For(state);
-            return level < 1 ? 0 : ScaleCost(balance.StationUpgradeBase[(int)role] * LocationMultiplier(state), balance.StationUpgradeGrowth, level - 1);
+            return level < 1 ? 0 : ScaleCost(balance.StationUpgradeBase[(int)role] * LocationMultiplier(state), IsDoctors(state) ? balance.DoctorsStationUpgradeGrowth : balance.StationUpgradeGrowth, level - 1);
         }
         // Starter-clinic overloads: every role but reception trains at the nurse price, and the taxi
         // stand prices as vending, exactly as before the balance table existed.
@@ -126,7 +141,8 @@ namespace IdleClinic.Core
             var speed = 100 + balance.RoomEquipmentSpeedPercent * (room.EquipmentLevel - 1 + roomEquipmentLevelsAdded)
                 + balance.StationEquipmentSpeedPercent * (Math.Max(1, StationLevel(state, role, stationId)) - 1 + equipmentLevelsAdded)
                 + balance.TrainingSpeedPercent * ((staff?.TrainingLevel ?? 1) - 1 + trainingLevelsAdded);
-            return (balance.ServiceBaseTicks[(int)role] * LocationMultiplier(state) * 100 + speed - 1) / speed;
+            var ticks = (balance.ServiceBaseTicks[(int)role] * LocationMultiplier(state) * 100 + speed - 1) / speed;
+            return role == ClinicStaffRole.Nurse && Deep(state) ? Math.Max(FastestTreatment(state), ticks) : ticks;
         }
         public static string ParkingPatientAnchor(int id) => "parking.bay." + id + ".patient";
         public static string AmenityPatientAnchor(ClinicAmenity kind) => kind == ClinicAmenity.Toilet ? "waiting.toilet.patient" : "waiting.vending.patient";

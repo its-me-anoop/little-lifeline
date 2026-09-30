@@ -44,24 +44,25 @@ namespace IdleClinic.Tests
         [TestCase(ClinicStaffRole.Nurse,ClinicHitKind.Station,3)]
         [TestCase(ClinicStaffRole.Doctor,ClinicHitKind.DoctorStation,3)]
         [TestCase(ClinicStaffRole.Pharmacist,ClinicHitKind.PharmacyStation,1)]
-        public void LastWorkstationAndLevelTwelveRemainReachable(ClinicStaffRole role,ClinicHitKind hit,int last)
+        public void LastWorkstationAndTopLevelsRemainReachable(ClinicStaffRole role,ClinicHitKind hit,int last)
         {
             using(var ui=new DockFixture())
             {
                 var state=ui.Simulation.State;
-                var room=state.Room(ClinicRules.RoomForRole(role));room.Tier=6;
-                if(role==ClinicStaffRole.Receptionist)state.ReceptionDesks.Add(new ReceptionDeskState{Id=last,EquipmentLevel=11});
-                else ClinicRules.Stations(state,role).Add(new TreatmentStationState{Id=last,EquipmentLevel=11});
-                state.Staff.Add(new ClinicStaffState{Id=ClinicRules.StaffId(role,last),Role=role,StationId=last,TrainingLevel=11});
+                int top=ClinicRules.MaximumTrackLevel(state),topTraining=ClinicRules.MaximumTrainingLevel(state);
+                var room=state.Room(ClinicRules.RoomForRole(role));room.Tier=ClinicRules.MaximumTier(state);
+                if(role==ClinicStaffRole.Receptionist)state.ReceptionDesks.Add(new ReceptionDeskState{Id=last,EquipmentLevel=top-1});
+                else ClinicRules.Stations(state,role).Add(new TreatmentStationState{Id=last,EquipmentLevel=top-1});
+                state.Staff.Add(new ClinicStaffState{Id=ClinicRules.StaffId(role,last),Role=role,StationId=last,TrainingLevel=topTraining-1});
                 var view=ClinicWorkstationReadout.Create(state,role,last);
                 Assert.That(view.EquipmentCapped,Is.False);Assert.That(view.TrainingCapped,Is.False);
                 var dock=ui.ObjectDock(new ClinicHit(hit,last));
                 Assert.That(dock.Q<Button>("station-equipment-"+role+"-"+last),Is.Not.Null);
                 Assert.That(dock.Q<Button>("staff-training-"+ClinicRules.StaffId(role,last)),Is.Not.Null);
                 Assert.That(ClinicSelectionPolicy.CanSelectObject(state,new ClinicHit(hit,last)),Is.True);
-                if(role==ClinicStaffRole.Receptionist)state.ReceptionDesks.Single(s=>s.Id==last).EquipmentLevel=12;
-                else ClinicRules.Stations(state,role).Single(s=>s.Id==last).EquipmentLevel=12;
-                state.Staff.Single(s=>s.Id==ClinicRules.StaffId(role,last)).TrainingLevel=12;
+                if(role==ClinicStaffRole.Receptionist)state.ReceptionDesks.Single(s=>s.Id==last).EquipmentLevel=top;
+                else ClinicRules.Stations(state,role).Single(s=>s.Id==last).EquipmentLevel=top;
+                state.Staff.Single(s=>s.Id==ClinicRules.StaffId(role,last)).TrainingLevel=topTraining;
                 var maxed=ClinicWorkstationReadout.Create(state,role,last);
                 Assert.That(maxed.EquipmentCapped,Is.True);Assert.That(maxed.TrainingCapped,Is.True);
                 Assert.That(ui.ObjectDock(new ClinicHit(hit,last)).Query<Label>().ToList().Count(l=>l.text=="Max"),Is.EqualTo(2));
@@ -72,12 +73,14 @@ namespace IdleClinic.Tests
         {
             using(var ui=new DockFixture())
             {
-                var room=ui.Simulation.State.Room(kind);room.Tier=5;room.EquipmentLevel=10;
+                var state=ui.Simulation.State;
+                var room=state.Room(kind);room.Tier=5;room.EquipmentLevel=ClinicRules.ComponentCap(state,kind);
                 var dock=ui.RoomDock(kind);
                 var expand=dock.Q<Button>("expand-room");Assert.That(expand,Is.Not.Null);
-                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text=="Upgrade limit 12 · 4h build"),Is.True);
-                Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment").tooltip,Does.Contain("Requires room 6"));
-                room.Tier=6;
+                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text.StartsWith("Upgrade limit "+ClinicRules.TrackCap(state,6)+" · ")),Is.True);
+                Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment").tooltip,
+                    Does.Contain("Requires room "+ClinicRules.TierUnlocking(state,room.EquipmentLevel+1)));
+                room.Tier=ClinicRules.MaximumTier(state);
                 Assert.That(ui.RoomDock(kind).Q<Button>("expand-room"),Is.Null);
             }
         }
@@ -119,7 +122,7 @@ namespace IdleClinic.Tests
             Assert.That(ClinicLocationReadout.CanOpen(state,99999,false),Is.False);
             Assert.That(ClinicLocationReadout.CanOpen(state,100000,false),Is.True);
             Assert.That(ClinicLocationReadout.CanOpen(state,100000,true),Is.False);
-            state.Staff[0].TrainingLevel=5;
+            state.Staff[0].TrainingLevel=ClinicRules.MaximumTrainingLevel(state)-1;
             Assert.That(ClinicLocationReadout.CanOpen(state,100000,false),Is.False);
             Assert.That(state.Wallet,Is.Zero,"Eligibility is a readout, never the opening debit.");
         }
@@ -276,14 +279,16 @@ namespace IdleClinic.Tests
         private static ClinicState MaxedStarter(ClinicState state=null)
         {
             state=state??ClinicSimulation.CreateNew().State;state.Tutorial=ClinicTutorialStep.Complete;state.WaitingRoomUnlocked=true;
-            foreach(var room in state.Rooms){room.Built=true;room.Tier=3;room.EquipmentLevel=room.FacilitiesLevel=room.DecorationLevel=6;room.StationCount=room.Kind==ClinicRoom.Waiting?0:2;}
+            int top=ClinicRules.MaximumTrackLevel(state),training=ClinicRules.MaximumTrainingLevel(state);
+            foreach(var room in state.Rooms){room.Built=true;room.Tier=ClinicRules.MaximumTier(state);room.EquipmentLevel=room.FacilitiesLevel=top;
+                room.DecorationLevel=ClinicRules.Deep(state)?1:top;room.StationCount=room.Kind==ClinicRoom.Waiting?0:2;}
             state.ReceptionDesks.Clear();state.TreatmentStations.Clear();state.Staff.Clear();
             for(var i=0;i<2;i++)
             {
-                state.ReceptionDesks.Add(new ReceptionDeskState{Id=i,EquipmentLevel=6});
-                state.TreatmentStations.Add(new TreatmentStationState{Id=i,EquipmentLevel=6});
+                state.ReceptionDesks.Add(new ReceptionDeskState{Id=i,EquipmentLevel=top});
+                state.TreatmentStations.Add(new TreatmentStationState{Id=i,EquipmentLevel=top});
                 foreach(var role in new[]{ClinicStaffRole.Receptionist,ClinicStaffRole.Nurse})
-                    state.Staff.Add(new ClinicStaffState{Id=ClinicRules.StaffId(role,i),Role=role,StationId=i,TrainingLevel=6});
+                    state.Staff.Add(new ClinicStaffState{Id=ClinicRules.StaffId(role,i),Role=role,StationId=i,TrainingLevel=training});
             }
             foreach(var amenity in state.Amenities)amenity.Level=3;
             return state;

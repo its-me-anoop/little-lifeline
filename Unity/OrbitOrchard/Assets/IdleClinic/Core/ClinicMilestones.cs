@@ -49,7 +49,7 @@ namespace IdleClinic.Core
                 new ClinicMilestone("doctors.taxi.max", "Fully upgrade the taxi stand", 25,
                     (s, d) => d != null && d.Amenity(ClinicAmenity.Taxi)?.Level >= ClinicRules.MaximumAmenityLevel(d, ClinicAmenity.Taxi)),
                 new ClinicMilestone("doctors.training.max", "Train a doctors clinic team member to the top level", 30,
-                    (s, d) => d != null && d.Staff.Any(x => x.TrainingLevel >= ClinicRules.ComponentCap(d, ClinicRules.RoomForRole(x.Role)))),
+                    (s, d) => d != null && d.Staff.Any(x => x.TrainingLevel >= ClinicRules.MaximumTrainingLevel(d))),
                 new ClinicMilestone("doctors.staff.full", "Fully staff the doctors clinic", 40,
                     (s, d) => d != null && Enum.GetValues(typeof(ClinicStaffRole)).Cast<ClinicStaffRole>().All(r => Count(d, r) >= ClinicRules.MaximumStaff(d, r)))
             };
@@ -71,6 +71,19 @@ namespace IdleClinic.Core
                 var target = tier;
                 list.Add(new ClinicMilestone("doctors.tier" + target, "Renovate every doctors clinic room to tier " + target, 10 * (target - 1),
                     (s, d) => d != null && d.Rooms.All(r => r.Built && r.Tier >= target)));
+            }
+            // The longer climb of rules 5: every starter room to each quarter of its sizes, then the doctors clinic's.
+            foreach (var target in new[] { 5, 10, 15, 20 })
+            {
+                var tier = target;
+                list.Add(new ClinicMilestone("starter.all.tier" + tier, "Renovate every starter room to tier " + tier, 5 + tier,
+                    (s, d) => s.Rooms.All(r => r.Built && r.Tier >= tier)));
+            }
+            foreach (var target in new[] { 10, 20, 30, 40 })
+            {
+                var tier = target;
+                list.Add(new ClinicMilestone("doctors.tier" + tier, "Renovate every doctors clinic room to tier " + tier, 20 + tier * 2,
+                    (s, d) => d != null && d.Rooms.All(r => r.Built && r.Tier >= tier)));
             }
             return list;
         }

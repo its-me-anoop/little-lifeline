@@ -329,7 +329,7 @@ namespace IdleClinic.Tests
                 if (stage == 0 && game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment).Success) { firstUpgrade = second; stage++; }
                 else if (stage == 1 && game.BuildWaitingRoom().Success) { waitingBuilt = second; stage++; }
                 else if (stage == 2 && game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Facilities).Success) stage++;
-                else if (stage == 3 && game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Decoration).Success) stage++;
+                else if (stage == 3 && game.Upgrade(ClinicRoom.Reception, UpgradeTrack.Facilities).Success) stage++;
                 else if (stage == 4 && game.Renovate(ClinicRoom.FirstAid).Success) stage++;
                 else if (stage == 5 && game.AddTreatmentStation().Success) stage++;
                 else if (stage == 6 && game.HireNurse().Success) { secondNurse = second; stage++; }
@@ -447,9 +447,10 @@ namespace IdleClinic.Tests
             Valid(game);
         }
 
+        /// <summary>These tests pin the 4.x rules (three room sizes, six levels): saves on them still load and play.</summary>
         private static ClinicSimulation Ready()
         {
-            var game = ClinicSimulation.CreateNew();
+            var game = ClinicSimulation.CreateNew(); game.State.RulesVersion = 4;
             game.Advance(25); Assert.That(game.Collect(0).Success, Is.True); Assert.That(game.HireNurse().Success, Is.True);
             game.Advance(30); Assert.That(game.State.Tutorial, Is.EqualTo(ClinicTutorialStep.Complete));
             Valid(game);

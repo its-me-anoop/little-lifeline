@@ -83,7 +83,8 @@ namespace IdleClinic.App
                 {
                     var kind=room.Kind;
                     var complete=room.Built&&room.Tier==ClinicRules.MaximumTier(starter)
-                        &&room.EquipmentLevel==6&&room.FacilitiesLevel==6&&room.DecorationLevel==6
+                        &&room.EquipmentLevel>=ClinicRules.MaximumTrackLevel(starter)&&room.FacilitiesLevel>=ClinicRules.MaximumTrackLevel(starter)
+                        &&(ClinicRules.Deep(starter)||room.DecorationLevel>=ClinicRules.MaximumTrackLevel(starter))
                         &&!starter.Construction.Any(c=>c.Room==kind);
                     UnlockRequirement(checklist,RoomName(kind),complete,()=>Select(kind));
                 }
@@ -95,7 +96,7 @@ namespace IdleClinic.App
                         var id=station;
                         var staff=starter.Staff.FirstOrDefault(s=>s.Role==role&&s.StationId==id);
                         var exists=StationIds(starter,role).Contains(id);
-                        var complete=exists&&ClinicRules.StationLevel(starter,role,id)==6&&staff!=null&&staff.TrainingLevel==6;
+                        var complete=exists&&ClinicRules.StationLevel(starter,role,id)>=ClinicRules.MaximumTrackLevel(starter)&&staff!=null&&staff.TrainingLevel>=ClinicRules.MaximumTrainingLevel(starter);
                         UnlockRequirement(checklist,(role==ClinicStaffRole.Receptionist?"Reception":"Nursing")+" team "+(id+1),complete,
                             ()=>{if(exists)SelectObject(StationHit(capturedRole,id));else Select(ClinicRules.RoomForRole(capturedRole));});
                     }

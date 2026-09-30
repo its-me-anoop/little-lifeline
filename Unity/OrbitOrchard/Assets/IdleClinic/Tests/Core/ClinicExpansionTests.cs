@@ -332,7 +332,8 @@ namespace IdleClinic.Tests
         }
 
         private static bool IsVisiting(ClinicPatientState p) => p.Phase == ClinicPatientPhase.WalkingToAmenity || p.Phase == ClinicPatientPhase.UsingAmenity || p.Phase == ClinicPatientPhase.ReturningFromAmenity;
-        private static ClinicSimulation Ready() { var g = ClinicSimulation.CreateNew(); g.Advance(25); g.Collect(0); g.HireNurse(); g.Advance(30); return g; }
+        // Pinned to the 4.x rules (three room sizes, six levels), which existing saves still use.
+        private static ClinicSimulation Ready() { var g = ClinicSimulation.CreateNew(); g.State.RulesVersion = 4; g.Advance(25); g.Collect(0); g.HireNurse(); g.Advance(30); return g; }
         private static ClinicSimulation Amenities() { var g = Ready(); Earn(g, 1200); g.BuildWaitingRoom(); g.Advance(20); g.UpgradeAmenity(ClinicAmenity.Toilet); g.UpgradeAmenity(ClinicAmenity.Vending); g.UpgradeAmenity(ClinicAmenity.Parking); g.DrainEvents(); Valid(g); return g; }
         private static void Earn(ClinicSimulation game, long amount) { for (var i = 0; i < 2000 && game.State.Wallet < amount; i++) { game.Advance(10, false); foreach (var d in game.State.ReceptionDesks) game.Collect(d.Id); } Assert.That(game.State.Wallet, Is.GreaterThanOrEqualTo(amount)); }
         private static ClinicPatientState WaitFor(ClinicSimulation game, Func<ClinicPatientState, bool> test) { for (var i = 0; i < 2400; i++) { game.Advance(.1); var p = game.State.Patients.FirstOrDefault(test); if (p != null) return p; } Assert.Fail("Patient transition not reached."); return null; }

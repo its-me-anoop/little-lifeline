@@ -49,7 +49,7 @@ namespace IdleClinic.Core
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).EquipmentLevel >= 2, ClinicRoom.FirstAid, control: "upgrade-firstaid-equipment"),
             new ClinicGuideStep("guide.waiting", "Build the waiting room", "Seats stop the queue spilling into the street.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Waiting).Built, ClinicRoom.Waiting, control: "build-waiting-room"),
-            new ClinicGuideStep("guide.decor", "Decorate reception", "Each decor level adds 5% to every visit fee.", 5,
+            new ClinicGuideStep("guide.decor", "Decorate reception", "Decor is optional and bought with gems. Each level adds 5% to every visit fee.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Reception).DecorationLevel >= 2, ClinicRoom.Reception, control: "upgrade-reception-decoration"),
             new ClinicGuideStep("guide.renovate", "Renovate first aid", "Renovations raise upgrade limits and make room for another station.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).Tier >= 2, ClinicRoom.FirstAid, control: "expand-room"),

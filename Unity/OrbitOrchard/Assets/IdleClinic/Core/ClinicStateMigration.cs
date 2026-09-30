@@ -55,11 +55,12 @@ namespace IdleClinic.Core
         /// job completes on the rules it was bought with. Owned levels are untouched; only later prices change.</summary>
         public static bool TryAdoptCurrentRules(ClinicState state)
         {
-            if (state == null || state.RulesVersion == ClinicBalance.CurrentRulesVersion || state.RulesVersion != 3
+            if (state == null || state.RulesVersion == ClinicBalance.CurrentRulesVersion || state.RulesVersion < 3 || state.RulesVersion > ClinicBalance.CurrentRulesVersion
                 || state.Construction.Count != 0 || !ClinicSimulation.IsValidState(state)) return false;
+            var previous = state.RulesVersion;
             state.RulesVersion = ClinicBalance.CurrentRulesVersion;
             if (ClinicSimulation.IsValidState(state)) return true;
-            state.RulesVersion = 3;
+            state.RulesVersion = previous;
             return false;
         }
     }

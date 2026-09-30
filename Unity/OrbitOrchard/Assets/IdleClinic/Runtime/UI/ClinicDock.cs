@@ -107,7 +107,7 @@ namespace IdleClinic.App
 
         private void BuildTrackTab(VisualElement parent,ClinicRoomState room,UpgradeTrack track,ClinicGlyph glyph)
         {
-            var level=room.Level(track);var cap=ClinicRules.ComponentCap(State,room.Kind);
+            var level=room.Level(track);var cap=ClinicRules.TrackCap(State,room.Kind,track);
             var selected=track==upgradeTrack;
             var tab=IconButton(parent,glyph,TrackName(track)+", level "+level+" of "+cap,()=>{upgradeTrack=track;dockKey="";UpdateReadouts();},"segment track-tab");
             tab.name="upgrade-tab-"+room.Kind.ToString().ToLowerInvariant()+"-"+track.ToString().ToLowerInvariant();
@@ -143,7 +143,9 @@ namespace IdleClinic.App
         /// <summary>The selected track: what the next level adds, the change it makes, how far the room can go, and the price.</summary>
         private void BuildUpgrade(VisualElement parent,ClinicRoomState room,UpgradeTrack track)
         {
+            if(track==UpgradeTrack.Decoration&&ClinicRules.Deep(State)){BuildDecor(parent,room);return;}
             var level=room.Level(track);var cap=ClinicRules.ComponentCap(State,room.Kind);var capped=level>=cap;
+            var unlockTier=ClinicRules.TierUnlocking(State,level+1);
             var maxTier=ClinicRules.MaximumTier(State);var nextRoom=room.Tier<maxTier;
             var building=State.Construction.Any(c=>c.Room==room.Kind);
             var price=ClinicRules.UpgradeCost(State,room.Kind,track);
@@ -152,7 +154,8 @@ namespace IdleClinic.App
             var tile=Box(intro,"icon-tile icon-tile-large");tile.pickingMode=PickingMode.Ignore;
             tile.Add(new ClinicIcon(track==UpgradeTrack.Equipment?ClinicGlyph.Equipment:track==UpgradeTrack.Facilities?ClinicGlyph.Facility:ClinicGlyph.Plant,34,LeafInk));
             var words=Box(intro,"track-words");words.pickingMode=PickingMode.Ignore;
-            Text(words,(capped?(nextRoom?"ROOM "+(room.Tier+1)+" ADDS":"FULLY IMPROVED"):"LEVEL "+(level+1)+" ADDS"),"eyebrow",true);
+            var atTop=level>=ClinicRules.MaximumTrackLevel(State);
+            Text(words,atTop?"FULLY IMPROVED":capped?"ROOM "+unlockTier+" ADDS":"LEVEL "+(level+1)+" ADDS","eyebrow",true);
             Display(Text(words,TrackHeadline(room.Kind,track),"track-title",true));
             Text(words,TrackDescription(room.Kind,track),"track-description");
 
@@ -165,10 +168,10 @@ namespace IdleClinic.App
                 Display(Text(values,before,"effect-before",true));
                 values.Add(new ClinicIcon(ClinicGlyph.Arrow,14,new Color(.34f,.41f,.35f)));
             }
-            Display(Text(values,capped&&!nextRoom?"Max":NextBenefit(room,track),"effect-after",true));
+            Display(Text(values,atTop?"Max":NextBenefit(room,track),"effect-after",true));
 
             // One pip per level this room can ever reach: filled, next, open now, or waiting on a bigger room.
-            var most=ClinicRules.TrackCap(maxTier);
+            var most=ClinicRules.MaximumTrackLevel(State);
             var pips=Box(panel,"level-pips");pips.pickingMode=PickingMode.Ignore;
             pips.tooltip="Level "+level+" of "+cap+" in this room"+(cap<most?". Levels "+(cap+1)+" to "+most+" open with bigger rooms.":".");
             for(var l=2;l<=most;l++)
@@ -183,13 +186,13 @@ namespace IdleClinic.App
             Action activate=()=>{if(capped)FocusRenovation(room);else Run(()=>simulation.Upgrade(room.Kind,track));};
             var button=new Button(activate){name=controlName};
             button.AddToClassList("track-action");
-            button.tooltip=TrackName(track)+" level "+level+". "+(capped?(nextRoom?"Requires room "+(room.Tier+1):"Fully improved"):
+            button.tooltip=TrackName(track)+" level "+level+". "+(capped?(!atTop?"Requires room "+unlockTier:"Fully improved"):
                 Money(price)+" coins. "+UpgradeBenefit(room.Kind,track));
             if(capped)
             {
                 button.AddToClassList("blocked-action");
-                button.Add(new ClinicIcon(nextRoom?ClinicGlyph.Lock:ClinicGlyph.Check,18));
-                Text(button,!nextRoom?"Fully improved":building?"Opens when the renovation finishes":"Renovate to room "+(room.Tier+1)+" first","blocked-label",true);
+                button.Add(new ClinicIcon(!atTop?ClinicGlyph.Lock:ClinicGlyph.Check,18));
+                Text(button,atTop?"Fully improved":building&&unlockTier==room.Tier+1?"Opens when the renovation finishes":"Opens at room "+unlockTier,"blocked-label",true);
             }
             else
             {
@@ -201,6 +204,69 @@ namespace IdleClinic.App
             }
             panel.Add(button);
             RegisterAccessibleButton(button,button.tooltip,activate);
+        }
+
+        /// <summary>Decor (rules 5): optional, bought with gems, never needed to progress. Each level adds to every visit fee.</summary>
+        private void BuildDecor(VisualElement parent,ClinicRoomState room)
+        {
+            var level=room.DecorationLevel;var most=ClinicRules.MaximumDecorationLevel(State);var atTop=level>=most;
+            var percent=ClinicBalance.For(State).DecorationFeePercent;
+            var panel=Box(parent,"track-panel decor-panel");
+            var intro=Box(panel,"track-intro");intro.pickingMode=PickingMode.Ignore;
+            var tile=Box(intro,"icon-tile icon-tile-large");tile.pickingMode=PickingMode.Ignore;
+            tile.Add(new ClinicIcon(ClinicGlyph.Plant,34,GemInk));
+            var words=Box(intro,"track-words");words.pickingMode=PickingMode.Ignore;
+            Text(words,atTop?"FULLY DECORATED":"OPTIONAL · DECOR LEVEL "+(level+1),"eyebrow",true);
+            Display(Text(words,DecorHeadline(level),"track-title",true));
+            Text(words,"Decor is bought with gems and never needed to progress. Each level adds "+percent+"% to every visit fee.","track-description");
+            var effect=Box(panel,"effect-row");effect.pickingMode=PickingMode.Ignore;
+            Text(effect,"Decor fee bonus","effect-label",true);
+            var values=Box(effect,"effect-values");values.pickingMode=PickingMode.Ignore;
+            Display(Text(values,"+"+percent*(level-1)+"%","effect-before",true));
+            if(!atTop)
+            {
+                values.Add(new ClinicIcon(ClinicGlyph.Arrow,14,new Color(.34f,.41f,.35f)));
+                Display(Text(values,"+"+percent*level+"%","effect-after decor-after",true));
+            }
+            var pips=Box(panel,"level-pips");pips.pickingMode=PickingMode.Ignore;
+            pips.tooltip="Decor level "+level+" of "+most;
+            for(int l=2;l<=most;l++)
+            {
+                var pip=Box(pips,"level-pip decor-pip");pip.pickingMode=PickingMode.Ignore;
+                pip.EnableInClassList("pip-have",l<=level);pip.EnableInClassList("pip-next",l==level+1);
+            }
+            var kind=room.Kind;
+            var name="upgrade-"+kind.ToString().ToLowerInvariant()+"-decoration";
+            if(atTop)
+            {
+                var done=new Button(){name=name,tooltip="Decor level "+level+". Fully decorated"};
+                done.AddToClassList("track-action");done.AddToClassList("blocked-action");
+                done.Add(new ClinicIcon(ClinicGlyph.Check,18));Text(done,"Fully decorated","blocked-label",true);
+                panel.Add(done);RegisterAccessibleButton(done,done.tooltip,()=>{});
+                return;
+            }
+            var buy=GemActionButton(panel,"Add decor to "+RoomName(kind)+" for "+ClinicRules.DecorationGemCost(State,kind)+" gems","Add decor",
+                ()=>BuyDecor(kind),()=>ClinicRules.DecorationGemCost(State,kind),"gem-action gem-action-wide",readouts);
+            buy.name=name;
+            buy.tooltip="Decor level "+level+". "+ClinicRules.DecorationGemCost(State,kind)+" gems. Adds "+percent+"% to every visit fee.";
+        }
+
+        private static string DecorHeadline(int level)
+        {
+            string[] names={"Framed botanical prints","Potted palms","A woven rug","Warm table lamps","Soft cushions","A gallery wall",
+                "Trailing plants","Brass wall lights","Linen curtains","A statement mirror","Sculpted planters","Pendant lights",
+                "A reading nook","Hand-painted tiles","A water feature","Fresh flowers","A feature wall","Chandelier lighting","Art glass panels"};
+            return names[Math.Max(0,Math.Min(names.Length-1,level-1))];
+        }
+
+        private void BuyDecor(ClinicRoom kind)
+        {
+            if(saves==null)return;
+            var cost=ClinicRules.DecorationGemCost(State,kind);
+            if(profile.premium.gems<cost){Notify("You need "+cost+" gems. Goals and the gem shop are here.",5);OpenShop();return;}
+            if(!saves.BuyDecoration(kind,DateTimeOffset.UtcNow)){Notify(saves.Error??"That decor could not be added.",6);return;}
+            RebindAfterCommit();clinicAudio.PlayReward();Feedback(1);
+            Celebrate(world.GetRoomPoint(kind),1.8f,"Decorated!");
         }
 
         private string TrackHeadline(ClinicRoom room,UpgradeTrack track)
@@ -238,7 +304,7 @@ namespace IdleClinic.App
         private void FocusRenovation(ClinicRoomState room)
         {
             dock.Q<Button>("expand-room")?.Focus();
-            Notify(room.Tier<ClinicRules.MaximumTier(State)?"Room "+(room.Tier+1)+" unlocks more improvements":"Fully improved");
+            Notify(room.Tier<ClinicRules.MaximumTier(State)?"Bigger rooms unlock more improvements":"Fully improved");
         }
 
         private string NextBenefit(ClinicRoomState room,UpgradeTrack track)
@@ -291,7 +357,7 @@ namespace IdleClinic.App
             var tile=Box(button,"icon-tile icon-tile-small tile-light");tile.Add(new ClinicIcon(ClinicGlyph.Upgrade,22,BuildInk));
             var words=Box(button,"renovate-words");
             Display(Text(words,"Renovate to room "+nextTier,"renovate-title",true));
-            Text(words,"Upgrade limit "+ClinicRules.TrackCap(nextTier)+" · "+TimeLabel(ClinicRules.RenovationSeconds(State,room.Kind))+" build","renovate-detail");
+            Text(words,"Upgrade limit "+ClinicRules.TrackCap(State,nextTier)+" · "+TimeLabel(ClinicRules.RenovationSeconds(State,room.Kind))+" build","renovate-detail");
             var bar=Box(words,"meter meter-gold");var fill=Box(bar,"meter-fill");
             var cost=Box(button,"renovate-cost");
             var priceRow=Box(cost,"cost-row");priceRow.Add(new ClinicIcon(ClinicGlyph.Coin,18,CoinInk));Display(Text(priceRow,Money(price),"purchase-price",true));
@@ -305,7 +371,7 @@ namespace IdleClinic.App
                 need.text=ready?"Ready":"Need "+Money(price-State.Wallet)+" more";
                 need.EnableInClassList("need-ready",ready);
             });
-            RegisterAccessibleButton(button,button.tooltip+". Upgrade limit "+ClinicRules.TrackCap(nextTier),()=>Run(action),
+            RegisterAccessibleButton(button,button.tooltip+". Upgrade limit "+ClinicRules.TrackCap(State,nextTier),()=>Run(action),
                 ()=>State.Wallet>=price?"Ready":"Need "+Money(price-State.Wallet)+" more coins");
         }
 

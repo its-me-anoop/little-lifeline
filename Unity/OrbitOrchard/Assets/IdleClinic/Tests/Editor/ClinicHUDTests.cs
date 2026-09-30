@@ -192,7 +192,8 @@ namespace IdleClinic.Tests
         [Test]
         public void IndividualUpgradeReadoutUsesAssignedStaffAndTheOwningRoomCap()
         {
-            var state=ClinicSimulation.CreateNew().State;state.Tutorial=ClinicTutorialStep.Complete;
+            // Pinned to the 4.x caps (level 2 is the top at room size 1) to test the readout's binding.
+            var state=ClinicSimulation.CreateNew().State;state.RulesVersion=4;state.Tutorial=ClinicTutorialStep.Complete;
             state.ReceptionDesks.Add(new ReceptionDeskState{Id=1,EquipmentLevel=2});
             state.Staff.Add(new ClinicStaffState{Id=7,Role=ClinicStaffRole.Receptionist,StationId=1,TrainingLevel=2});
             var first=ClinicWorkstationReadout.Create(state,ClinicStaffRole.Receptionist,0);
@@ -212,7 +213,7 @@ namespace IdleClinic.Tests
             using(var ui=new CapturedTouchPanel())
             using(var ax=new CashAccessibilityFixture(ui.Root))
             {
-                var state=ax.Simulation.State;state.Tutorial=ClinicTutorialStep.Complete;
+                var state=ax.Simulation.State;state.RulesVersion=4;state.Tutorial=ClinicTutorialStep.Complete;
                 state.Room(ClinicRoom.Reception).Tier=2;
                 state.ReceptionDesks.Add(new ReceptionDeskState{Id=1,EquipmentLevel=2});
                 state.Staff.Add(new ClinicStaffState{Id=7,Role=ClinicStaffRole.Receptionist,StationId=1,TrainingLevel=2});

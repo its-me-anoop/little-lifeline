@@ -59,6 +59,24 @@ namespace IdleClinic.Core
         /// <summary>Longest single construction; later tiers stop growing at this wait.</summary>
         public int MaximumConstructionSeconds { get; }
 
+        /// <summary>Rules 5: a long climb. Room sizes, improvement tracks and staff training have many more levels,
+        /// the doctors clinic has twice as many again, and decor becomes an optional gem purchase.</summary>
+        public bool DeepProgression { get; }
+        /// <summary>Starter-clinic maxima under deep progression; the doctors clinic doubles each.</summary>
+        public int StarterMaximumTier { get; }
+        public int StarterMaximumTrackLevel { get; }
+        public int StarterMaximumTrainingLevel { get; }
+        public int StarterMaximumDecorationLevel { get; }
+        /// <summary>The doctors clinic's longer tracks climb more gently per level.</summary>
+        public ClinicGrowth DoctorsUpgradeGrowth { get; private set; }
+        public ClinicGrowth DoctorsRenovationGrowth { get; private set; }
+        public ClinicGrowth DoctorsStationUpgradeGrowth { get; private set; }
+        public ClinicGrowth DoctorsTrainingGrowth { get; private set; }
+        public ClinicGrowth DoctorsRenovationTimeGrowth { get; private set; }
+        /// <summary>Gem price of the first decor level in the starter clinic, and its growth per owned level.</summary>
+        public long DecorationGemBase { get; }
+        public ClinicGrowth DecorationGemGrowth { get; }
+
         // Indexed by ClinicAmenity.
         public long[] AmenityBase { get; }
         public ClinicGrowth AmenityGrowth { get; }
@@ -107,6 +125,7 @@ namespace IdleClinic.Core
             MaximumConstructionSeconds = int.MaxValue;
             AmenityBase = new long[] { 220, 140, 180, 260 };
             AmenityGrowth = new ClinicGrowth(2, 1);
+            SameGrowthInBothClinics();
             if (rulesVersion < 4) return;
             // 4.0 pacing: a brisk first hour (cheaper first purchases, 30-second renovations, an
             // affordable second nurse) that still climbs steeply, so later tiers are a real goal.
@@ -133,21 +152,54 @@ namespace IdleClinic.Core
             ParkingFeePerLevel = 0;
             ParkingExitFeePerLevel = 10;
             OfflineCapVisits = 250;
+            SameGrowthInBothClinics();
+            if (rulesVersion < 5) return;
+            // 5.0: a long climb. Twenty room sizes (forty in the doctors clinic), ten levels of equipment,
+            // facilities and workstations (twenty), and twenty-five training levels (fifty). Income per level is
+            // unchanged, so no clinic earns less; the prices and build times of the new levels set the pace.
+            DeepProgression = true;
+            StarterMaximumTier = 20;
+            StarterMaximumTrackLevel = 10;
+            StarterMaximumTrainingLevel = 25;
+            StarterMaximumDecorationLevel = 10;
+            UpgradeGrowth = new ClinicGrowth(5, 2);
+            DoctorsUpgradeGrowth = new ClinicGrowth(3, 2);
+            RenovationGrowth = new ClinicGrowth(3, 2);
+            DoctorsRenovationGrowth = new ClinicGrowth(124, 100);
+            StationUpgradeGrowth = new ClinicGrowth(5, 2);
+            DoctorsStationUpgradeGrowth = new ClinicGrowth(3, 2);
+            TrainingGrowth = new ClinicGrowth(135, 100);
+            DoctorsTrainingGrowth = new ClinicGrowth(115, 100);
+            RenovationTimeGrowth = new ClinicGrowth(3, 2);
+            DoctorsRenovationTimeGrowth = new ClinicGrowth(12, 10);
+            MaximumConstructionSeconds = 2 * 60 * 60;
+            DecorationGemBase = 5;
+            DecorationGemGrowth = new ClinicGrowth(13, 10);
+        }
+
+        /// <summary>Before rules 5 both clinics climb at the same rate per level.</summary>
+        private void SameGrowthInBothClinics()
+        {
+            DoctorsUpgradeGrowth = UpgradeGrowth; DoctorsRenovationGrowth = RenovationGrowth;
+            DoctorsStationUpgradeGrowth = StationUpgradeGrowth; DoctorsTrainingGrowth = TrainingGrowth;
+            DoctorsRenovationTimeGrowth = RenovationTimeGrowth;
         }
 
         /// <summary>Rules 1–3 share these values; earlier saves are migrated before they are priced.</summary>
         public static readonly ClinicBalanceTable V3 = new ClinicBalanceTable(3);
         public static readonly ClinicBalanceTable V4 = new ClinicBalanceTable(4);
+        public static readonly ClinicBalanceTable V5 = new ClinicBalanceTable(5);
     }
 
     public static class ClinicBalance
     {
-        public const int CurrentRulesVersion = 4;
+        public const int CurrentRulesVersion = 5;
 
         public static ClinicBalanceTable For(int rulesVersion)
         {
             if (rulesVersion >= 1 && rulesVersion <= 3) return ClinicBalanceTable.V3;
             if (rulesVersion == 4) return ClinicBalanceTable.V4;
+            if (rulesVersion == 5) return ClinicBalanceTable.V5;
             throw new ArgumentOutOfRangeException(nameof(rulesVersion), rulesVersion, "No balance table exists for these rules.");
         }
 

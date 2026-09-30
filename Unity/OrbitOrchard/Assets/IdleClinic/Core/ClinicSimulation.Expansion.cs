@@ -10,7 +10,8 @@ namespace IdleClinic.Core
             var room = ClinicRules.RoomForRole(role);
             var level = ClinicRules.StationLevel(State, role, stationId);
             if (level < 1) return No("Build this workstation first.");
-            if (level >= ClinicRules.TrackCap(State.Room(room).Tier)) return No("Upgrade the room tier for better workstations.");
+            if (level >= ClinicRules.ComponentCap(State, room))
+                return No(level >= ClinicRules.MaximumTrackLevel(State) ? "This workstation is at its top level." : "Renovate the room for better workstations.");
             var cost = ClinicRules.StationUpgradeCost(State, role, stationId);
             if (!CanSpend(cost)) return No("Save " + cost + " coins for this workstation.");
             Spend(cost);
@@ -27,7 +28,8 @@ namespace IdleClinic.Core
             var staff = State.Staff.Find(s => s.Id == staffId);
             if (staff == null) return No("Hire this staff member first.");
             var room = ClinicRules.RoomForRole(staff.Role);
-            if (staff.TrainingLevel >= ClinicRules.TrackCap(State.Room(room).Tier)) return No("Upgrade the room tier for further training.");
+            if (staff.TrainingLevel >= ClinicRules.TrainingCap(State, room))
+                return No(staff.TrainingLevel >= ClinicRules.MaximumTrainingLevel(State) ? "Fully trained." : "Renovate the room for further training.");
             var cost = ClinicRules.StaffTrainingCost(State, staff);
             if (!CanSpend(cost)) return No("Save " + cost + " coins for training.");
             Spend(cost);

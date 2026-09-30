@@ -353,6 +353,21 @@ namespace IdleClinic.Services
         public bool BoostActive(DateTimeOffset now) => Profile?.daily != null && Profile.daily.boostEndsUtcTicks > now.UtcDateTime.Ticks;
         public TimeSpan BoostRemaining(DateTimeOffset now) => BoostActive(now) ? TimeSpan.FromTicks(Profile.daily.boostEndsUtcTicks - now.UtcDateTime.Ticks) : TimeSpan.Zero;
 
+        /// <summary>Add one decor level to a room in the clinic being played, paid in gems (rules 5).</summary>
+        public bool BuyDecoration(ClinicRoom room, DateTimeOffset now)
+        {
+            var state = Profile?.ActiveState;
+            if (state == null) { Error = "That room could not be decorated."; return false; }
+            var gems = ClinicRules.DecorationGemCost(state, room);
+            if (gems <= 0) { Error = "This room is fully decorated."; return false; }
+            return SpendGems(gems, now, candidate =>
+            {
+                var result = new ClinicSimulation(candidate.ActiveState).Decorate(room);
+                if (!result.Success) Error = result.Message;
+                return result.Success;
+            });
+        }
+
         public bool BuyBoost(string id, DateTimeOffset now)
         {
             var boost = Array.Find(ClinicShopOffers.Boosts, b => b.Id == id);

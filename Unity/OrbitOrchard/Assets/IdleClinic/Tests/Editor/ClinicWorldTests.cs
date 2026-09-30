@@ -404,9 +404,11 @@ namespace IdleClinic.Tests
         {
             var state=new ClinicState();var item=new ClinicRoomState{Kind=room,Built=true};state.Rooms.Add(item);
             world.Render(state,.016f);
-            for(int level=2;level<=6;level++)
+            // Every level up to the top of the track adds something; decor pieces live in the room's style.
+            var style=Find(room==ClinicRoom.Reception?"Reception style":room==ClinicRoom.FirstAid?"First aid style":"Waiting room style");
+            for(int level=2;level<=10;level++)
             {
-                var detail=Find(room+" "+track+" level "+level);Assert.That(detail,Is.Not.Null);
+                var detail=track==UpgradeTrack.Decoration?style.Find("Decor level "+level):Find(room+" "+track+" level "+level);Assert.That(detail,Is.Not.Null);
                 Assert.That(detail.gameObject.activeInHierarchy,Is.False);
                 if(track==UpgradeTrack.Equipment)item.EquipmentLevel=level;
                 else if(track==UpgradeTrack.Facilities)item.FacilitiesLevel=level;
@@ -490,7 +492,7 @@ namespace IdleClinic.Tests
         [Test]
         public void ClinicFloorAndNeighbourhoodHaveDesignedFurnishingsInsteadOfBlankGround()
         {
-            foreach(var name in new[]{"Meadow ground","Reception welcome rug","Care floor inlay","Waiting woven rug",
+            foreach(var name in new[]{"Meadow ground","Reception welcome rug","Reception style","First aid style","Waiting room style",
                 "Reception notice board","Waiting notice board","Community notice board","Street bicycle rack","Bus shelter","Flower border"})
                 Assert.That(Find(name),Is.Not.Null,name);
             Assert.That(Find("Paper ground"),Is.Null,"The world backdrop must be landscaped rather than blank paper.");

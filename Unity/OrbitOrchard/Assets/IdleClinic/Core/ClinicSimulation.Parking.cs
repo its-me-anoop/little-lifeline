@@ -17,7 +17,7 @@ namespace IdleClinic.Core
             var moving=State.Patients.FirstOrDefault(p=>IsMovingVehicle(p.Phase));
             // Even fully upgraded care cannot finish before the shared aisle clears.
             // Other visitors remain eligible, so transport never stops the clinic.
-            return moving==null||moving.PhaseEndsTick-State.Tick<=ClinicRules.EarliestCalledPatientCompletionTicks;
+            return moving==null||moving.PhaseEndsTick-State.Tick<=ClinicRules.EarliestCalledPatientCompletion(State);
         }
         private long NextParkingEligibilityTick()
         {
@@ -26,7 +26,7 @@ namespace IdleClinic.Core
             {
                 if(IsMovingVehicle(patient.Phase))
                 {
-                    long callOpens=patient.PhaseEndsTick-ClinicRules.EarliestCalledPatientCompletionTicks;
+                    long callOpens=patient.PhaseEndsTick-ClinicRules.EarliestCalledPatientCompletion(State);
                     if(callOpens>State.Tick)next=System.Math.Min(next,callOpens);
                 }
                 waitingForRoadWindow|=patient.Phase==ClinicPatientPhase.WaitingToExit||ClinicRules.IsDoctors(State)&&patient.Phase==ClinicPatientPhase.WaitingToPark;
@@ -106,7 +106,7 @@ namespace IdleClinic.Core
                 return true;
             }
             return !State.Patients.Any(p=>p.ParkingBayId>=0&&(p.Phase==ClinicPatientPhase.Treating&&p.PhaseEndsTick<=clears
-                ||p.Phase==ClinicPatientPhase.WalkingToTreatment&&p.PhaseEndsTick+ClinicRules.FastestTreatmentTicks<=clears));
+                ||p.Phase==ClinicPatientPhase.WalkingToTreatment&&p.PhaseEndsTick+ClinicRules.FastestTreatment(State)<=clears));
         }
         private static bool TryDoctorsParkingCrossing(ClinicPatientState patient,out long starts,out long ends)
         {

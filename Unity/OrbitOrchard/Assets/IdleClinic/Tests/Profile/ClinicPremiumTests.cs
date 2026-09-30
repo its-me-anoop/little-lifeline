@@ -169,7 +169,7 @@ namespace IdleClinic.Tests
             Assert.That(sim.Renovate(ClinicRoom.Waiting).Success, Is.True);
             var next = sim.State.Construction.Single();
             Assert.That(next.PaidCost, Is.EqualTo(ClinicRules.RenovationCost(adopted, ClinicRoom.Waiting)));
-            Assert.That(next.EndsTick - next.StartedTick, Is.EqualTo(1200), "New work uses rules 4: two minutes.");
+            Assert.That(next.EndsTick - next.StartedTick, Is.EqualTo(ClinicRules.RenovationSeconds(adopted, ClinicRoom.Waiting) * 10L), "New work uses the current rules.");
             Assert.That(store.Save(store.Profile, now), Is.True, store.Error);
             Assert.That(JsonUtility.ToJson(new ClinicProfileStore(directory).LoadClinic(now).state), Is.EqualTo(JsonUtility.ToJson(store.Profile.state)));
         }

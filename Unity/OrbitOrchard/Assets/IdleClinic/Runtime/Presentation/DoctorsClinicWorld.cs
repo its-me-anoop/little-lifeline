@@ -15,7 +15,7 @@ namespace IdleClinic.Presentation
         private readonly Action<string,Vector3,Vector3> anchor;private readonly Action<Transform,string,Vector3,Vector3> sockets;
         private readonly GameObject[,] workstations=new GameObject[4,4],futureStations=new GameObject[4,4];private readonly GameObject[,] cash=new GameObject[4,6];
         private readonly GameObject[] seats=new GameObject[30],toilets=new GameObject[2];
-        private readonly List<Detail> details=new List<Detail>();private readonly List<ClinicDoor> doors=new List<ClinicDoor>();
+        private readonly List<Detail> details=new List<Detail>();private readonly ClinicRoomStyle[] styles=new ClinicRoomStyle[5];private readonly List<ClinicDoor> doors=new List<ClinicDoor>();
         private readonly Transform selection;private readonly DoctorsClinicTransport transport;private readonly ClinicConstruction construction;
         private readonly GameObject vending,vendingCash,waitingCrates;private readonly Transform vendingButton,vendingTip;
         private readonly long[] tills=new long[4];private long vendingTill;private bool waitingBuilt;
@@ -25,7 +25,7 @@ namespace IdleClinic.Presentation
         internal DoctorsClinicWorld(ClinicArt art,Transform parent,ClinicWorld world,Action<string,Vector3,Vector3> anchor,Action<Transform,string,Vector3,Vector3> sockets)
         {
             this.art=art;this.parent=parent;this.world=world;this.anchor=anchor;this.sockets=sockets;
-            Architecture();Furniture();StagedWorkstations();Anchors();ProgressionDetails();Neighbourhood();
+            Architecture();Furniture();StagedWorkstations();Anchors();ProgressionDetails();Neighbourhood();RoomStyles();
             selection=art.Group("Doctors selection",parent);art.Box("Selection inset",selection,new Vector3(0,.16f,0),new Vector3(1,.015f,1),"Gold");selection.gameObject.SetActive(false);
             waitingCrates=art.Group("Future doctors waiting room",parent,new Vector3(5.9f,0,-4.5f)).gameObject;
             art.Box("Lounge delivery crate",waitingCrates.transform,new Vector3(0,.4f,0),new Vector3(1.4f,.6f,1),"Wood");
@@ -49,7 +49,7 @@ namespace IdleClinic.Presentation
         internal void Render(ClinicState state,ClinicActors actors,float delta,bool reduced)
         {
             waitingBuilt=state.Room(ClinicRoom.Waiting)?.Built==true;waitingCrates.SetActive(!waitingBuilt);
-            int capacity=waitingBuilt?Mathf.Min(30,8+2*((state.Room(ClinicRoom.Waiting)?.FacilitiesLevel??1)-1)):0;
+            int capacity=waitingBuilt?Mathf.Clamp(ClinicRules.WaitingCapacity(state),0,30):0;
             for(int i=0;i<30;i++)ClinicUpgradeEffects.Show(seats[i],i<capacity);
             for(int role=0;role<4;role++)for(int i=0;i<(role==3?2:4);i++)
             {int level=StationLevel(state,(ClinicStaffRole)role,i);ClinicUpgradeEffects.Show(workstations[role,i],level>0);futureStations[role,i].SetActive(level==0);}
@@ -60,6 +60,8 @@ namespace IdleClinic.Presentation
                 for(int n=0;n<6;n++)cash[i,n].SetActive(n<count);
             }
             foreach(var detail in details)detail.Render(state);
+            int maximumTier=ClinicRules.MaximumTier(state);
+            for(int r=0;r<styles.Length;r++){var room=state.Room((ClinicRoom)r);styles[r]?.Render(ClinicWorld.StyleTier(room?.Tier??1,maximumTier,true),ClinicWorld.StyleMaximum(maximumTier,true),room!=null&&room.Built,ClinicWorld.StyleDecor(room?.DecorationLevel??1));}
             int toiletLevel=state.Amenity(ClinicAmenity.Toilet)?.Level??0,vendingLevel=state.Amenity(ClinicAmenity.Vending)?.Level??0;
             for(int i=0;i<2;i++)ClinicUpgradeEffects.Show(toilets[i],toiletLevel>0);
             ClinicUpgradeEffects.Show(vending,vendingLevel>0);vendingTill=state.Amenity(ClinicAmenity.Vending)?.Till??0;vendingCash.SetActive(vendingLevel>0&&vendingTill>0);
@@ -77,9 +79,8 @@ namespace IdleClinic.Presentation
             art.Box("Doctors continuous corridor floor",parent,new Vector3(-1,.10f,-.60f),new Vector3(22.4f,.06f,19.4f),"TilePeach");
             for(int r=0;r<5;r++)
             {
-                var b=RoomBounds[r];var root=art.Group(((ClinicRoom)r)+" room footprint",parent,b.center-Vector3.up*.14f);
-                art.Box("Doctors room floor",root,new Vector3(0,.135f,0),new Vector3(b.size.x,.02f,b.size.z),r==0?"TilePeach":r==2?"TileSage":"TileBlue");
-                for(float z=-b.extents.z+.5f;z<b.extents.z;z+=.65f)art.Box("Doctors grout seam",root,new Vector3(0,.148f,z),new Vector3(b.size.x,.004f,.01f),"Ivory");
+                // Each room's floor comes from its room style, built once the room is furnished.
+                art.Group(((ClinicRoom)r)+" room footprint",parent,RoomBounds[r].center-Vector3.up*.14f);
             }
             Wall("Doctors west external wall",-12.28f,-10.30f,-12.28f,9.1f,1.95f);
             Wall("Doctors north external wall",-12.36f,9.05f,10.35f,9.05f,2.05f);
@@ -193,24 +194,19 @@ namespace IdleClinic.Presentation
             for(int room=0;room<5;room++)
             {
                 var bounds=RoomBounds[room];
-                for(int tier=2;tier<=6;tier++)
-                {
-                    var d=art.Group(((ClinicRoom)room)+" tier "+tier+" installed fittings",parent);float x=bounds.min.x+.60f+(tier-2)*Mathf.Min(1.35f,(bounds.size.x-1.2f)/5);
-                    art.Box("Tier oak valance",d,new Vector3(x,1.88f,bounds.max.z-.16f),new Vector3(1.05f,.12f,.13f),"Wood");
-                    art.Orb("Tier warm wall lamp",d,new Vector3(x,1.65f,bounds.max.z-.23f),new Vector3(.22f,.25f,.15f),"Linen");details.Add(Detail.RoomTier(d.gameObject,(ClinicRoom)room,tier));
-                }
-                for(int track=0;track<3;track++)for(int level=2;level<=12;level++)
+                // Room sizes restyle the whole room (ClinicRoomStyle); decor lives there too.
+                for(int track=0;track<2;track++)for(int level=2;level<=TopLevel;level++)
                 {
                     var d=art.Group(((ClinicRoom)room)+" "+((UpgradeTrack)track)+" level "+level,parent);
                     ComponentFitting(d,(ClinicRoom)room,(UpgradeTrack)track,level);
                     details.Add(Detail.Component(d.gameObject,(ClinicRoom)room,(UpgradeTrack)track,level));
                 }
             }
-            for(int role=0;role<4;role++)for(int station=0;station<(role==3?2:4);station++)for(int level=2;level<=12;level++)
+            for(int role=0;role<4;role++)for(int station=0;station<(role==3?2:4);station++)for(int level=2;level<=TopLevel;level++)
             {
                 var d=art.Group(((ClinicStaffRole)role)+" station "+station+" equipment "+level,workstations[role,station].transform);
                 int n=level-2;float y=role==1?1.17f:.92f;
-                art.Box("Individual upgraded instrument",d,new Vector3(-.67f+(n%6)*.12f,y+(n/6)*.12f,.10f),new Vector3(.075f,.105f,.11f),level%2==0?"Blue":"Gold");
+                art.Box("Individual upgraded instrument",d,new Vector3(-.67f+(n%10)*.075f,y+(n/10)*.12f,.10f),new Vector3(.06f,.105f,.11f),level%2==0?"Blue":"Gold");
                 details.Add(Detail.Station(d.gameObject,(ClinicStaffRole)role,station,level));
             }
         }
@@ -218,8 +214,9 @@ namespace IdleClinic.Presentation
         {
             // Four furnishing clusters keep progression readable. Every new level improves
             // a recognisable object; waiting-room facilities also add the actual seat pairs.
+            // Seven clusters of three hold the twenty levels of each track.
             var b=RoomBounds[(int)room];int n=level-2,cluster=n/3,step=n%3;
-            float x=b.min.x+.85f+cluster*(b.size.x-1.70f)/3,z=b.max.z-.22f;
+            float x=b.min.x+.85f+cluster*(b.size.x-1.70f)/6,z=b.max.z-.22f;
             bool lounge=room==ClinicRoom.Waiting;bool pharmacy=room==ClinicRoom.Pharmacy;
             if(track==UpgradeTrack.Equipment)
             {
@@ -258,17 +255,30 @@ namespace IdleClinic.Presentation
                     else {art.Box("Linen supply basket",root,new Vector3(x+.27f,.92f,z),new Vector3(.18f,.11f,.21f),"Wood");art.Box("Fresh linen roll",root,new Vector3(x+.27f,1.00f,z),new Vector3(.13f,.06f,.15f),"Linen");}
                 }
             }
-            else
-            {
-                if(n==0||n==4||n==8)
-                {art.Box("Botanical oak frame",root,new Vector3(x-.32f,1.63f,z),new Vector3(.37f,.46f,.035f),"Wood");art.Box("Botanical artwork",root,new Vector3(x-.32f,1.63f,z-.025f),new Vector3(.31f,.40f,.012f),"Linen");art.Orb("Botanical leaf print",root,new Vector3(x-.32f,1.66f,z-.036f),new Vector3(.15f,.26f,.015f),"Sage");}
-                else if(n==2||n==6||n==10)
-                {art.Box("Greenery stand stem",root,new Vector3(x+.38f,.53f,z),new Vector3(.035f,.78f,.035f),"Gold");art.Box("Greenery stand top",root,new Vector3(x+.38f,.94f,z),new Vector3(.22f,.045f,.22f),"Wood");art.Cylinder("Ceramic greenery pot",root,new Vector3(x+.38f,1.04f,z),new Vector3(.18f,.21f,.18f),"Clay");art.Orb("Indoor greenery",root,new Vector3(x+.38f,1.25f,z),new Vector3(.31f,.35f,.25f),"Leaf");}
-                else if(n==5)
-                {art.Orb("Wall clock frame",root,new Vector3(x,1.84f,z),new Vector3(.36f,.36f,.035f),"Wood");art.Orb("Wall clock face",root,new Vector3(x,1.84f,z-.027f),new Vector3(.30f,.30f,.012f),"Linen");art.Box("Clock hands",root,new Vector3(x+.035f,1.87f,z-.04f),new Vector3(.12f,.025f,.012f),"Ink");}
-                else if(n==9){art.Box("Community message ribbon",root,new Vector3(x,1.40f,z),new Vector3(.38f,.12f,.020f),"Apricot");}
-                else {art.Box("Flower stand stem",root,new Vector3(x-.18f,.53f,z),new Vector3(.035f,.78f,.035f),"Gold");art.Box("Flower stand top",root,new Vector3(x-.18f,.94f,z),new Vector3(.20f,.045f,.20f),"Wood");art.Cylinder("Small flower vase",root,new Vector3(x-.18f,1.04f,z),new Vector3(.12f,.20f,.12f),"Blue");art.Orb("Fresh flower",root,new Vector3(x-.18f,1.21f,z),new Vector3(.18f,.15f,.17f),"Apricot");}
-            }
+        }
+        private const int TopLevel=20;
+        private void RoomStyles()
+        {
+            const float top=.145f,wall=.07f;
+            Rect R(int r){var b=RoomBounds[r];return new Rect(b.min.x,b.min.z,b.size.x,b.size.z);}
+            styles[0]=new ClinicRoomStyle(art,parent,"Doctors reception",R(0),top,new[]{
+                new RoomWall(-12.28f+wall,-7.85f,-12.28f+wall,-3.15f-wall,1.95f),new RoomWall(-12.28f+wall,-3.15f-wall,-1.5f-wall,-3.15f-wall,.82f)},0,"TilePeach",TopLevel,
+                new[]{new Vector3(-9f,.7f,-3.2f)});
+            styles[1]=new ClinicRoomStyle(art,parent,"Doctors first aid",R(1),top,new[]{
+                new RoomWall(-12.28f+wall,-1.75f+wall,-12.28f+wall,2.95f-wall,1.95f),new RoomWall(-12.28f+wall,2.95f-wall,-1.5f-wall,2.95f-wall,.82f),
+                new RoomWall(-12.28f+wall,-1.75f+wall,-1.5f-wall,-1.75f+wall,.82f)},1,"TileBlue",TopLevel);
+            styles[2]=new ClinicRoomStyle(art,parent,"Doctors waiting room",R(2),top,new[]{
+                new RoomWall(1.5f+wall,-7.85f+wall,10.28f-wall,-7.85f+wall,.62f),new RoomWall(10.28f-wall,-6.32f,10.28f-wall,-1.3f-wall,.65f),
+                new RoomWall(1.5f+wall,-1.3f-wall,4.94f,-1.3f-wall,.82f),new RoomWall(6.76f,-1.3f-wall,10.28f-wall,-1.3f-wall,.82f)},2,"TileSage",TopLevel,
+                new[]{new Vector3(7f,.7f,-1.4f)});
+            // The back walls of consultations and the pharmacy carry their equipment; decor uses the partitions.
+            styles[3]=new ClinicRoomStyle(art,parent,"Doctors consultations",R(3),top,new[]{
+                new RoomWall(-12.28f+wall,9.05f-wall,10.28f-wall,9.05f-wall,1.70f),
+                new RoomWall(-6.6f-wall,4.6f,-6.6f-wall,9.05f-wall,1.48f),new RoomWall(-1f-wall,4.6f,-1f-wall,9.05f-wall,1.48f),new RoomWall(4.6f-wall,4.6f,4.6f-wall,9.05f-wall,1.48f)},3,"TileBlue",TopLevel);
+            styles[4]=new ClinicRoomStyle(art,parent,"Doctors pharmacy",R(4),top,new[]{
+                new RoomWall(1.5f+wall,-.1f+wall,10.28f-wall,-.1f+wall,.62f),new RoomWall(10.28f-wall,-.1f+wall,10.28f-wall,2.95f-wall,.65f),
+                new RoomWall(1.5f+wall,2.95f-wall,10.28f-wall,2.95f-wall,1.20f)},4,"TileBlue",TopLevel);
+            foreach(var style in styles)style.Adopt(parent);
         }
         private void Neighbourhood()
         {

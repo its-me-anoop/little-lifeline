@@ -30,8 +30,9 @@ namespace IdleClinic.Tests
         }
         [Test] public void CorrespondingCostsTimesIncomeDoubleAndEveryNewFacilityHasABenefit()
         {
-            var starter = ClinicSimulation.CreateNew().State;
-            var doctors = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic).State;
+            // Rules 4 double every price and time exactly; rules 5 give the doctors clinic its own gentler growth.
+            var starter = ClinicSimulation.CreateNew().State; starter.RulesVersion = 4;
+            var doctors = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic).State; doctors.RulesVersion = 4;
             Assert.That(ClinicRules.VisitFee(doctors), Is.EqualTo(2 * ClinicRules.VisitFee(starter)));
             Assert.That(ClinicRules.ReceptionTicks(doctors), Is.EqualTo(280));
             Assert.That(ClinicRules.TreatmentTicks(doctors), Is.EqualTo(360));
@@ -63,7 +64,7 @@ namespace IdleClinic.Tests
                 variants.Add(s => s.Room(kind).Tier--);
                 variants.Add(s => s.Room(kind).EquipmentLevel--);
                 variants.Add(s => s.Room(kind).FacilitiesLevel--);
-                variants.Add(s => s.Room(kind).DecorationLevel--);
+                if (!ClinicRules.Deep(maxed.State)) variants.Add(s => s.Room(kind).DecorationLevel--);
             }
             variants.Add(s => s.Room(ClinicRoom.Waiting).Built = false);
             foreach (var staff in maxed.State.Staff)
@@ -136,13 +137,13 @@ namespace IdleClinic.Tests
                 Assert.That(game.HireStaff(role).Success, Is.False); Assert.That(game.AddStation(role).Success, Is.False);
                 foreach (var staff in game.State.Staff.Where(s => s.Role == role))
                 {
-                    Assert.That(staff.TrainingLevel, Is.EqualTo(12));
-                    Assert.That(ClinicRules.StationLevel(game.State, role, staff.StationId), Is.EqualTo(12));
+                    Assert.That(staff.TrainingLevel, Is.EqualTo(ClinicRules.MaximumTrainingLevel(game.State)));
+                    Assert.That(ClinicRules.StationLevel(game.State, role, staff.StationId), Is.EqualTo(ClinicRules.MaximumTrackLevel(game.State)));
                     Assert.That(game.TrainStaff(staff.Id).Success, Is.False);
                     Assert.That(game.UpgradeStation(role, staff.StationId).Success, Is.False);
                 }
             }
-            foreach (var room in game.State.Rooms) { Assert.That(room.Tier, Is.EqualTo(6)); Assert.That(room.EquipmentLevel, Is.EqualTo(12)); Assert.That(room.FacilitiesLevel, Is.EqualTo(12)); Assert.That(room.DecorationLevel, Is.EqualTo(12)); }
+            foreach (var room in game.State.Rooms) { Assert.That(room.Tier, Is.EqualTo(ClinicRules.MaximumTier(game.State))); Assert.That(room.EquipmentLevel, Is.EqualTo(ClinicRules.MaximumTrackLevel(game.State))); Assert.That(room.FacilitiesLevel, Is.EqualTo(ClinicRules.MaximumTrackLevel(game.State))); Assert.That(room.DecorationLevel, Is.EqualTo(1), "Decor is optional under rules 5."); }
             Assert.That(ClinicRules.ParkingCapacity(game.State), Is.EqualTo(12));
             Assert.That(ClinicRules.ToiletCubicleCount(game.State), Is.EqualTo(2));
             Assert.That(ClinicRules.UnpaidQueueCapacity(game.State), Is.EqualTo(23));
@@ -191,8 +192,8 @@ namespace IdleClinic.Tests
         {
             var game = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic); game.Advance(180);
             var mutations = new Action<ClinicState>[] {
-                s => s.Wallet++, s => s.Location = (ClinicLocation)50, s => s.Room(ClinicRoom.Pharmacy).Tier = 7,
-                s => s.Room(ClinicRoom.Consultation).EquipmentLevel = 3, s => s.Staff[0].StationId = 10,
+                s => s.Wallet++, s => s.Location = (ClinicLocation)50, s => s.Room(ClinicRoom.Pharmacy).Tier = ClinicRules.MaximumTier(s) + 1,
+                s => s.Room(ClinicRoom.Consultation).EquipmentLevel = ClinicRules.MaximumTrackLevel(s) + 1, s => s.Staff[0].StationId = 10,
                 s => s.Patients[0].ToAnchor = "unknown.anchor", s => s.Patients[0].NextService = ClinicStaffRole.Receptionist,
                 s => s.Patients[0].PharmacyComplete = true, s => s.Amenity(ClinicAmenity.Taxi).Level = 7,
                 s => s.TotalTransferredOut = -1, s => s.TaxiRides.Add(new ClinicTaxiState { PatientId = 99999, DockId = 0 })
@@ -415,31 +416,59 @@ namespace IdleClinic.Tests
         }
         private static void Maximise(ClinicSimulation g)
         {
-            // Improve the working bottlenecks first; the fixture earns every coin through ordinary simulation.
-            foreach (var room in g.State.Rooms)
-                while (room.Tier < ClinicRules.MaximumTier(g.State))
-                { Earn(g, ClinicRules.RenovationCost(g.State, room.Kind)); Assert.That(g.Renovate(room.Kind).Success, Is.True); g.Advance(ClinicRules.RenovationSeconds(g.State, room.Kind)); }
-            foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
+            // Buy the cheapest available improvement each time, as a patient player would; every coin is earned
+            // through ordinary simulation and collection. Decor is left out under rules 5, where it costs gems.
+            for (var step = 0; step < 200000; step++)
             {
-                int max = ClinicRules.MaximumStaff(g.State, role);
-                if (max == 0) continue;
-                while (ClinicRules.StationCount(g.State, role) < max)
+                var s = g.State;
+                var options = new List<(long cost, Func<ClinicCommandResult> buy)>();
+                foreach (var room in s.Rooms)
                 {
-                    if (role == ClinicStaffRole.Receptionist) { Earn(g, ClinicRules.HireCost(g.State, role)); Assert.That(g.HireStaff(role).Success, Is.True); }
-                    else { Earn(g, ClinicRules.AddStationCost(g.State, role)); Assert.That(g.AddStation(role).Success, Is.True); }
+                    var kind = room.Kind;
+                    if (!room.Built) continue;
+                    if (room.Tier < ClinicRules.MaximumTier(s) && !g.IsUnderConstruction(kind) && !g.BuildersBusy)
+                        options.Add((ClinicRules.RenovationCost(s, kind), () => g.Renovate(kind)));
+                    foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
+                    {
+                        var t = track;
+                        if (t == UpgradeTrack.Decoration && ClinicRules.Deep(s)) continue;
+                        if (room.Level(t) < ClinicRules.TrackCap(s, kind, t)) options.Add((ClinicRules.UpgradeCost(s, kind, t), () => g.Upgrade(kind, t)));
+                    }
                 }
-                while (g.State.Staff.Count(s => s.Role == role) < max) { Earn(g, ClinicRules.HireCost(g.State, role)); Assert.That(g.HireStaff(role).Success, Is.True); }
+                foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
+                {
+                    var r = role; var max = ClinicRules.MaximumStaff(s, r);
+                    if (max == 0) continue;
+                    var staffed = s.Staff.Count(x => x.Role == r);
+                    if (r != ClinicStaffRole.Receptionist && ClinicRules.StationCount(s, r) < ClinicRules.StationCap(s, r))
+                        options.Add((ClinicRules.AddStationCost(s, r), () => g.AddStation(r)));
+                    if (staffed < max && (r == ClinicStaffRole.Receptionist || staffed < ClinicRules.StationCount(s, r)))
+                        options.Add((ClinicRules.HireCost(s, r), () => g.HireStaff(r)));
+                }
+                foreach (var staff in s.Staff.ToList())
+                {
+                    var member = staff; var room = ClinicRules.RoomForRole(member.Role);
+                    if (member.TrainingLevel < ClinicRules.TrainingCap(s, room)) options.Add((ClinicRules.StaffTrainingCost(s, member), () => g.TrainStaff(member.Id)));
+                    if (ClinicRules.StationLevel(s, member.Role, member.StationId) < ClinicRules.ComponentCap(s, room))
+                        options.Add((ClinicRules.StationUpgradeCost(s, member.Role, member.StationId), () => g.UpgradeStation(member.Role, member.StationId)));
+                }
+                foreach (var amenity in s.Amenities)
+                {
+                    var kind = amenity.Kind;
+                    if (amenity.Level < ClinicRules.AmenityCap(s, kind) && (kind == ClinicAmenity.Parking || kind == ClinicAmenity.Taxi || s.Room(ClinicRoom.Waiting).Built))
+                        options.Add((ClinicRules.AmenityUpgradeCost(s, kind), () => g.UpgradeAmenity(kind)));
+                }
+                options.RemoveAll(o => o.cost <= 0);
+                if (options.Count == 0)
+                {
+                    if (s.Construction.Count == 0) break;
+                    g.Advance(300, false); foreach (var desk in s.ReceptionDesks) g.Collect(desk.Id); g.CollectVendingTips(); g.CollectParkingFees();
+                    continue;
+                }
+                var best = options.OrderBy(o => o.cost).First();
+                Earn(g, best.cost);
+                Assert.That(best.buy().Success, Is.True);
             }
-            foreach (var room in g.State.Rooms)
-                foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
-                    while (room.Level(track) < ClinicRules.ComponentCap(g.State, room.Kind)) { Earn(g, ClinicRules.UpgradeCost(g.State, room.Kind, track)); Assert.That(g.Upgrade(room.Kind, track).Success, Is.True); }
-            foreach (var staff in g.State.Staff)
-            {
-                while (staff.TrainingLevel < ClinicRules.ComponentCap(g.State, ClinicRules.RoomForRole(staff.Role))) { Earn(g, ClinicRules.StaffTrainingCost(g.State, staff)); Assert.That(g.TrainStaff(staff.Id).Success, Is.True); }
-                while (ClinicRules.StationLevel(g.State, staff.Role, staff.StationId) < ClinicRules.ComponentCap(g.State, ClinicRules.RoomForRole(staff.Role))) { Earn(g, ClinicRules.StationUpgradeCost(g.State, staff.Role, staff.StationId)); Assert.That(g.UpgradeStation(staff.Role, staff.StationId).Success, Is.True); }
-            }
-            foreach (var amenity in g.State.Amenities)
-                while (amenity.Level < ClinicRules.MaximumAmenityLevel(g.State, amenity.Kind)) { Earn(g, ClinicRules.AmenityUpgradeCost(g.State, amenity.Kind)); Assert.That(g.UpgradeAmenity(amenity.Kind).Success, Is.True); }
             Assert.That(ClinicSimulation.IsValidState(g.State), Is.True);
         }
         public static void Earn(ClinicSimulation game, long amount)

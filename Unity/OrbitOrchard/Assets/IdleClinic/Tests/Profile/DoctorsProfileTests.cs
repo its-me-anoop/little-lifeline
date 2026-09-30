@@ -177,7 +177,7 @@ namespace IdleClinic.Tests
 
         [Test] public void VersionThreeCampaignWithBothClinicsMigratesWithAnEmptyGemLedger()
         {
-            var store = CompletedStarter(); Assert.That(store.OpenDoctorsClinic(now), Is.True, store.Error);
+            var store = CompletedStarter(false); Assert.That(store.OpenDoctorsClinic(now), Is.True, store.Error);
             var envelope = WriteVersionThree(store.Profile);
             var original = JsonUtility.FromJson<VersionThreeProfile>(JsonUtility.FromJson<Envelope>(envelope).payload);
 
@@ -280,27 +280,29 @@ namespace IdleClinic.Tests
             Assert.That(premium.decorationsOwned, Is.Empty);
         }
 
-        private ClinicProfileStore CompletedStarter()
+        /// <summary>A finished starter clinic. With currentRules false it stays on the save's rules 3 (three room sizes,
+        /// six levels) and is not saved, so saving cannot move it to the current rules before the test records it.</summary>
+        private ClinicProfileStore CompletedStarter(bool currentRules = true)
         {
             var store = new ClinicProfileStore(directory); store.LoadClinic(now);
             var sim = new ClinicSimulation(store.Profile.state);
-            foreach (var room in sim.State.Rooms)
+            // A finished starter clinic under the save's rules. Earning twenty room sizes through offline cycles would
+            // take weeks of simulated time, so the owned levels are set directly; opening and travel are under test.
+            var s = sim.State; if (currentRules) ClinicStateMigration.TryAdoptCurrentRules(s);
+            int tier = ClinicRules.MaximumTier(s), top = ClinicRules.MaximumTrackLevel(s), training = ClinicRules.MaximumTrainingLevel(s);
+            foreach (var room in s.Rooms)
             {
-                while (room.Tier < 3) { Buy(sim, ClinicRules.RenovationCost(sim.State, room.Kind), () => sim.Renovate(room.Kind)); sim.Advance(180); }
-                foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
-                    while (room.Level(track) < 6) Buy(sim, ClinicRules.UpgradeCost(sim.State, room.Kind, track), () => sim.Upgrade(room.Kind, track));
+                room.Tier = tier; room.EquipmentLevel = room.FacilitiesLevel = top;
+                if (!ClinicRules.Deep(s)) room.DecorationLevel = top;
             }
-            foreach (var role in new[] { ClinicStaffRole.Receptionist, ClinicStaffRole.Nurse })
-                for (var id = 0; id < 2; id++)
-                    while (ClinicRules.StationLevel(sim.State, role, id) < 6)
-                    { var station = id; Buy(sim, ClinicRules.StationUpgradeCost(sim.State, role, id), () => sim.UpgradeStation(role, station)); }
-            foreach (var staff in sim.State.Staff)
-                while (staff.TrainingLevel < 6) Buy(sim, ClinicRules.StaffTrainingCost(sim.State, staff), () => sim.TrainStaff(staff.Id));
-            foreach (var amenity in sim.State.Amenities)
-                while (amenity.Level < 3) Buy(sim, ClinicRules.AmenityUpgradeCost(sim.State, amenity.Kind), () => sim.UpgradeAmenity(amenity.Kind));
+            foreach (var desk in s.ReceptionDesks) desk.EquipmentLevel = top;
+            foreach (var station in s.TreatmentStations) station.EquipmentLevel = top;
+            foreach (var staff in s.Staff) staff.TrainingLevel = training;
+            foreach (var amenity in s.Amenities)
+                while (amenity.Level < ClinicRules.MaximumAmenityLevel(s, amenity.Kind)) Buy(sim, ClinicRules.AmenityUpgradeCost(s, amenity.Kind), () => sim.UpgradeAmenity(amenity.Kind));
             Fund(sim, 100000);
             Assert.That(ClinicRules.StarterCompletion(sim.State), Is.Empty);
-            Assert.That(store.Save(store.Profile, now), Is.True, store.Error);
+            if (currentRules) Assert.That(store.Save(store.Profile, now), Is.True, store.Error);
             return store;
         }
         private static void Buy(ClinicSimulation sim, long cost, Func<ClinicCommandResult> command)

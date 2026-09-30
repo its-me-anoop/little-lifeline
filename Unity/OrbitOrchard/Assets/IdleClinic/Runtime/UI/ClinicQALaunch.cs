@@ -27,6 +27,14 @@ namespace IdleClinic.App
             var guide = Value("CLINIC_QA_GUIDE", "-qaGuide") != null;
             // Camera framing for store captures: "factor,u,v", for example "0.7,0.5,0.6".
             var zoom = Value("CLINIC_QA_ZOOM", "-qaZoom");
+            // Room style preview: "tier" or "tier,decor", for example "12,6".
+            var style = Value("CLINIC_QA_STYLE", "-qaStyle");
+            if (style != null)
+            {
+                var parts = style.Split(',');
+                if (int.TryParse(parts[0], out var tier)) IdleClinic.Presentation.ClinicWorld.PreviewTier = tier;
+                if (parts.Length > 1 && int.TryParse(parts[1], out var decor)) IdleClinic.Presentation.ClinicWorld.PreviewDecor = decor;
+            }
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
             {
