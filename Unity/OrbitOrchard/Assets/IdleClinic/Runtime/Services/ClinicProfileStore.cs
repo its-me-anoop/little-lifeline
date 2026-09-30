@@ -142,6 +142,18 @@ namespace IdleClinic.Services
             return CommitCandidate(candidate, now);
         }
 
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>Development-build QA only: open the doctors clinic without its requirements, for captures.</summary>
+        public bool QaOpenDoctorsClinic(DateTimeOffset now)
+        {
+            if (!CanCommit() || Profile.doctorsState != null) return false;
+            var candidate = Copy(Profile);
+            candidate.doctorsState = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic, candidate.state.Seed).State;
+            candidate.activeLocation = ClinicLocation.DoctorsClinic;
+            return CommitCandidate(candidate, now);
+        }
+#endif
+
         public bool OpenDoctorsClinic(DateTimeOffset now)
         {
             if (!CanCommit()) return false;

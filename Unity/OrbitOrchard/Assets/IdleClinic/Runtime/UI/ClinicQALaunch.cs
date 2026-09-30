@@ -38,6 +38,9 @@ namespace IdleClinic.App
             // First aid equipment preview: every item at one version, for example "7".
             var gear = Value("CLINIC_QA_GEAR", "-qaGear");
             if (gear != null && int.TryParse(gear, out var gearVersion)) IdleClinic.Presentation.ClinicWorld.PreviewGear = gearVersion;
+            // Video captures: the doctors clinic, a fully staffed clinic, and a clean frame without any interface.
+            if (Value("CLINIC_QA_DOCTORS", "-qaDoctors") != null && saves.QaOpenDoctorsClinic(DateTimeOffset.UtcNow)) PublishLocation();
+            if (Value("CLINIC_QA_CLEAN", "-qaClean") != null) StartCoroutine(HideInterface());
             // Screenshot state: play the opening (collect, hire), earn extra coins, then let the clinic run for a while.
             if (Value("CLINIC_QA_TUTORIAL", "-qaTutorial") != null && State.Tutorial != ClinicTutorialStep.Complete)
             { simulation.Advance(25); simulation.Collect(0); simulation.HireNurse(); simulation.Advance(30); }
@@ -58,6 +61,17 @@ namespace IdleClinic.App
                         ClinicSimulation.TryGrantReward(State, ClinicGear.UpgradeCost(State, kind, item));
                         simulation.UpgradeGear(kind, item);
                     }
+            if (Value("CLINIC_QA_FULL", "-qaFull") != null)
+                for (var pass = 0; pass < 12; pass++)
+                {
+                    foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
+                    {
+                        ClinicSimulation.TryGrantReward(State, 10000000); simulation.AddStation(role);
+                        ClinicSimulation.TryGrantReward(State, 10000000); simulation.HireStaff(role);
+                    }
+                    foreach (ClinicAmenity kind in Enum.GetValues(typeof(ClinicAmenity)))
+                    { ClinicSimulation.TryGrantReward(State, 10000000); simulation.UpgradeAmenity(kind); }
+                }
             if (double.TryParse(Value("CLINIC_QA_ADVANCE", "-qaAdvance"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)) simulation.Advance(seconds, false);
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
@@ -90,6 +104,16 @@ namespace IdleClinic.App
             }
             else if (open == "settings") ToggleSettings();
             else if (Enum.TryParse<ClinicRoom>(open, out var selected)) StartCoroutine(SelectAfterFirstFrames(selected));
+        }
+
+        private System.Collections.IEnumerator HideInterface()
+        {
+            while (true)
+            {
+                foreach (var element in new[] { header, hint, cameraTools, hudChips, overlay, dock, scrim, guideCard, welcomeCard, banner })
+                    if (element != null) element.style.display = UnityEngine.UIElements.DisplayStyle.None;
+                yield return null;
+            }
         }
 
         // The room panel needs the world's first frames (its picture is rendered from the scene), so open it a moment after launch.
