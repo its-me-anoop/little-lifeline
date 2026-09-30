@@ -38,6 +38,27 @@ namespace IdleClinic.App
             // First aid equipment preview: every item at one version, for example "7".
             var gear = Value("CLINIC_QA_GEAR", "-qaGear");
             if (gear != null && int.TryParse(gear, out var gearVersion)) IdleClinic.Presentation.ClinicWorld.PreviewGear = gearVersion;
+            // Screenshot state: play the opening (collect, hire), earn extra coins, then let the clinic run for a while.
+            if (Value("CLINIC_QA_TUTORIAL", "-qaTutorial") != null && State.Tutorial != ClinicTutorialStep.Complete)
+            { simulation.Advance(25); simulation.Collect(0); simulation.HireNurse(); simulation.Advance(30); }
+            if (long.TryParse(Value("CLINIC_QA_COINS", "-qaCoins"), out var coins)) ClinicSimulation.TryGrantReward(State, coins);
+            // Room size and equipment progress for a mid-game look: every built room to this size, then this many upgrades each.
+            if (int.TryParse(Value("CLINIC_QA_TIER", "-qaTier"), out var roomSize))
+            {
+                if (State.Tutorial == ClinicTutorialStep.Complete && State.Location == ClinicLocation.StarterClinic) { State.WaitingRoomUnlocked = true; State.Room(ClinicRoom.Waiting).Built = true; }
+                foreach (var built in State.Rooms) if (built.Built) built.Tier = Math.Min(roomSize, ClinicRules.MaximumTier(State));
+            }
+            if (int.TryParse(Value("CLINIC_QA_UPGRADES", "-qaUpgrades"), out var upgrades))
+                foreach (var built in State.Rooms.ToArray())
+                    for (var k = 0; k < upgrades && built.Built; k++)
+                    {
+                        var kind = built.Kind; var item = -1; var pieces = ClinicGear.UnlockedCount(State, kind);
+                        for (var o = 0; o < pieces && item < 0; o++) { var i = (k + o) % pieces; if (!ClinicGear.AtTop(State, kind, i)) item = i; }
+                        if (item < 0) break;
+                        ClinicSimulation.TryGrantReward(State, ClinicGear.UpgradeCost(State, kind, item));
+                        simulation.UpgradeGear(kind, item);
+                    }
+            if (double.TryParse(Value("CLINIC_QA_ADVANCE", "-qaAdvance"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)) simulation.Advance(seconds, false);
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
             {
@@ -68,7 +89,14 @@ namespace IdleClinic.App
                 ToggleGems();
             }
             else if (open == "settings") ToggleSettings();
-            else if (Enum.TryParse<ClinicRoom>(open, out var selected)) Select(selected);
+            else if (Enum.TryParse<ClinicRoom>(open, out var selected)) StartCoroutine(SelectAfterFirstFrames(selected));
+        }
+
+        // The room panel needs the world's first frames (its picture is rendered from the scene), so open it a moment after launch.
+        private System.Collections.IEnumerator SelectAfterFirstFrames(ClinicRoom room)
+        {
+            yield return new WaitForSeconds(1.5f);
+            Select(room);
         }
     }
 }
