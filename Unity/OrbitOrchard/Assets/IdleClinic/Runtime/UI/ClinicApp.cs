@@ -40,7 +40,8 @@ namespace IdleClinic.App
         private readonly Dictionary<int, ClinicProgress> patientRings = new Dictionary<int, ClinicProgress>();
         private readonly Dictionary<int, VisualElement> constructionMarkers = new Dictionary<int, VisualElement>();
         private readonly Dictionary<ClinicRoom, VisualElement> roomTargets = new Dictionary<ClinicRoom, VisualElement>();
-        private VisualElement waitingMarker,vendingCashMarker,parkingCashMarker;
+        private VisualElement waitingMarker,vendingCashMarker,parkingCashMarker,taxiCashMarker;
+        private readonly VisualElement[] pharmacyCashMarkers=new VisualElement[2];
         private Button parkingControl;
         private readonly Dictionary<string,VisualElement> objectTargets=new Dictionary<string,VisualElement>();
         private readonly Dictionary<VisualElement,ClinicHit> objectHits=new Dictionary<VisualElement,ClinicHit>();
@@ -188,7 +189,7 @@ namespace IdleClinic.App
                 : State.Tutorial==ClinicTutorialStep.FirstTreatment ? "A little care. A fresh start." : "";
             hint.style.display=string.IsNullOrEmpty(hintLabel.text)?DisplayStyle.None:DisplayStyle.Flex;
             var key=simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom+":"+upgradeTrack)+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
-                string.Join(";",State.Rooms.Select(r=>$"{r.Built}:{r.Tier}:{r.EquipmentLevel}:{r.FacilitiesLevel}:{r.DecorationLevel}:{r.StationCount}"))+":"+
+                string.Join(";",State.Rooms.Select(r=>$"{r.Built}:{r.Tier}:{r.EquipmentLevel}:{r.FacilitiesLevel}:{r.DecorationLevel}:{r.StationCount}:{(r.GearLevels==null?"":string.Join(",",r.GearLevels))}"))+":"+
                 string.Join(";",State.Construction.Select(c=>c.Id))+":"+
                 string.Join(";",State.ReceptionDesks.Select(d=>$"{d.Id}:{d.EquipmentLevel}"))+":"+
                 string.Join(";",State.TreatmentStations.Select(s=>$"{s.Id}:{s.EquipmentLevel}"))+":"+
@@ -251,12 +252,14 @@ namespace IdleClinic.App
                 {
                     // Double collections: the same amount again, paid as a reward. Commit, then bind to the saved profile.
                     var bonus=saves.GrantBoostBonus(e.Amount,DateTimeOffset.UtcNow);
-                    if(bonus>0){profile=saves.Profile;BindSimulations();FloatText(ClinicCashPresentation.IsVendingCollection(e)?world.GetVendingCashPoint():ClinicCashPresentation.IsParkingCollection(e)?world.GetParkingCashPoint():world.GetCashPoint(e.DeskId),"×2 +"+Money(bonus),"float-coins");}
+                    if(bonus>0){profile=saves.Profile;BindSimulations();FloatText(CashPoint(e),"×2 +"+Money(bonus),"float-coins");}
                 }
                 if(e.Kind==ClinicEventKind.CashCollected)
                 {
                     if(ClinicCashPresentation.IsVendingCollection(e))LaunchCoinsFrom(world.GetVendingCashPoint());
                     else if(ClinicCashPresentation.IsParkingCollection(e))LaunchCoinsFrom(world.GetParkingCashPoint());
+                    else if(ClinicCashPresentation.IsTaxiCollection(e))LaunchCoinsFrom(world.GetTaxiCashPoint());
+                    else if(ClinicCashPresentation.IsPharmacyCollection(e))LaunchCoinsFrom(world.GetPharmacyCashPoint(e.DeskId));
                     else LaunchCoins(e.DeskId,e.Amount);
                     Feedback(0);
                 }

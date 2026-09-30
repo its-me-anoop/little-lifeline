@@ -182,16 +182,18 @@ namespace IdleClinic.Tests
         }
 
         [TestCase(0)][TestCase(5)]
-        public void ParkingPassengersClearTheFinalOutdoorQueueRowOnArrivalAndDeparture(int bay)
+        public void ParkingPassengersClearTheFinalQueueRowOnArrivalAndDeparture(int bay)
         {
             string parking="parking.bay."+bay+".patient";
             foreach(bool returning in new[]{false,true})
             {
-                var route=new RouteProbe(world,returning?"firstaid.station.0.patient":parking,
-                    returning?parking:"reception.queue.0");
+                var destination=returning?parking:"reception.queue.0";
+                var route=new RouteProbe(world,returning?"firstaid.station.0.patient":parking,destination);
                 for(int sample=0;sample<=1000;sample++)
                 {
                     var point=route.Sample(sample/1000f);
+                    // The walker is heading for its own place in the line; the rows it passes must still be given room.
+                    if(Vector3.Distance(point,world.GetAnchorPoint(destination))<.75f)continue;
                     for(int queue=8;queue<=10;queue++)
                     {
                         var separation=point-world.GetAnchorPoint("reception.queue."+queue);separation.y=0;

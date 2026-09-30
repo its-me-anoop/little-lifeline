@@ -257,6 +257,9 @@ namespace IdleClinic.App
                 if(pair.Value.style.display==DisplayStyle.Flex&&pair.Value.worldBound.Contains(panelPoint)){Collect(pair.Key);return;}
             if(vendingCashMarker!=null&&vendingCashMarker.style.display==DisplayStyle.Flex&&vendingCashMarker.worldBound.Contains(panelPoint)){CollectVending();return;}
             if(parkingCashMarker!=null&&parkingCashMarker.style.display==DisplayStyle.Flex&&parkingCashMarker.worldBound.Contains(panelPoint)){CollectParking();return;}
+            if(taxiCashMarker!=null&&taxiCashMarker.style.display==DisplayStyle.Flex&&taxiCashMarker.worldBound.Contains(panelPoint)){CollectTaxi();return;}
+            for(var i=0;i<pharmacyCashMarkers.Length;i++)
+                if(pharmacyCashMarkers[i]!=null&&pharmacyCashMarkers[i].style.display==DisplayStyle.Flex&&pharmacyCashMarkers[i].worldBound.Contains(panelPoint)){CollectPharmacy(i);return;}
             if(waitingMarker!=null&&waitingMarker.style.display==DisplayStyle.Flex&&waitingMarker.worldBound.Contains(panelPoint)){Select(ClinicRoom.Waiting);return;}
             var hit=world.Pick(ToViewport(panelPoint));
             if(hit.Kind!=ClinicHitKind.Cash&&hit.Kind!=ClinicHitKind.VendingCash

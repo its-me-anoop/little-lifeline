@@ -25,6 +25,10 @@ namespace IdleClinic.Core
         public long ParkingFeePerLevel { get; }
         /// <summary>Rules 4: paid at the barrier as the car leaves, into the car park's own cash box.</summary>
         public long ParkingExitFeePerLevel { get; }
+        /// <summary>Rules 5, doctors clinic: what a patient pays at the pharmacy counter, as a percentage of the visit fee.</summary>
+        public int PharmacyFeePercent { get; }
+        /// <summary>Rules 5, doctors clinic: the fare each taxi ride pays per taxi stand level.</summary>
+        public long TaxiFarePerLevel { get; }
         public long VendingTipPerLevel { get; }
         public long ToiletTipPerLevel { get; }
         /// <summary>Offline coin limit, in visit fees; zero means unlimited.</summary>
@@ -76,6 +80,11 @@ namespace IdleClinic.Core
         /// <summary>Gem price of the first decor level in the starter clinic, and its growth per owned level.</summary>
         public long DecorationGemBase { get; }
         public ClinicGrowth DecorationGemGrowth { get; }
+
+        /// <summary>Rules 5: equipment prices start at the room's equipment price, then compound with the growth per piece
+        /// unlocked and per version already owned.</summary>
+        public ClinicGrowth GearItemGrowth { get; private set; }
+        public ClinicGrowth GearVersionGrowth { get; private set; }
 
         // Indexed by ClinicAmenity.
         public long[] AmenityBase { get; }
@@ -158,6 +167,8 @@ namespace IdleClinic.Core
             // facilities and workstations (twenty), and twenty-five training levels (fifty). Income per level is
             // unchanged, so no clinic earns less; the prices and build times of the new levels set the pace.
             DeepProgression = true;
+            PharmacyFeePercent = 40;
+            TaxiFarePerLevel = 10;
             StarterMaximumTier = 20;
             StarterMaximumTrackLevel = 10;
             StarterMaximumTrainingLevel = 25;
@@ -175,6 +186,10 @@ namespace IdleClinic.Core
             MaximumConstructionSeconds = 2 * 60 * 60;
             DecorationGemBase = 5;
             DecorationGemGrowth = new ClinicGrowth(13, 10);
+            // Every room's equipment is twenty pieces of ten versions each, so nine paid upgrades per piece. The first
+            // piece's first upgrade costs what the old equipment level did.
+            GearItemGrowth = new ClinicGrowth(6, 5);
+            GearVersionGrowth = new ClinicGrowth(27, 20);
         }
 
         /// <summary>Before rules 5 both clinics climb at the same rate per level.</summary>

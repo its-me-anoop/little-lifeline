@@ -73,6 +73,12 @@ namespace IdleClinic.Core
                 + balance.PharmacyFacilitiesFeePercent * (state.Room(ClinicRoom.Pharmacy).FacilitiesLevel - 1);
             return balance.VisitFeeBase * LocationMultiplier(state) * percent / 100;
         }
+        /// <summary>Paid at the pharmacy counter when a prescription is collected (rules 5, doctors clinic).</summary>
+        public static long PharmacyFee(ClinicState state) => IsDoctors(state) ? VisitFee(state) * ClinicBalance.For(state).PharmacyFeePercent / 100 : 0;
+        public static long MaximumPharmacyFee(ClinicState state) => IsDoctors(state) ? MaximumVisitFee(state) * ClinicBalance.For(state).PharmacyFeePercent / 100 : 0;
+        /// <summary>Paid to the taxi stand for each ride, to or from the clinic (rules 5, doctors clinic).</summary>
+        public static long TaxiFare(ClinicState state) => IsDoctors(state) ? ClinicBalance.For(state).TaxiFarePerLevel * LocationMultiplier(state) * (state.Amenity(ClinicAmenity.Taxi)?.Level ?? 0) : 0;
+        public static long MaximumTaxiFare(ClinicState state) => IsDoctors(state) ? ClinicBalanceTable.V5.TaxiFarePerLevel * LocationMultiplier(state) * MaximumAmenityLevel(state, ClinicAmenity.Taxi) : 0;
         public static long ParkingFee(ClinicState state)
             => ClinicBalance.For(state).ParkingFeePerLevel * LocationMultiplier(state) * state.Amenity(ClinicAmenity.Parking).Level;
         public static long ParkingExitFee(ClinicState state)
@@ -91,7 +97,9 @@ namespace IdleClinic.Core
         public static double WaitingCallSeconds(ClinicState state) => WaitingCallTicks(state) / 10d;
         public static int ReceptionTicks(ClinicState state) => ReceptionTicks(state, 0);
         public static int TreatmentTicks(ClinicState state) => TreatmentTicks(state, 0);
-        public static int WaitingCallTicks(ClinicState state, int equipmentLevelsAdded = 0) => SpeedTicks(20 * LocationMultiplier(state), state.Room(ClinicRoom.Waiting).EquipmentLevel + equipmentLevelsAdded);
+        public static int WaitingCallTicks(ClinicState state, int equipmentLevelsAdded = 0) => ClinicGear.Active(state, ClinicRoom.Waiting)
+            ? ClinicGear.Apply(state, ClinicRoom.Waiting, 20L * LocationMultiplier(state))
+            : SpeedTicks(20 * LocationMultiplier(state), state.Room(ClinicRoom.Waiting).EquipmentLevel + equipmentLevelsAdded);
         public static int PatientAppearance(ulong seed, int patientId) => (int)((seed % 12 + (ulong)patientId * 7) % 12);
         public static int ParkingCapacity(ClinicState state) => 2 * state.Amenity(ClinicAmenity.Parking).Level;
         public static long VendingTip(ClinicState state) => ClinicBalance.For(state).VendingTipPerLevel * LocationMultiplier(state) * state.Amenity(ClinicAmenity.Vending).Level;
@@ -133,15 +141,19 @@ namespace IdleClinic.Core
         public static int ReceptionTicks(ClinicState state, int deskId) => StationServiceTicks(state, ClinicStaffRole.Receptionist, deskId);
         public static int TreatmentTicks(ClinicState state, int stationId) => StationServiceTicks(state, ClinicStaffRole.Nurse, stationId);
         public static int StationServiceTicks(ClinicState state, ClinicStaffRole role, int stationId,
-            int equipmentLevelsAdded = 0, int trainingLevelsAdded = 0, int roomEquipmentLevelsAdded = 0)
+            int equipmentLevelsAdded = 0, int trainingLevelsAdded = 0, int roomEquipmentLevelsAdded = 0, int gearStepsAdded = 0)
         {
             var balance = ClinicBalance.For(state);
             var room = state.Room(RoomForRole(role));
             var staff = state.Staff.Find(s => s.Role == role && s.StationId == stationId);
-            var speed = 100 + balance.RoomEquipmentSpeedPercent * (room.EquipmentLevel - 1 + roomEquipmentLevelsAdded)
+            // Equipment pieces (rules 5) take a share of the remaining time off; the older equipment level adds to speed instead.
+            var kind = RoomForRole(role);
+            var gear = ClinicGear.Active(state, kind);
+            var speed = 100 + (gear ? 0 : balance.RoomEquipmentSpeedPercent * (room.EquipmentLevel - 1 + roomEquipmentLevelsAdded))
                 + balance.StationEquipmentSpeedPercent * (Math.Max(1, StationLevel(state, role, stationId)) - 1 + equipmentLevelsAdded)
                 + balance.TrainingSpeedPercent * ((staff?.TrainingLevel ?? 1) - 1 + trainingLevelsAdded);
-            var ticks = (balance.ServiceBaseTicks[(int)role] * LocationMultiplier(state) * 100 + speed - 1) / speed;
+            var ticks = (int)((balance.ServiceBaseTicks[(int)role] * LocationMultiplier(state) * 100L + speed - 1) / speed);
+            if (gear) ticks = ClinicGear.Apply(state, kind, ticks, gearStepsAdded);
             return role == ClinicStaffRole.Nurse && Deep(state) ? Math.Max(FastestTreatment(state), ticks) : ticks;
         }
         public static string ParkingPatientAnchor(int id) => "parking.bay." + id + ".patient";
@@ -149,6 +161,7 @@ namespace IdleClinic.Core
         private static int SpeedTicks(int baseTicks, int level) => (baseTicks * 100 + (100 + 15 * (level - 1)) - 1) / (100 + 15 * (level - 1));
         private static ClinicBalanceTable V3 => ClinicBalanceTable.V3;
         private static long ScaleCost(long basis, ClinicGrowth growth, int exponent) => ScaleCost(basis, growth.Numerator, growth.Denominator, exponent);
+        internal static long Compound(long basis, ClinicGrowth growth, int exponent) => ScaleCost(basis, growth, exponent);
         private static long ScaleCost(long basis, long numerator, long denominator, int exponent)
         {
             if (basis <= 0 || numerator <= 0 || denominator <= 0 || exponent < 0) return 0;

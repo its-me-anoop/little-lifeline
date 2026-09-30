@@ -42,7 +42,7 @@ namespace IdleClinic.Tests
             var reopened = new ClinicProfileStore(directory);
             var profile = reopened.LoadClinic(Start.AddHours(1));
             Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.CollectFirstPayment));
-            Assert.That(profile.state.Wallet, Is.Zero);
+            Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins));
             Assert.That(profile.state.ReceptionDesks[0].Till, Is.EqualTo(50));
             Assert.That(profile.state.TotalPayments, Is.EqualTo(1));
             Assert.That(profile.state.Staff.Count, Is.EqualTo(1));
@@ -59,10 +59,10 @@ namespace IdleClinic.Tests
             var reopened = new ClinicProfileStore(directory);
             profile = reopened.LoadClinic(Start.AddSeconds(25));
             Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.HireFirstNurse));
-            Assert.That(profile.state.Wallet, Is.EqualTo(50));
+            Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins + 50));
             Assert.That(profile.state.ReceptionDesks[0].Till, Is.Zero);
             Assert.That(new ClinicSimulation(profile.state).Collect(0).Success, Is.False);
-            Assert.That(profile.state.Wallet, Is.EqualTo(50));
+            Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins + 50));
         }
 
         [Test] public void FullStateAndPreferencesRoundTripExactly()
@@ -259,10 +259,10 @@ namespace IdleClinic.Tests
         {
             var store = new ClinicProfileStore(directory); store.LoadClinic(Start);
             var original = File.ReadAllText(SavePath);
-            var changed = original.Replace("\\\"Wallet\\\":0", "\\\"Wallet\\\":9000");
+            var changed = original.Replace("\\\"Wallet\\\":250", "\\\"Wallet\\\":9000");
             Assert.That(changed, Is.Not.EqualTo(original)); File.WriteAllText(SavePath, changed);
             var reopened = new ClinicProfileStore(directory); var profile = reopened.LoadClinic(Start);
-            Assert.That(profile.state.Wallet, Is.Zero); Assert.That(reopened.Error, Is.Not.Null);
+            Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins)); Assert.That(reopened.Error, Is.Not.Null);
         }
 
         [Test] public void AbandonedTemporaryFileCannotBecomeAClaimedSnapshot()
@@ -284,7 +284,7 @@ namespace IdleClinic.Tests
             var profile = new ClinicProfileStore(directory).LoadClinic(Start);
             Assert.That(profile.preferences.sound, Is.False); Assert.That(profile.preferences.haptics, Is.False);
             Assert.That(profile.preferences.reducedMotion, Is.True);
-            Assert.That(profile.state.Wallet, Is.Zero); Assert.That(profile.state.Tick, Is.Zero);
+            Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins)); Assert.That(profile.state.Tick, Is.Zero);
             Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.FirstArrival));
             Assert.That(File.ReadAllText(legacyPath), Is.EqualTo(before));
             Assert.That(File.Exists(legacyPath + ".backup"), Is.False);

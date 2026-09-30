@@ -46,7 +46,7 @@ namespace IdleClinic.Core
         public static IReadOnlyList<ClinicGuideStep> Steps { get; } = new List<ClinicGuideStep>
         {
             new ClinicGuideStep("guide.equipment", "Upgrade first aid equipment", "Faster care treats more patients every minute.", 5,
-                ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).EquipmentLevel >= 2, ClinicRoom.FirstAid, control: "upgrade-firstaid-equipment"),
+                ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).EquipmentLevel >= 2 || ClinicGear.Steps(s, ClinicRoom.FirstAid) >= 1, ClinicRoom.FirstAid, control: "upgrade-firstaid-equipment"),
             new ClinicGuideStep("guide.waiting", "Build the waiting room", "Seats stop the queue spilling into the street.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Waiting).Built, ClinicRoom.Waiting, control: "build-waiting-room"),
             new ClinicGuideStep("guide.decor", "Decorate reception", "Decor is optional and bought with gems. Each level adds 5% to every visit fee.", 5,
@@ -71,9 +71,9 @@ namespace IdleClinic.Core
                 ClinicGuideFocus.Locations, (s, d, p) => d != null),
             // The doctors clinic: consultations, the pharmacy, taxis and the climb to tier 6.
             Doctors("guide.doctors.consult", "Upgrade consultation equipment", "Faster consultations move patients on to the pharmacy.", 10,
-                ClinicGuideFocus.Room, d => d.Room(ClinicRoom.Consultation).EquipmentLevel >= 2, ClinicRoom.Consultation, control: "upgrade-consultation-equipment"),
+                ClinicGuideFocus.Room, d => d.Room(ClinicRoom.Consultation).EquipmentLevel >= 2 || ClinicGear.Steps(d, ClinicRoom.Consultation) >= 1, ClinicRoom.Consultation, control: "upgrade-consultation-equipment"),
             Doctors("guide.doctors.pharmacy", "Upgrade pharmacy equipment", "Quicker dispensing clears the queue for new patients.", 10,
-                ClinicGuideFocus.Room, d => d.Room(ClinicRoom.Pharmacy).EquipmentLevel >= 2, ClinicRoom.Pharmacy, control: "upgrade-pharmacy-equipment"),
+                ClinicGuideFocus.Room, d => d.Room(ClinicRoom.Pharmacy).EquipmentLevel >= 2 || ClinicGear.Steps(d, ClinicRoom.Pharmacy) >= 1, ClinicRoom.Pharmacy, control: "upgrade-pharmacy-equipment"),
             Doctors("guide.doctors.taxi", "Open the taxi stand", "Taxi patients don't need a parking space.", 10,
                 ClinicGuideFocus.Amenity, d => d.Amenity(ClinicAmenity.Taxi)?.Level >= 1, amenity: ClinicAmenity.Taxi, control: "build-taxi-stand"),
             Doctors("guide.doctors.doctor", "Hire a second doctor", "Add a consultation room, then hire a doctor for it.", 15,

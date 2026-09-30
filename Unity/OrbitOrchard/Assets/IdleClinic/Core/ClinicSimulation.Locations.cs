@@ -150,6 +150,7 @@ namespace IdleClinic.Core
         {
             State.Staff.Find(s => s.Id == ClinicRules.StaffId(ClinicStaffRole.Pharmacist, patient.PharmacyStationId)).PatientId = -1;
             Emit(ClinicEventKind.DispensingCompleted, ClinicRoom.Pharmacy, patient.Id, ClinicRules.StaffId(ClinicStaffRole.Pharmacist, patient.PharmacyStationId), source: patient.ToAnchor);
+            ChargePharmacyFee(patient);
             patient.PharmacyStationId = -1;
             patient.PharmacyComplete = true;
             patient.HasAdmissionReservation = false;

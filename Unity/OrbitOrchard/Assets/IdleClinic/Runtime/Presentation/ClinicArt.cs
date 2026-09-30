@@ -44,7 +44,7 @@ namespace IdleClinic.Presentation
             if(materials.TryGetValue(role,out var material)) return material;
             material=new Material(Shader.Find(role=="Paper" ? "Unlit/Color" : "Standard")){name="Clinic "+role,enableInstancing=true};
             material.color=Color(role);
-            if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:0); }
+            if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:role=="Platinum"?.5f:role=="Graphite"?.3f:0); }
             materials.Add(role,material);return material;
         }
         /// <summary>A separately coloured copy of a role's material, kept under its own key (for example one room's floor).</summary>
@@ -58,6 +58,8 @@ namespace IdleClinic.Presentation
         {
             if(role=="Glass")return .82f;
             if(role=="Chrome")return .72f;
+            if(role=="Platinum"||role=="Graphite")return .5f;
+            if(role=="Glow"||role=="Aqua")return .6f;
             if(role.StartsWith("Car",StringComparison.Ordinal))return .58f;
             if(role=="LampLight"||role=="TailLight")return .6f;
             return role=="Gold"?.40f:.19f;
@@ -76,6 +78,12 @@ namespace IdleClinic.Presentation
                 case "CarTaxi":return new Color(.90f,.70f,.20f);
                 case "Glass":return new Color(.20f,.27f,.31f);
                 case "Chrome":return new Color(.76f,.77f,.75f);
+                // First aid equipment: the metals and glows of its upper versions.
+                case "Platinum":return new Color(.82f,.84f,.86f);
+                case "Graphite":return new Color(.24f,.27f,.30f);
+                case "Aqua":return new Color(.30f,.72f,.72f);
+                case "Glow":return new Color(.55f,.95f,.80f);
+                case "Crimson":return new Color(.72f,.22f,.20f);
                 case "Tyre":return new Color(.12f,.13f,.13f);
                 case "LampLight":return new Color(.98f,.93f,.76f);
                 case "TailLight":return new Color(.70f,.12f,.12f);

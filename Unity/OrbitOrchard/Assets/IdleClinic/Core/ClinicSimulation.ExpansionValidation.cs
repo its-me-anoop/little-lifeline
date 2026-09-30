@@ -8,6 +8,7 @@ namespace IdleClinic.Core
     {
         private static bool IsValidExpansion(ClinicState state)
         {
+            if (state.TotalPharmacyFees != 0 || state.TotalTaxiFares != 0 || state.TreatmentStations.Any(s => s == null || s.Till != 0)) return false;
             if (state.TotalTips < 0 || state.TotalTips > 21 * state.TotalPayments || state.TotalTips > state.TotalEarned
                 || state.Amenities == null || state.Amenities.Count != 3 || state.TreatmentStations == null
                 || state.TreatmentStations.Count != state.Room(ClinicRoom.FirstAid).StationCount) return false;

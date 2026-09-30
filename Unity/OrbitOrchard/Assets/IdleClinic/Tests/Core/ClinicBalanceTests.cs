@@ -205,7 +205,7 @@ namespace IdleClinic.Tests
                 }
                 Assert.That(ClinicRules.VisitFee(v5), Is.EqualTo(ClinicRules.VisitFee(v4)), "No clinic earns less.");
                 foreach (var role in Roles)
-                    Assert.That(ClinicRules.StationServiceTicks(v5, role, 0), Is.EqualTo(ClinicRules.StationServiceTicks(v4, role, 0)), "Service speed is unchanged.");
+                    Assert.That(ClinicRules.StationServiceTicks(v5, role, 0), Is.LessThanOrEqualTo(ClinicRules.StationServiceTicks(v4, role, 0)), "Service is never slower than before.");
             }
         }
 

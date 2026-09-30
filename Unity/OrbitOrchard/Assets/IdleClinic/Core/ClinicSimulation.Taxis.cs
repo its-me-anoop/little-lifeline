@@ -122,6 +122,7 @@ namespace IdleClinic.Core
             ride.PhaseStartedTick = State.Tick;
             ride.PhaseEndsTick = State.Tick + ClinicRules.TaxiPickupTicks;
             patient.TaxiWaitingReserved = false;
+            ChargeTaxiFare(patient);
             Rest(patient, ClinicPatientPhase.TaxiPickingUp);
         }
         private bool RoadWindowAvailable(int duration)
@@ -156,7 +157,7 @@ namespace IdleClinic.Core
                     ride.Phase = ride.Pickup ? ClinicTaxiPhase.WaitingForPassenger : ClinicTaxiPhase.Boarding;
                     ride.PhaseStartedTick = State.Tick;
                     ride.PhaseEndsTick = ride.Pickup ? 0 : State.Tick + ClinicRules.TaxiDropOffTicks;
-                    if (!ride.Pickup) HoldTaxiPassenger(patient, ClinicPatientPhase.TaxiDroppingOff, State.Tick);
+                    if (!ride.Pickup) { HoldTaxiPassenger(patient, ClinicPatientPhase.TaxiDroppingOff, State.Tick); ChargeTaxiFare(patient); }
                     Emit(ClinicEventKind.TaxiArrived, ClinicRoom.Reception, patient.Id, source: ClinicRules.TaxiPatientAnchor(ride.DockId), amenity: ClinicAmenity.Taxi);
                 }
                 else if (ride.Phase == ClinicTaxiPhase.Boarding)

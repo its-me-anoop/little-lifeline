@@ -403,6 +403,8 @@ namespace IdleClinic.Tests
         public void EveryUpgradeTrackAddsAnAuthoredVisibleFitting(ClinicRoom room,UpgradeTrack track)
         {
             var state=new ClinicState();var item=new ClinicRoomState{Kind=room,Built=true};state.Rooms.Add(item);
+            // First aid equipment is shown piece by piece under rules 5; the track fittings belong to earlier rules.
+            if(track==UpgradeTrack.Equipment)state.RulesVersion=4;
             world.Render(state,.016f);
             // Every level up to the top of the track adds something; decor pieces live in the room's style.
             var style=Find(room==ClinicRoom.Reception?"Reception style":room==ClinicRoom.FirstAid?"First aid style":"Waiting room style");
@@ -417,6 +419,42 @@ namespace IdleClinic.Tests
                 Assert.That(detail.gameObject.activeInHierarchy,Is.True);
                 Assert.That(detail.GetComponentsInChildren<Renderer>().Length,Is.GreaterThan(0));
             }
+        }
+
+        [TestCase(ClinicRoom.Reception)]
+        [TestCase(ClinicRoom.FirstAid)]
+        [TestCase(ClinicRoom.Waiting)]
+        public void EveryItemHasTenAuthoredVersionsAndOnlyTheOwnedOneShows(ClinicRoom kind)
+        {
+            var state=new ClinicState();
+            foreach(var r in new[]{ClinicRoom.Reception,ClinicRoom.FirstAid,ClinicRoom.Waiting})state.Rooms.Add(new ClinicRoomState{Kind=r,Built=true,Tier=r==kind?4:1});
+            var room=state.Room(kind);
+            ClinicGear.EnsureSeeded(state,kind);room.GearLevels[1]=6;
+            world.Render(state,.016f);
+            int unlocked=ClinicGear.UnlockedCount(state,kind);
+            Assert.That(unlocked,Is.EqualTo(4));
+            for(int item=0;item<ClinicGear.ItemCount;item++)
+            {
+                var name=kind+" "+ClinicGear.ItemName(kind,item);
+                bool open=item<unlocked;
+                var piece=Find(name);
+                if(open)Assert.That(piece,Is.Not.Null,name);
+                if(piece==null)continue;
+                Assert.That(piece.gameObject.activeInHierarchy,Is.EqualTo(open),name+" arrives with room size "+ClinicGear.UnlockTier(state,item));
+                if(!open)continue;
+                var stem="Gear"+(item+1).ToString("00")+"_V";
+                for(int v=1;v<=ClinicGear.MaximumVersion;v++)
+                {
+                    Transform version=null;foreach(var t in piece.GetComponentsInChildren<Transform>(true))if(t.name==stem+v)version=t;
+                    Assert.That(version,Is.Not.Null,name+" version "+v);
+                    Assert.That(version.GetComponentsInChildren<Renderer>(true).Length,Is.GreaterThan(0));
+                    Assert.That(version.gameObject.activeSelf,Is.EqualTo(v==room.GearLevels[item]),name+" version "+v);
+                }
+            }
+            room.GearLevels[1]=7;world.Render(state,.016f);
+            var second=Find(kind+" "+ClinicGear.ItemName(kind,1));
+            int shown=0;foreach(var t in second.GetComponentsInChildren<Transform>(true))if(System.Text.RegularExpressions.Regex.IsMatch(t.name,@"^Gear02_V\d+$")&&t.gameObject.activeSelf){shown++;Assert.That(t.name,Is.EqualTo("Gear02_V7"));}
+            Assert.That(shown,Is.EqualTo(1));
         }
 
         [Test]
@@ -478,15 +516,15 @@ namespace IdleClinic.Tests
         }
 
         [Test]
-        public void AllQueueSocketsHavePavingBeneathTheirFeet()
+        public void AllQueueSocketsStandInsideTheReceptionBetweenTheDeskAisleAndTheFrontWall()
         {
-            var paving=Find("Reception forecourt paving").GetComponent<Renderer>().bounds;
+            var floor=Find("Reception style").GetComponentInChildren<Renderer>(true);
             for(int i=0;i<11;i++)
             {
                 var point=world.GetAnchorPoint("reception.queue."+i);
-                Assert.That(point.x,Is.InRange(paving.min.x+.25f,paving.max.x-.25f));
-                Assert.That(point.z,Is.InRange(paving.min.z+.25f,paving.max.z+.001f));
-                Assert.That(Mathf.Abs(point.y-paving.max.y),Is.LessThan(.005f));
+                Assert.That(point.x,Is.InRange(-5.3f,-.4f),"queue "+i);
+                Assert.That(point.z,Is.InRange(-4.85f,-4.15f),"Inside the front wall (-5.13), clear of the desk aisle (-4.05): queue "+i);
+                Assert.That(Mathf.Abs(point.y-.14f),Is.LessThan(.01f));
             }
         }
         [Test]

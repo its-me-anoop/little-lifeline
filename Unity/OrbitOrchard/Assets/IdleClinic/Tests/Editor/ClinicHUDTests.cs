@@ -233,7 +233,7 @@ namespace IdleClinic.Tests
             using(var ui=new CapturedTouchPanel())
             using(var ax=new CashAccessibilityFixture(ui.Root))
             {
-                var state=ax.Simulation.State;
+                var state=ax.Simulation.State;state.RulesVersion=4;
                 state.ReceptionDesks[0].EquipmentLevel=2;state.Staff[0].TrainingLevel=2;
                 Assert.That(ax.EquipmentBenefit(ClinicRoom.Reception),Is.EqualTo("10.3s"));
                 state.ReceptionDesks.Add(new ReceptionDeskState{Id=1});

@@ -16,7 +16,8 @@ namespace IdleClinic.Core
         public double ElapsedSeconds => (State.Tick + State.SubTick) / ClinicRules.TicksPerSecond;
         public int NurseCount => State.Staff.Count(s => s.Role == ClinicStaffRole.Nurse);
         public int ReceptionistCount => State.ReceptionDesks.Count;
-        public long TillCash => State.ReceptionDesks.Sum(d => d.Till) + State.Amenity(ClinicAmenity.Vending).Till + (State.Amenity(ClinicAmenity.Parking)?.Till ?? 0);
+        public long TillCash => State.ReceptionDesks.Sum(d => d.Till) + State.Amenity(ClinicAmenity.Vending).Till + (State.Amenity(ClinicAmenity.Parking)?.Till ?? 0)
+            + (State.Amenity(ClinicAmenity.Taxi)?.Till ?? 0) + State.PharmacyStations.Sum(s => s.Till);
         public int PaidWaitingCount => State.Patients.Count(IsPaidWaiting);
         public int AdmissionCapacity => ClinicRules.WaitingCapacity(State) + (ClinicRules.IsDoctors(State) ? State.Staff.Count(s => s.Role != ClinicStaffRole.Receptionist) : Math.Max(1, NurseCount));
 
@@ -222,6 +223,8 @@ namespace IdleClinic.Core
             var room = State.Room(kind);
             if (room == null || !room.Built) return No("Build this room first.");
             if (track == UpgradeTrack.Decoration && ClinicRules.Deep(State)) return No("Decor is added with gems.");
+            if (track == UpgradeTrack.Equipment && ClinicGear.Active(State, kind)) return No("Upgrade each piece of equipment in the equipment list.");
+            if (track == UpgradeTrack.Facilities && ClinicRules.Deep(State)) return No("Facilities improve as the room's equipment does.");
             if (room.Level(track) >= ClinicRules.TrackCap(State, kind, track))
                 return No(room.Level(track) >= ClinicRules.MaximumTrackLevel(State) ? "This improvement is at its top level." : "Renovate the room to unlock more improvements.");
             var cost = ClinicRules.UpgradeCost(State, kind, track);
@@ -232,6 +235,24 @@ namespace IdleClinic.Core
             else room.DecorationLevel++;
             Emit(ClinicEventKind.EquipmentUpgraded, kind, amount: cost, source: RoomAnchor(kind));
             return Yes("Room improved.", cost);
+        }
+
+        /// <summary>Buy the next version of one piece of a room's equipment (rules 5). Pieces arrive as the room is renovated.</summary>
+        public ClinicCommandResult UpgradeGear(ClinicRoom kind, int item)
+        {
+            if (!TutorialComplete()) return No("Finish the first treatment before upgrading.");
+            if (!Defined(kind) || !ClinicGear.Active(State, kind) || !ClinicGear.ValidItem(item)) return No("This equipment cannot be upgraded.");
+            var room = State.Room(kind);
+            if (!ClinicGear.Unlocked(State, kind, item)) return No("Renovate to room size " + ClinicGear.UnlockTier(State, item) + " to unlock the " + ClinicGear.ItemName(kind, item).ToLowerInvariant() + ".");
+            if (ClinicGear.AtTop(State, kind, item)) return No("This equipment is already the most advanced version.");
+            var cost = ClinicGear.UpgradeCost(State, kind, item);
+            if (!CanSpend(cost)) return No("Save " + cost + " coins for this upgrade.");
+            Spend(cost);
+            ClinicGear.EnsureSeeded(State, kind);
+            room.GearLevels[item]++;
+            ClinicGear.Sync(State, room);
+            Emit(ClinicEventKind.EquipmentUpgraded, kind, amount: cost, source: RoomAnchor(kind), item: item);
+            return Yes("Equipment upgraded.", cost);
         }
 
         /// <summary>Add one decor level (rules 5). Decor is optional and bought with gems; payment is the caller's.</summary>
@@ -618,12 +639,12 @@ namespace IdleClinic.Core
             Emit(ClinicEventKind.TutorialAdvanced, ClinicRoom.FirstAid);
         }
         private void Emit(ClinicEventKind kind, ClinicRoom room, int patientId = -1, int staffId = -1,
-            int deskId = -1, long amount = 0, string source = "", ClinicAmenity amenity = ClinicAmenity.Parking)
+            int deskId = -1, long amount = 0, string source = "", ClinicAmenity amenity = ClinicAmenity.Parking, int item = -1)
         {
             var id = State.NextEventId++;
             if (!captureEvents) return;
             pendingEvents.Add(new ClinicEvent { Id = id, Tick = State.Tick, Kind = kind, Room = room,
-                PatientId = patientId, StaffId = staffId, DeskId = deskId, Amount = amount, SourceAnchor = source, Amenity = amenity });
+                PatientId = patientId, StaffId = staffId, DeskId = deskId, Amount = amount, SourceAnchor = source, Amenity = amenity, Item = item });
         }
         private bool CanSpend(long amount) => amount > 0 && State.Wallet >= amount && State.TotalSpent <= MaximumMoney - amount;
         private void Spend(long amount) { State.Wallet -= amount; State.TotalSpent += amount; }
@@ -725,7 +746,7 @@ namespace IdleClinic.Core
                     || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
                     || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
                     || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)
-                    || room.StationCount < 0 || room.StationCount > 2) return false;
+                    || room.StationCount < 0 || room.StationCount > 2 || !ClinicGear.IsValid(room)) return false;
             var reception = state.Room(ClinicRoom.Reception);
             var firstAid = state.Room(ClinicRoom.FirstAid);
             var waiting = state.Room(ClinicRoom.Waiting);
@@ -860,8 +881,8 @@ namespace IdleClinic.Core
                 if (state.NextArrivalTick != -1 || state.NextPatientId != 1 || state.TotalTreatments != 0 || state.Patients.Count != 1
                     || state.Patients[0].Id != 0 || state.TotalPayments > 1 || state.WaitingRoomUnlocked || state.Construction.Count != 0) return false;
                 if (state.Tutorial == ClinicTutorialStep.FirstArrival && (state.TotalPayments != 0 || nurseStations.Count != 0)) return false;
-                if (state.Tutorial == ClinicTutorialStep.CollectFirstPayment && (state.TotalPayments != 1 || till != 50 || state.Wallet != 0 || nurseStations.Count != 0)) return false;
-                if (state.Tutorial == ClinicTutorialStep.HireFirstNurse && (state.TotalPayments != 1 || till != 0 || state.Wallet != 50 || nurseStations.Count != 0)) return false;
+                if (state.Tutorial == ClinicTutorialStep.CollectFirstPayment && (state.TotalPayments != 1 || till != 50 || state.Wallet != state.TotalRewards || nurseStations.Count != 0)) return false;
+                if (state.Tutorial == ClinicTutorialStep.HireFirstNurse && (state.TotalPayments != 1 || till != 0 || state.Wallet != state.TotalRewards + 50 || nurseStations.Count != 0)) return false;
                 if (state.Tutorial == ClinicTutorialStep.FirstTreatment && (state.TotalPayments != 1 || nurseStations.Count != 1 || state.TotalSpent != 50)) return false;
             }
             if (state.DoctorsClinicUnlocked && ClinicRules.StarterCompletion(state).Count != 0) return false;

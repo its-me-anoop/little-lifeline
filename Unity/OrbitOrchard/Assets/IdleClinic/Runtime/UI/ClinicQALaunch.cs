@@ -35,6 +35,9 @@ namespace IdleClinic.App
                 if (int.TryParse(parts[0], out var tier)) IdleClinic.Presentation.ClinicWorld.PreviewTier = tier;
                 if (parts.Length > 1 && int.TryParse(parts[1], out var decor)) IdleClinic.Presentation.ClinicWorld.PreviewDecor = decor;
             }
+            // First aid equipment preview: every item at one version, for example "7".
+            var gear = Value("CLINIC_QA_GEAR", "-qaGear");
+            if (gear != null && int.TryParse(gear, out var gearVersion)) IdleClinic.Presentation.ClinicWorld.PreviewGear = gearVersion;
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
             {

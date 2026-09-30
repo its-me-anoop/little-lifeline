@@ -11,8 +11,10 @@ namespace IdleClinic.Presentation
         private const int TopLevel=10,Levels=TopLevel-1;
         private readonly GameObject[,,] details=new GameObject[3,2,Levels];
         private readonly GameObject[,,] stationDetails=new GameObject[2,2,Levels];
+        private readonly ClinicRoomGear roomGear;
         internal ClinicUpgrades(ClinicArt art,Transform parent)
         {
+            roomGear=new ClinicRoomGear(art,parent,false);
             for(int kind=0;kind<2;kind++)for(int station=0;station<2;station++)for(int level=2;level<=TopLevel;level++)
             {
                 var root=art.Group((kind==0?"Desk ":"Station ")+station+" equipment "+level,parent);stationDetails[kind,station,level-2]=root.gameObject;
@@ -51,6 +53,7 @@ namespace IdleClinic.Presentation
         }
         internal void Render(ClinicState state)
         {
+            roomGear.Render(state);
             for(int kind=0;kind<2;kind++)for(int station=0;station<2;station++)
             {
                 int equipment=0;
@@ -63,7 +66,8 @@ namespace IdleClinic.Presentation
                 ClinicRoomState data=null;for(int i=0;i<state.Rooms.Count;i++)if((int)state.Rooms[i].Kind==room){data=state.Rooms[i];break;}
                 for(int track=0;track<2;track++)for(int level=2;level<=TopLevel;level++)
                 {
-                    bool active=data!=null&&data.Built&&data.Level((UpgradeTrack)track)>=level;
+                    // Equipment is shown piece by piece by ClinicRoomGear once it is priced per item.
+                    bool active=data!=null&&data.Built&&data.Level((UpgradeTrack)track)>=level&&!(track==0&&ClinicGear.Active(state,(ClinicRoom)room));
                     ClinicUpgradeEffects.Show(details[room,track,level-2],active);
                 }
             }
@@ -91,12 +95,12 @@ namespace IdleClinic.Presentation
                 float x=-4.70f+slot*.82f;
                 if(!second)
                 {
-                    art.Cylinder("Queue guide post",root,new Vector3(x,.47f,-6.60f),new Vector3(.055f,.65f,.055f),"Gold");
-                    art.Cylinder("Queue guide foot",root,new Vector3(x,.16f,-6.60f),new Vector3(.19f,.045f,.19f),"SageDark");
-                    art.Box("Queue floor arrow",root,new Vector3(x,.146f,-5.18f),new Vector3(.28f,.008f,.06f),"Gold");
+                    art.Cylinder("Queue guide post",root,new Vector3(x,.47f,-5.02f),new Vector3(.055f,.65f,.055f),"Gold");
+                    art.Cylinder("Queue guide foot",root,new Vector3(x,.16f,-5.02f),new Vector3(.19f,.045f,.19f),"SageDark");
+                    art.Box("Queue floor arrow",root,new Vector3(x,.146f,-4.25f),new Vector3(.28f,.008f,.06f),"Gold");
                 }
-                else if(slot<4)art.Box("Queue guide rope",root,new Vector3(x+.41f,.70f,-6.60f),new Vector3(.76f,.03f,.03f),"Rose");
-                else art.Box("Queue welcome sign",root,new Vector3(-4.70f,.95f,-6.60f),new Vector3(.34f,.22f,.03f),"SignBlue");
+                else if(slot<4)art.Box("Queue guide rope",root,new Vector3(x+.41f,.70f,-5.02f),new Vector3(.76f,.03f,.03f),"Rose");
+                else art.Box("Queue welcome sign",root,new Vector3(-4.70f,.95f,-5.02f),new Vector3(.34f,.22f,.03f),"SignBlue");
             }
         }
         private static void Treatment(ClinicArt art,Transform root,int track,int n)

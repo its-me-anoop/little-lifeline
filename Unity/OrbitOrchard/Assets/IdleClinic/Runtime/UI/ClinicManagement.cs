@@ -18,6 +18,9 @@ namespace IdleClinic.App
     {
         public static bool IsVendingCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected
             &&change.DeskId==-1&&change.Amenity==ClinicAmenity.Vending;
+        public static bool IsTaxiCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected
+            &&change.DeskId==-1&&change.Amenity==ClinicAmenity.Taxi;
+        public static bool IsPharmacyCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected&&change.Room==ClinicRoom.Pharmacy;
         public static bool IsParkingCollection(ClinicEvent change)=>change.Kind==ClinicEventKind.CashCollected
             &&change.DeskId==-1&&change.Amenity==ClinicAmenity.Parking;
     }
@@ -88,6 +91,8 @@ namespace IdleClinic.App
         }
         private void CollectVending()=>Run(()=>simulation.CollectVendingTips());
         private void CollectParking()=>Run(()=>simulation.CollectParkingFees());
+        private void CollectTaxi()=>Run(()=>simulation.CollectTaxiFares());
+        private void CollectPharmacy(int station)=>Run(()=>simulation.CollectPharmacyFees(station));
 
         private void BuildRoomShortcuts(VisualElement heading,ClinicRoom room)
         {
@@ -239,6 +244,33 @@ namespace IdleClinic.App
             ClinicMarkerPresentation.CashDetail(parkingCashMarker,wideWorldMarkers);
             PositionMarker(parkingCashMarker,world.WorldToViewport(world.GetParkingCashPoint()),parkingTill>0,-30,
                 wideWorldMarkers?new Vector2(44,44):(Vector2?)null);
+            if(State.Location==ClinicLocation.DoctorsClinic)
+            {
+                var taxiTill=State.Amenity(ClinicAmenity.Taxi)?.Till??0;
+                taxiCashMarker=CashMarker(taxiCashMarker,"Collect taxi fares",()=>State.Amenity(ClinicAmenity.Taxi)?.Till??0,CollectTaxi);
+                PositionMarker(taxiCashMarker,world.WorldToViewport(world.GetTaxiCashPoint()),taxiTill>0,-30,wideWorldMarkers?new Vector2(44,44):(Vector2?)null);
+                for(var i=0;i<pharmacyCashMarkers.Length;i++)
+                {
+                    var id=i;var station=State.PharmacyStations.Find(x=>x.Id==id);
+                    pharmacyCashMarkers[i]=CashMarker(pharmacyCashMarkers[i],"Collect pharmacy fees, counter "+(id+1),()=>State.PharmacyStations.Find(x=>x.Id==id)?.Till??0,()=>CollectPharmacy(id));
+                    PositionMarker(pharmacyCashMarkers[i],world.WorldToViewport(world.GetPharmacyCashPoint(id)),(station?.Till??0)>0,-30,wideWorldMarkers?new Vector2(44,44):(Vector2?)null);
+                }
+            }
+        }
+
+        /// <summary>A coin marker over a cash box that collects its balance when tapped.</summary>
+        private VisualElement CashMarker(VisualElement marker,string accessibleName,Func<long> till,Action collect)
+        {
+            if(marker==null)
+            {
+                marker=Box(overlay,"cash-marker");marker.pickingMode=PickingMode.Ignore;
+                marker.Add(new ClinicIcon(ClinicGlyph.Coin,19,new Color(.46f,.28f,.07f)));
+                Text(marker,"","cash-amount",true);
+                RegisterAccessibleButton(marker,accessibleName,collect,()=>till().ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins");
+            }
+            marker.Q<Label>().text=Money(till());
+            ClinicMarkerPresentation.CashDetail(marker,wideWorldMarkers);
+            return marker;
         }
         // Physical taps use the same minimum-size rectangles as accessibility.
         // Cash is checked before this lookup; nearby objects share space by distance.

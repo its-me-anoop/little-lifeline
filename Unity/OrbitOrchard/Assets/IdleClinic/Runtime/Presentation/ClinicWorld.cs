@@ -56,6 +56,8 @@ namespace IdleClinic.Presentation
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
         /// <summary>Development QA only: show every room styled as this room size and decor level (zero keeps the real ones).</summary>
         public static int PreviewTier,PreviewDecor;
+        /// <summary>Development previews: every room's equipment at this version when above zero.</summary>
+        public static int PreviewGear{get=>ClinicRoomGear.PreviewVersion;set=>ClinicRoomGear.PreviewVersion=value;}
 #endif
         internal static int StyleTier(int tier,int maximum,bool doctors)
         {
@@ -84,7 +86,7 @@ namespace IdleClinic.Presentation
         public void ConfigureLocation(ClinicLocation location)
         {
             Initialize();if(Location==location)return;
-            scene.gameObject.SetActive(false);ClinicArt.Destroy(scene.gameObject);anchors.Clear();Location=location;
+            gearPreview?.Dispose();gearPreview=null;scene.gameObject.SetActive(false);ClinicArt.Destroy(scene.gameObject);anchors.Clear();Location=location;
             scene=art.Group(location==ClinicLocation.DoctorsClinic?"Small doctors clinic":"Fixed hospital",transform);
             doctors=null;effects=new ClinicUpgradeEffects(art,scene);
             if(location==ClinicLocation.DoctorsClinic)doctors=new DoctorsClinicWorld(art,scene,this,Anchor,RegisterSockets);
@@ -216,10 +218,17 @@ namespace IdleClinic.Presentation
         public Vector3 GetDeskPoint(int id)=>doctors!=null?doctors.WorkstationPoint(ClinicStaffRole.Receptionist,id):desks[Mathf.Clamp(id,0,1)].transform.position+new Vector3(-.40f,1.26f,.02f);
         public Vector3 GetStationPoint(int id)=>doctors!=null?doctors.WorkstationPoint(ClinicStaffRole.Nurse,id):stations[Mathf.Clamp(id,0,1)].transform.position+new Vector3(-.20f,.80f,.27f);
         public Vector3 GetWorkstationPoint(ClinicStaffRole role,int id)=>doctors!=null?doctors.WorkstationPoint(role,id):role==ClinicStaffRole.Receptionist?GetDeskPoint(id):GetStationPoint(id);
+        private ClinicGearPreview gearPreview;
+        /// <summary>A picture of one first aid equipment piece at one version, for the equipment panel.</summary>
+        public RenderTexture GearPreview(ClinicRoom room,int item,int version){Initialize();if(gearPreview==null)gearPreview=new ClinicGearPreview(art,scene);return gearPreview.Show(room,item,version);}
+        /// <summary>Where a piece of a room's equipment stands, for celebrations and floating text.</summary>
+        public Vector3 GetGearPoint(ClinicRoom room,int item)=>ClinicRoomGear.Point(doctors!=null,room,item);
         public Vector3 GetRoomPoint(ClinicRoom room)=>doctors!=null?doctors.RoomPoint(room):roomRoots[(int)room].position+Vector3.up;
         public Vector3 GetAmenityPoint(ClinicAmenity kind)=>doctors!=null?doctors.AmenityPoint(kind):kind==ClinicAmenity.Parking?ClinicAmenities.ParkingPoint:
             kind==ClinicAmenity.Toilet?ClinicAmenities.ToiletPoint:ClinicAmenities.VendingPoint;
         public Vector3 GetVendingCashPoint()=>doctors!=null?doctors.VendingCashPoint:ClinicAmenities.VendingCashPoint;
+        public Vector3 GetTaxiCashPoint()=>doctors!=null?doctors.AmenityPoint(ClinicAmenity.Taxi)-Vector3.up*.15f:Vector3.zero;
+        public Vector3 GetPharmacyCashPoint(int station)=>doctors!=null?doctors.WorkstationPoint(ClinicStaffRole.Pharmacist,station)+Vector3.up*.1f:Vector3.zero;
         public Vector3 GetParkingCashPoint()=>ClinicParkingPresentation.CashPoint(doctors!=null);
         public Vector3 GetAnchorPoint(string name)
         {
@@ -476,7 +485,8 @@ namespace IdleClinic.Presentation
             Anchor("waiting.vending.patient",new Vector3(5.05f,Floor,-3.42f),Vector3.forward);
             Anchor("waiting.vending.cash",ClinicAmenities.VendingCashPoint);
             Anchor("entrance",new Vector3(.67f,Floor,-5.80f));Anchor("exit",new Vector3(1.12f,Floor,-6.15f),Vector3.back);
-            for(int i=0;i<11;i++)Anchor("reception.queue."+i,new Vector3(-3.85f+(i%4)*.73f,Floor,-4.78f-(i/4)*.70f));
+            // The queue stands inside the reception, between the desk aisle and the front wall: two rows of up to eight, first place nearest the entrance.
+            for(int i=0;i<11;i++)Anchor("reception.queue."+i,new Vector3(-.85f-(i%8)*.58f,Floor,-4.36f-(i/8)*.40f));
             for(int i=0;i<2;i++)Anchor("firstaid.standing."+i,new Vector3(-.62f,Floor,.70f+i*.65f),Vector3.left);
             Anchor("reception.progress",new Vector3(-2.8f,1.65f,-1.40f));Anchor("firstaid.progress",new Vector3(-2.8f,1.90f,3.35f));Anchor("waiting.progress",new Vector3(3.4f,1.5f,1.1f));
         }
@@ -489,6 +499,6 @@ namespace IdleClinic.Presentation
             light.shadows=LightShadows.Soft;light.shadowStrength=.28f;light.shadowBias=.025f;light.shadowNormalBias=.12f;light.cullingMask=1<<ClinicArt.Layer;
         }
         private void ReleaseTexture() { if(Texture==null)return;SceneCamera.targetTexture=null;Texture.Release();ClinicArt.Destroy(Texture);Texture=null; }
-        private void OnDestroy() { ReleaseTexture();art?.Dispose(); }
+        private void OnDestroy() { gearPreview?.Dispose();ReleaseTexture();art?.Dispose(); }
     }
 }

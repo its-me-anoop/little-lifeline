@@ -127,7 +127,8 @@ namespace IdleClinic.App
         private bool RoomPointHasHigherPriorityAction(Vector2 point)
         {
             foreach(var marker in cashMarkers.Values)if(CoversWorldPoint(marker,point))return true;
-            return CoversWorldPoint(vendingCashMarker,point)||CoversWorldPoint(parkingCashMarker,point)||CoversWorldPoint(waitingMarker,point);
+            foreach(var marker in pharmacyCashMarkers)if(CoversWorldPoint(marker,point))return true;
+            return CoversWorldPoint(vendingCashMarker,point)||CoversWorldPoint(parkingCashMarker,point)||CoversWorldPoint(taxiCashMarker,point)||CoversWorldPoint(waitingMarker,point);
         }
         private bool WorldPointIsCovered(Vector2 point)
         {

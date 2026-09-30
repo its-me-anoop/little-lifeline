@@ -63,15 +63,16 @@ namespace IdleClinic.App
                 ApplySafeArea();return;
             }
             dock.AddToClassList("room-dock");
-            if(upgradeTrackRoom!=room.Kind){upgradeTrackRoom=room.Kind;upgradeTrack=GuideTrack(room.Kind)??UpgradeTrack.Equipment;}
+            if(upgradeTrackRoom!=room.Kind){upgradeTrackRoom=room.Kind;gearFocus=-1;upgradeTrack=GuideTrack(room.Kind)??UpgradeTrack.Equipment;}
+            if(upgradeTrack==UpgradeTrack.Facilities&&ClinicRules.Deep(State))upgradeTrack=UpgradeTrack.Equipment;
             var body=new ScrollView(ScrollViewMode.Vertical){name="clinic-room-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden,verticalScrollerVisibility=ScrollerVisibility.Hidden};
             body.AddToClassList("bounded-dock-content");dock.Add(body);
             BindTouchCaptureLifecycle(body.contentContainer);BindTouchCaptureLifecycle(body.contentViewport);
             var tabs=Box(body,"segmented track-tabs");
             BuildTrackTab(tabs,room,UpgradeTrack.Equipment,ClinicGlyph.Equipment);
-            BuildTrackTab(tabs,room,UpgradeTrack.Facilities,ClinicGlyph.Facility);
             BuildTrackTab(tabs,room,UpgradeTrack.Decoration,ClinicGlyph.Plant);
-            BuildUpgrade(body,room,upgradeTrack);
+            if(GearList(room,upgradeTrack))BuildGearList(body,room);
+            else BuildUpgrade(body,room,upgradeTrack);
             var construction=State.Construction.FirstOrDefault(c=>c.Room==room.Kind);
             if(construction!=null)BuildConstructionReadout(construction,body);
             else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.BuildersBusy)BuildBuilderBusy(body);
@@ -92,7 +93,8 @@ namespace IdleClinic.App
             var building=State.Construction.Any(c=>c.Room==room.Kind);
             var chip=Text(meta,building?"Room "+room.Tier+" → "+(room.Tier+1):"Room "+room.Tier+" of "+ClinicRules.MaximumTier(State),"meta-chip",true);
             chip.EnableInClassList("meta-chip-building",building);
-            Text(meta,"Upgrade limit "+ClinicRules.ComponentCap(State,room.Kind),"meta-note");
+            if(ClinicGear.Active(State,room.Kind))Text(meta,ClinicGear.UnlockedCount(State,room.Kind)+" of "+ClinicGear.ItemCount+" pieces","meta-note");
+            else Text(meta,"Upgrade limit "+ClinicRules.ComponentCap(State,room.Kind),"meta-note");
         }
 
         private UpgradeTrack? GuideTrack(ClinicRoom room)
@@ -108,6 +110,7 @@ namespace IdleClinic.App
         private void BuildTrackTab(VisualElement parent,ClinicRoomState room,UpgradeTrack track,ClinicGlyph glyph)
         {
             var level=room.Level(track);var cap=ClinicRules.TrackCap(State,room.Kind,track);
+            if(GearList(room,track))GearProgress(State,room,out level,out cap);
             var selected=track==upgradeTrack;
             var tab=IconButton(parent,glyph,TrackName(track)+", level "+level+" of "+cap,()=>{upgradeTrack=track;dockKey="";UpdateReadouts();},"segment track-tab");
             tab.name="upgrade-tab-"+room.Kind.ToString().ToLowerInvariant()+"-"+track.ToString().ToLowerInvariant();

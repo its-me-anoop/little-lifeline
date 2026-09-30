@@ -56,6 +56,7 @@ namespace IdleClinic.Tests
         }
         [Test] public void UpgradingEveryTrackAndStationShowsTheTopLevelAndKeepsSockets()
         {
+            state.RulesVersion=4;
             var point=world.GetAnchorPoint("consultation.station.0.patient");world.Render(state,0);
             int top=ClinicRules.MaximumTrackLevel(state);
             foreach(var r in state.Rooms){r.Built=true;r.Tier=ClinicRules.MaximumTier(state);r.EquipmentLevel=r.FacilitiesLevel=r.DecorationLevel=top;}

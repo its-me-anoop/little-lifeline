@@ -99,6 +99,18 @@ namespace IdleClinic.Tests
             Assert.That(JsonUtility.ToJson(new ClinicProfileStore(directory).LoadClinic(now)), Is.EqualTo(JsonUtility.ToJson(store.Profile)));
         }
 
+        [Test] public void ABrandNewClinicStartsWithFiveGemsAnd250CoinsAndAReloadKeepsThem()
+        {
+            File.Delete(path);
+            var fresh = new ClinicProfileStore(directory); fresh.LoadClinic(now);
+            Assert.That(fresh.Profile.premium.gems, Is.EqualTo(ClinicProfileStore.NewPlayerGems));
+            Assert.That(fresh.Profile.premium.gemsEarned, Is.EqualTo(ClinicProfileStore.NewPlayerGems));
+            Assert.That(fresh.Profile.premium.IsValid(), Is.True);
+            Assert.That(fresh.Profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins));
+            var reopened = new ClinicProfileStore(directory); reopened.LoadClinic(now);
+            Assert.That(reopened.Profile.premium.gems, Is.EqualTo(ClinicProfileStore.NewPlayerGems), "Not granted again on relaunch.");
+        }
+
         [Test] public void EachTransactionGrantsOnceAndAFailedSaveGrantsNothingUntilRetried()
         {
             var store = new ClinicProfileStore(directory); store.LoadClinic(now);
@@ -224,7 +236,7 @@ namespace IdleClinic.Tests
             var buyer = new ClinicProfileStore(other); buyer.LoadClinic(now);
             Assert.That(buyer.RecordPurchasedUnlock(ClinicUnlocks.ExtraBuilder, now), Is.True, buyer.Error);
             Assert.That(buyer.ConstructionSlots, Is.EqualTo(2));
-            Assert.That(buyer.Profile.premium.gems, Is.Zero, "An App Store unlock costs no gems.");
+            Assert.That(buyer.Profile.premium.gems, Is.EqualTo(ClinicProfileStore.NewPlayerGems), "An App Store unlock costs no gems.");
         }
 
         [Test] public void DailyGoalsPayOnceAndTheLoginStreakGrowsOrRestarts()
@@ -242,7 +254,7 @@ namespace IdleClinic.Tests
                 sim.Advance(30, false);
                 foreach (var desk in sim.State.ReceptionDesks) sim.Collect(desk.Id);
                 if (first.Measure == ClinicDailyMeasure.Spent) sim.Upgrade(ClinicRoom.Reception, UpgradeTrack.Decoration);
-                if (first.Measure == ClinicDailyMeasure.Spent) sim.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment);
+                if (first.Measure == ClinicDailyMeasure.Spent) { sim.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment); sim.UpgradeGear(ClinicRoom.FirstAid, 0); }
             }
             Assert.That(store.IsDailyDone(first), Is.True, first.Id);
             Assert.That(store.Save(store.Profile, now), Is.True, store.Error);

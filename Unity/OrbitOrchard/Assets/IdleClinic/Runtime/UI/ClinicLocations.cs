@@ -173,6 +173,8 @@ namespace IdleClinic.App
             waitingMarker?.RemoveFromHierarchy();waitingMarker=null;
             vendingCashMarker?.RemoveFromHierarchy();vendingCashMarker=null;
             parkingCashMarker?.RemoveFromHierarchy();parkingCashMarker=null;
+            taxiCashMarker?.RemoveFromHierarchy();taxiCashMarker=null;
+            for(var i=0;i<pharmacyCashMarkers.Length;i++){pharmacyCashMarkers[i]?.RemoveFromHierarchy();pharmacyCashMarkers[i]=null;}
         }
     }
 }

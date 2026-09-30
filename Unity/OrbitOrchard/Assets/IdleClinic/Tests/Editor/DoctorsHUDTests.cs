@@ -74,12 +74,12 @@ namespace IdleClinic.Tests
             using(var ui=new DockFixture())
             {
                 var state=ui.Simulation.State;
-                var room=state.Room(kind);room.Tier=5;room.EquipmentLevel=ClinicRules.ComponentCap(state,kind);
+                var room=state.Room(kind);room.Tier=5;
                 var dock=ui.RoomDock(kind);
                 var expand=dock.Q<Button>("expand-room");Assert.That(expand,Is.Not.Null);
-                Assert.That(dock.Query<Label>().ToList().Any(l=>l.text.StartsWith("Upgrade limit "+ClinicRules.TrackCap(state,6)+" · ")),Is.True);
-                Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment").tooltip,
-                    Does.Contain("Requires room "+ClinicRules.TierUnlocking(state,room.EquipmentLevel+1)));
+                Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment"),Is.Not.Null,"The first upgradable piece can be bought.");
+                Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-facilities"),Is.Null,"Facilities are gone.");
+                Assert.That(dock.Q<Button>("gear-upgrade-19").enabledSelf,Is.False,"Later pieces wait for bigger rooms.");
                 room.Tier=ClinicRules.MaximumTier(state);
                 Assert.That(ui.RoomDock(kind).Q<Button>("expand-room"),Is.Null);
             }

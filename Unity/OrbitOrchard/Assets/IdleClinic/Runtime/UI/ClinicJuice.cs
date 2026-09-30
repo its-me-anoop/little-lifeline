@@ -69,6 +69,13 @@ namespace IdleClinic.App
             }
         }
 
+        /// <summary>The cash box a collection came from: a desk, the car park, the vending tip cup, the taxi stand or a pharmacy counter.</summary>
+        private Vector3 CashPoint(ClinicEvent change)
+            => ClinicCashPresentation.IsVendingCollection(change) ? world.GetVendingCashPoint()
+                : ClinicCashPresentation.IsParkingCollection(change) ? world.GetParkingCashPoint()
+                : ClinicCashPresentation.IsTaxiCollection(change) ? world.GetTaxiCashPoint()
+                : ClinicCashPresentation.IsPharmacyCollection(change) ? world.GetPharmacyCashPoint(change.DeskId) : world.GetCashPoint(change.DeskId);
+
         private void Celebrate(Vector3 point, float radius, string text)
         {
             world.CelebrateUpgrade(point, radius);
@@ -81,12 +88,13 @@ namespace IdleClinic.App
             switch (change.Kind)
             {
                 case ClinicEventKind.CashCollected:
-                    var source = ClinicCashPresentation.IsVendingCollection(change) ? world.GetVendingCashPoint()
-                        : ClinicCashPresentation.IsParkingCollection(change) ? world.GetParkingCashPoint() : world.GetCashPoint(change.DeskId);
+                    var source = CashPoint(change);
                     FloatText(source, "+" + Money(change.Amount), "float-coins");
                     break;
                 case ClinicEventKind.EquipmentUpgraded:
-                    Celebrate(world.GetRoomPoint(change.Room), 1.8f, "Upgraded!"); break;
+                    if (change.Item >= 0) Celebrate(world.GetGearPoint(change.Room, change.Item), 1.0f, "Upgraded!");
+                    else Celebrate(world.GetRoomPoint(change.Room), 1.8f, "Upgraded!");
+                    break;
                 case ClinicEventKind.StationUpgraded:
                 case ClinicEventKind.StaffTrained:
                     Celebrate(world.GetRoomPoint(change.Room), 1.4f, change.Kind == ClinicEventKind.StaffTrained ? "Trained!" : "Upgraded!"); break;
@@ -99,6 +107,10 @@ namespace IdleClinic.App
                     Celebrate(world.GetAmenityPoint(change.Amenity), 1.2f, "Improved!"); break;
                 case ClinicEventKind.ConstructionCompleted:
                     Celebrate(world.GetRoomPoint(change.Room), 2.6f, "Room ready!"); break;
+                case ClinicEventKind.PharmacyFeePaid:
+                    FloatText(world.GetPharmacyCashPoint(change.DeskId), "+" + Money(change.Amount), "float-coins"); break;
+                case ClinicEventKind.TaxiFarePaid:
+                    FloatText(world.GetTaxiCashPoint(), "+" + Money(change.Amount), "float-coins"); break;
                 case ClinicEventKind.ParkingFeePaid:
                     FloatText(world.GetParkingCashPoint(), "+" + Money(change.Amount), "float-coins"); break;
             }

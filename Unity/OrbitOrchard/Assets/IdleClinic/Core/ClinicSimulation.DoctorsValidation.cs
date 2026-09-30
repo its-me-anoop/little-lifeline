@@ -19,8 +19,9 @@ namespace IdleClinic.Core
                 || state.TotalPayments < 0 || state.TotalPayments > state.NextPatientId || state.TotalTreatments < 0 || state.TotalTreatments > state.TotalPayments
                 || state.TotalCollected > state.TotalEarned || state.TotalTips < 0 || state.TotalTips > 84L * state.TotalPayments
                 || !ValidParkingLedger(state, false)
-                || state.TotalEarned < 100L * state.TotalPayments + state.TotalTips + state.TotalParkingFees
-                || state.TotalEarned > ClinicRules.MaximumVisitFee(state) * state.TotalPayments + state.TotalTips + state.TotalParkingFees
+                || !ValidFareLedger(state)
+                || state.TotalEarned < 100L * state.TotalPayments + state.TotalTips + state.TotalParkingFees + state.TotalPharmacyFees + state.TotalTaxiFares
+                || state.TotalEarned > ClinicRules.MaximumVisitFee(state) * state.TotalPayments + state.TotalTips + state.TotalParkingFees + state.TotalPharmacyFees + state.TotalTaxiFares
                 || !MoneyRange(state.TotalRewards)
                 || (decimal)state.Wallet != state.TotalCollected - (decimal)state.TotalSpent + state.TotalTransferredIn - state.TotalTransferredOut + state.TotalRewards
                 || state.Rooms == null || state.Rooms.Count != 5 || state.ReceptionDesks == null || state.TreatmentStations == null
@@ -33,7 +34,8 @@ namespace IdleClinic.Core
                 if (room == null || !Defined(room.Kind) || !roomKinds.Add(room.Kind) || !room.Built || room.Tier < 1 || room.Tier > ClinicRules.MaximumTier(state)
                     || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
                     || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
-                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)) return false;
+                    || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)
+                    || !ClinicGear.IsValid(room)) return false;
                 var role = room.Kind == ClinicRoom.Reception ? ClinicStaffRole.Receptionist : room.Kind == ClinicRoom.FirstAid ? ClinicStaffRole.Nurse
                     : room.Kind == ClinicRoom.Consultation ? ClinicStaffRole.Doctor : ClinicStaffRole.Pharmacist;
                 if (room.Kind == ClinicRoom.Waiting ? room.StationCount != 0 : room.StationCount < 1 || room.StationCount > ClinicRules.MaximumStaff(state, role)) return false;
@@ -42,8 +44,8 @@ namespace IdleClinic.Core
             foreach (var amenity in state.Amenities)
                 if (amenity == null || !Defined(amenity.Kind) || !amenityKinds.Add(amenity.Kind) || amenity.Level < 1
                     || amenity.Level > ClinicRules.AmenityCap(state, amenity.Kind) || !MoneyRange(amenity.Till)
-                    || amenity.Kind != ClinicAmenity.Vending && amenity.Kind != ClinicAmenity.Parking && amenity.Till != 0) return false;
-            long till = state.Amenity(ClinicAmenity.Vending).Till + state.Amenity(ClinicAmenity.Parking).Till;
+                    || amenity.Kind != ClinicAmenity.Vending && amenity.Kind != ClinicAmenity.Parking && amenity.Kind != ClinicAmenity.Taxi && amenity.Till != 0) return false;
+            long till = state.Amenity(ClinicAmenity.Vending).Till + state.Amenity(ClinicAmenity.Parking).Till + state.Amenity(ClinicAmenity.Taxi).Till;
             foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
             {
                 var count = ClinicRules.StationCount(state, role);
@@ -58,6 +60,7 @@ namespace IdleClinic.Core
                         till += desk.Till;
                     }
                     else if (ClinicRules.Stations(state, role)[id] == null || ClinicRules.Stations(state, role)[id].Id != id) return false;
+                    if (role != ClinicStaffRole.Receptionist) { var station = ClinicRules.Stations(state, role)[id]; if (role == ClinicStaffRole.Pharmacist) { if (!MoneyRange(station.Till)) return false; till += station.Till; } else if (station.Till != 0) return false; }
                     if (ClinicRules.StationLevel(state, role, id) < 1 || ClinicRules.StationLevel(state, role, id) > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)) return false;
                 }
                 var staffCount = state.Staff.Count(s => s != null && s.Role == role);

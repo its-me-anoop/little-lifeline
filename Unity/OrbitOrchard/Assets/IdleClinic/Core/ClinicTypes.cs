@@ -29,7 +29,7 @@ namespace IdleClinic.Core
         TutorialAdvanced, StationUpgraded, StaffTrained, AmenityUpgraded, AmenityVisitStarted, TipReceived,
         DoctorHired, PharmacistHired, ConsultationStarted, ConsultationCompleted,
         DispensingStarted, DispensingCompleted, DoctorsClinicUnlocked, TaxiArrived, TaxiDeparted,
-        ParkingFeePaid
+        ParkingFeePaid, PharmacyFeePaid, TaxiFarePaid
     }
 
     [Serializable]
@@ -58,6 +58,9 @@ namespace IdleClinic.Core
         public long TotalTips;
         // Car park exit charges (rules 4). Absent from older saves, which read it as zero.
         public long TotalParkingFees;
+        // Pharmacy counter fees and taxi fares (rules 5, doctors clinic): paid into the counter's or the stand's cash box.
+        public long TotalPharmacyFees;
+        public long TotalTaxiFares;
         // Coins paid into the wallet by rewards (daily goals, coin packs, boosts), not by patients.
         public long TotalRewards;
         public bool WaitingRoomUnlocked;
@@ -88,6 +91,9 @@ namespace IdleClinic.Core
         public int FacilitiesLevel = 1;
         public int DecorationLevel = 1;
         public int StationCount;
+        // First aid only, once seeded: the version (1-10) of each of the twenty pieces of equipment. Empty
+        // in older saves and other rooms; see ClinicGear.
+        public List<int> GearLevels = new List<int>();
         public int Level(UpgradeTrack track) => track == UpgradeTrack.Equipment ? EquipmentLevel
             : track == UpgradeTrack.Facilities ? FacilitiesLevel : DecorationLevel;
     }
@@ -107,6 +113,8 @@ namespace IdleClinic.Core
     {
         public int Id;
         public int EquipmentLevel = 1;
+        // Pharmacy counters only: fees waiting to be collected.
+        public long Till;
     }
 
     [Serializable]
@@ -218,6 +226,8 @@ namespace IdleClinic.Core
         public int DeskId = -1;
         public ClinicRoom Room;
         public ClinicAmenity Amenity;
+        /// <summary>First aid equipment piece an EquipmentUpgraded event bought, or -1.</summary>
+        public int Item = -1;
         public string SourceAnchor = "";
         public long Amount;
     }

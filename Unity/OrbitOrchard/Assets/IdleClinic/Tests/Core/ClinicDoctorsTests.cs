@@ -432,9 +432,16 @@ namespace IdleClinic.Tests
                     {
                         var t = track;
                         if (t == UpgradeTrack.Decoration && ClinicRules.Deep(s)) continue;
+                        if (t != UpgradeTrack.Decoration && ClinicGear.Active(s, kind)) continue;
                         if (room.Level(t) < ClinicRules.TrackCap(s, kind, t)) options.Add((ClinicRules.UpgradeCost(s, kind, t), () => g.Upgrade(kind, t)));
                     }
                 }
+                foreach (var geared in s.Rooms)
+                    for (var item = 0; item < ClinicGear.ItemCount; item++)
+                    {
+                        var i = item; var kind = geared.Kind;
+                        if (ClinicGear.Active(s, kind) && ClinicGear.Unlocked(s, kind, i) && !ClinicGear.AtTop(s, kind, i)) options.Add((ClinicGear.UpgradeCost(s, kind, i), () => g.UpgradeGear(kind, i)));
+                    }
                 foreach (ClinicStaffRole role in Enum.GetValues(typeof(ClinicStaffRole)))
                 {
                     var r = role; var max = ClinicRules.MaximumStaff(s, r);

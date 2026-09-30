@@ -81,6 +81,8 @@ namespace IdleClinic.Services
                         preferences = ReadLegacyPreferences(),
                         lastAccountedUtcTicks = now.UtcDateTime.Ticks
                     };
+                    Profile.premium.Earn(NewPlayerGems);
+                    ClinicSimulation.TryGrantReward(Profile.state, NewPlayerCoins);
                     Save(Profile, now);
                 }
             }
@@ -95,6 +97,11 @@ namespace IdleClinic.Services
             if (Error == null) Error = recovery;
             return Profile;
         }
+
+        /// <summary>Gems a brand-new clinic starts with, recorded as earned so the ledger stays balanced.</summary>
+        public const long NewPlayerGems = 5;
+        /// <summary>Coins a brand-new clinic starts with, booked as a reward so totals stay consistent.</summary>
+        public const long NewPlayerCoins = 250;
 
         /// <summary>Call after active ticks/actions and before backgrounding. A stale snapshot cannot replace a resumed clinic.</summary>
         public bool Save(ClinicProfile profile, DateTimeOffset now)

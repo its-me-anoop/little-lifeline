@@ -121,6 +121,23 @@ Button:active { scale: .96 .96; }
 .narrow .offer-boost > ClinicIcon { display: none; }
 .narrow .offer-boost .offer-words { margin-left: 2px; }
 
+/* ---------- First aid equipment ---------- */
+.gear-panel { margin-bottom: 4px; }
+.gear-list { margin-bottom: 8px; }
+.gear-preview { width: 104px; height: 104px; min-width: 104px; flex-shrink: 0; border-radius: 16px; background-color: rgb(251,250,240); border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); -unity-background-scale-mode: scale-to-fit; }
+.gear-focus .gear-name { color: rgb(47,94,71); }
+.gear-row { flex-direction: row; align-items: center; min-height: 64px; padding: 8px 4px 8px 2px; border-bottom-width: 1px; border-bottom-color: rgb(221,227,206); }
+.gear-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-right: 10px; }
+.gear-name { font-size: 16px; color: rgb(36,58,49); white-space: normal; }
+.gear-version { font-size: 13px; color: rgb(78,97,82); margin-top: 1px; white-space: normal; }
+.gear-pips { flex-direction: row; margin-top: 5px; }
+.gear-pip { flex-grow: 1; flex-basis: 0; height: 6px; margin-right: 2px; border-radius: 3px; background-color: rgb(221,227,206); }
+.gear-locked .gear-name { color: rgb(120,134,118); }
+.gear-locked .gear-version { color: rgb(120,134,118); }
+.gear-action { flex-direction: row; justify-content: center; align-items: center; flex-shrink: 0; width: 120px; height: 44px; margin: 0; border-radius: 12px; }
+.gear-next { font-size: 14px; color: rgb(251,250,240); margin-right: 6px; }
+.gear-price { font-size: 15px; color: rgb(251,250,240); margin-left: 4px; }
+
 /* ---------- Room panel ---------- */
 .track-panel { padding: 12px; border-radius: 18px; background-color: rgb(238,241,224); margin-bottom: 12px; }
 .track-intro { flex-direction: row; align-items: flex-start; }

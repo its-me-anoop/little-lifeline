@@ -18,6 +18,7 @@ namespace IdleClinic.Presentation
         private readonly List<Detail> details=new List<Detail>();private readonly ClinicRoomStyle[] styles=new ClinicRoomStyle[5];private readonly List<ClinicDoor> doors=new List<ClinicDoor>();
         private readonly Transform selection;private readonly DoctorsClinicTransport transport;private readonly ClinicConstruction construction;
         private readonly GameObject vending,vendingCash,waitingCrates;private readonly Transform vendingButton,vendingTip;
+        private readonly ClinicRoomGear roomGear;
         private readonly long[] tills=new long[4];private long vendingTill;private bool waitingBuilt;
         internal int DoorOpeningCount { get {int count=0;foreach(var door in doors)count+=door.OpeningCount;return count;} }
         internal Vector3 VendingCashPoint=>new Vector3(9.63f,1.38f,-.79f);
@@ -25,6 +26,7 @@ namespace IdleClinic.Presentation
         internal DoctorsClinicWorld(ClinicArt art,Transform parent,ClinicWorld world,Action<string,Vector3,Vector3> anchor,Action<Transform,string,Vector3,Vector3> sockets)
         {
             this.art=art;this.parent=parent;this.world=world;this.anchor=anchor;this.sockets=sockets;
+            roomGear=new ClinicRoomGear(art,parent,true);
             Architecture();Furniture();StagedWorkstations();Anchors();ProgressionDetails();Neighbourhood();RoomStyles();
             selection=art.Group("Doctors selection",parent);art.Box("Selection inset",selection,new Vector3(0,.16f,0),new Vector3(1,.015f,1),"Gold");selection.gameObject.SetActive(false);
             waitingCrates=art.Group("Future doctors waiting room",parent,new Vector3(5.9f,0,-4.5f)).gameObject;
@@ -59,6 +61,7 @@ namespace IdleClinic.Presentation
                 int count=tills[i]>0?Mathf.Clamp(1+(int)Math.Log10(Math.Max(1,tills[i])),1,6):0;
                 for(int n=0;n<6;n++)cash[i,n].SetActive(n<count);
             }
+            roomGear.Render(state);
             foreach(var detail in details)detail.Render(state);
             int maximumTier=ClinicRules.MaximumTier(state);
             for(int r=0;r<styles.Length;r++){var room=state.Room((ClinicRoom)r);styles[r]?.Render(ClinicWorld.StyleTier(room?.Tier??1,maximumTier,true),ClinicWorld.StyleMaximum(maximumTier,true),room!=null&&room.Built,ClinicWorld.StyleDecor(room?.DecorationLevel??1));}
@@ -413,7 +416,7 @@ namespace IdleClinic.Presentation
                 bool active=false;
                 if(kind==2)active=StationLevel(s,role,index)>=level;
                 else if(kind==3){for(int i=0;i<s.Amenities.Count;i++)if(s.Amenities[i].Kind==amenity){active=s.Amenities[i].Level>=level;break;}}
-                else {for(int i=0;i<s.Rooms.Count;i++)if(s.Rooms[i].Kind==room){var data=s.Rooms[i];active=data.Built&&(kind==0?data.Level(track):data.Tier)>=level;break;}}
+                else {for(int i=0;i<s.Rooms.Count;i++)if(s.Rooms[i].Kind==room){var data=s.Rooms[i];active=data.Built&&(kind==0?data.Level(track):data.Tier)>=level&&!(kind==0&&track==UpgradeTrack.Equipment&&ClinicGear.Active(s,room));break;}}
                 ClinicUpgradeEffects.Show(root,active);
             }
         }

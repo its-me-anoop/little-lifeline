@@ -380,7 +380,7 @@ namespace IdleClinic.Presentation
             }
             else if(toSeat) { if(!fromAmenity){Add(new Vector3(lane,end.y,WaitingEastLane));Add(new Vector3(3.40f,end.y,WaitingEastLane));}Add(new Vector3(3.40f,end.y,end.z)); }
             else if(toCare) { Add(new Vector3(lane,end.y,1.03f));Add(new Vector3(end.x,end.y,1.03f)); }
-            else if(toQueue) { Add(new Vector3(lane,end.y,end.z)); }
+            else if(toQueue) { Add(new Vector3(lane,end.y,-4.05f));Add(new Vector3(end.x,end.y,-4.05f)); }
             else Add(new Vector3(lane,end.y,end.z));
             Add(end);
         }

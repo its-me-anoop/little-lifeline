@@ -1,0 +1,13 @@
+Little Lifeline 4.2 — Twenty pieces of equipment in every room
+
+Your existing clinic, coins and upgrades carry over. Please update over 4.1 rather than reinstalling so the save upgrade is tested too. Nothing you own gets slower.
+
+Please try:
+• Open any room and choose Equipment. Every room now has twenty pieces, and each renovation unlocks one more. Every piece has ten versions, from basic to advanced. Tap a piece to see it in the picture at the top, then upgrade it and watch the new version appear in the room.
+• Each upgrade takes a tenth off the time the room still has to lose, so the first upgrades matter most. The room shows its check-in, treatment, call, consultation or dispensing time.
+• The Facilities tab is gone. Queue places, waiting seats and the visit fee now grow with each room's equipment.
+• In the doctors clinic, look for coins over the pharmacy counters and the taxi stand. Patients pay for their prescriptions and for each taxi ride; tap the coins to collect them.
+• New clinics start with 250 coins and 5 gems.
+• Visitors now wait in line inside the reception, not out on the pavement.
+
+Please report anything that overlaps, floats or hides another piece; prices or times that look wrong; and coins you cannot collect.

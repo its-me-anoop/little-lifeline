@@ -326,10 +326,10 @@ namespace IdleClinic.Tests
                 if (second % 10 == 0) foreach (var desk in game.State.ReceptionDesks.ToArray()) game.Collect(desk.Id);
                 if (game.State.Tutorial == ClinicTutorialStep.HireFirstNurse) game.HireNurse();
                 if (game.State.Tutorial != ClinicTutorialStep.Complete) continue;
-                if (stage == 0 && game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Equipment).Success) { firstUpgrade = second; stage++; }
+                if (stage == 0 && game.UpgradeGear(ClinicRoom.FirstAid, 0).Success) { firstUpgrade = second; stage++; }
                 else if (stage == 1 && game.BuildWaitingRoom().Success) { waitingBuilt = second; stage++; }
-                else if (stage == 2 && game.Upgrade(ClinicRoom.FirstAid, UpgradeTrack.Facilities).Success) stage++;
-                else if (stage == 3 && game.Upgrade(ClinicRoom.Reception, UpgradeTrack.Facilities).Success) stage++;
+                else if (stage == 2 && game.UpgradeGear(ClinicRoom.FirstAid, 0).Success) stage++;
+                else if (stage == 3 && game.UpgradeGear(ClinicRoom.Reception, 0).Success) stage++;
                 else if (stage == 4 && game.Renovate(ClinicRoom.FirstAid).Success) stage++;
                 else if (stage == 5 && game.AddTreatmentStation().Success) stage++;
                 else if (stage == 6 && game.HireNurse().Success) { secondNurse = second; stage++; }
