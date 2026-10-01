@@ -158,7 +158,7 @@ namespace IdleClinic.Tests
         {
             // Arrange a valid mature clinic while retaining the existing authoritative ledger.
             var state=game.State;
-            foreach(var room in state.Rooms){room.Built=true;room.Tier=3;room.EquipmentLevel=6;room.FacilitiesLevel=6;room.DecorationLevel=6;}
+            foreach(var room in state.Rooms.Where(r=>!ClinicRules.IsServiceRoom(r.Kind))){room.Built=true;room.Tier=3;room.EquipmentLevel=6;room.FacilitiesLevel=6;room.DecorationLevel=6;}
             state.Room(ClinicRoom.Reception).StationCount=2;state.Room(ClinicRoom.FirstAid).StationCount=2;
             state.ReceptionDesks.Add(new ReceptionDeskState{Id=1,EquipmentLevel=6});state.TreatmentStations.Add(new TreatmentStationState{Id=1,EquipmentLevel=6});
             foreach(var desk in state.ReceptionDesks)desk.EquipmentLevel=6;foreach(var station in state.TreatmentStations)station.EquipmentLevel=6;

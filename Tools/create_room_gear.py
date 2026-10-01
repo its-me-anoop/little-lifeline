@@ -9,9 +9,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gear_kit
 import gear_items_firstaid, gear_items_reception, gear_items_waiting, gear_items_consultation, gear_items_pharmacy
+import gear_items_office, gear_items_staffroom, gear_items_store
 
 ROOMS = [("Reception", gear_items_reception), ("FirstAid", gear_items_firstaid), ("Waiting", gear_items_waiting),
-         ("Consultation", gear_items_consultation), ("Pharmacy", gear_items_pharmacy)]
+         ("Consultation", gear_items_consultation), ("Pharmacy", gear_items_pharmacy),
+         ("Office", gear_items_office), ("StaffRoom", gear_items_staffroom), ("Store", gear_items_store)]
 args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 preview = args[args.index("--preview") + 1] if "--preview" in args else None
 only = [a for a in args[args.index("--room") + 1:] if not a.startswith("--")] if "--room" in args else None

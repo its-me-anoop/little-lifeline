@@ -110,7 +110,7 @@ namespace IdleClinic.Presentation
             if(location==ClinicLocation.StarterClinic)
             {
                 // Onto the front pavement; every third visitor uses the zebra crossing to the far side.
-                const float pavement=-6.95f,farPavement=-11.05f,crossing=.72f;
+                const float pavement=-6.95f,farPavement=-11.05f,crossing=ClinicFloorPlan.StreetCrossingX;
                 departure.Add(new Vector3(start.x,y,pavement));
                 if(id%3==0){departure.Add(new Vector3(crossing,y,pavement));departure.Add(new Vector3(crossing,y,farPavement));departure.Add(new Vector3(id%2==0?-26f:26f,y,farPavement));}
                 else departure.Add(new Vector3(id%2==0?26f:-26f,y,pavement));
@@ -304,98 +304,4 @@ namespace IdleClinic.Presentation
         }
     }
 
-    /// <summary>Routes use the open front aisle and central corridor, never a straight line through furniture.</summary>
-    internal sealed class ClinicRoute
-    {
-        // Two 0.30m visitor bodies fit inside the existing door jambs. Keep the
-        // direction choice tied to graph junctions, not a retargeted visible pose.
-        private const float NorthLane=1.02f,SouthLane=.30f;
-        private const float WaitingEastLane=.24f,WaitingWestLane=.91f;
-        private readonly Vector3[] points=new Vector3[64];
-        private int count;
-        private float length;
-        internal float Length=>length;
-        internal void Build(ClinicWorld world,string from,string to,bool staff,Vector3? visibleStart=null)
-        {
-            count=0;length=0;var start=visibleStart??world.GetAnchorPoint(from);var end=world.GetAnchorPoint(to);Add(start);
-            if(from==to&&(end-start).sqrMagnitude<.000001f){Add(end);return;}
-            if(world.Location==ClinicLocation.DoctorsClinic){DoctorsClinicRoute.Build(world,from,to,staff,start,Add);return;}
-            bool fromDesk=Starts(from,"reception.desk."),toDesk=Starts(to,"reception.desk.");
-            bool fromQueue=Starts(from,"reception.queue."),toQueue=Starts(to,"reception.queue.");
-            bool fromSeat=Starts(from,"waiting.seat."),toSeat=Starts(to,"waiting.seat.");
-            bool fromCare=Starts(from,"firstaid.station."),toCare=Starts(to,"firstaid.station.");
-            bool fromParking=Starts(from,"parking.bay."),toParking=Starts(to,"parking.bay.");
-            bool fromAmenity=Starts(from,"waiting.toilet.")||Starts(from,"waiting.vending."),toAmenity=Starts(to,"waiting.toilet.")||Starts(to,"waiting.vending.");
-            float deskAisle=staff?-1.15f:-4.05f;
-            float fromJunction=fromCare?1.03f:fromSeat||fromAmenity?WaitingWestLane:fromDesk?deskAisle:fromParking?-6.90f:world.GetAnchorPoint(from).z;
-            float toJunction=toCare?1.03f:toSeat||toAmenity?WaitingEastLane:toDesk?deskAisle:toParking?-6.90f:end.z;
-            float lane=toJunction>=fromJunction?NorthLane:SouthLane;
-            if(fromQueue&&toQueue)
-            {
-                if((start.z<-5.13f)!=(end.z<-5.13f))
-                { Add(new Vector3(lane,start.y,start.z));Add(new Vector3(lane,end.y,end.z)); }
-                Add(end);return;
-            }
-            if(fromParking)
-            {
-                // A queue may advance during the walk from a parked car. Rejoin the
-                // remaining walkway from the visible position, without walking back
-                // to the bay or repeating its first southward step.
-                float crossingZ=world.GetAnchorPoint(from).z-.58f;
-                if(start.x<-6.651f)
-                { Add(new Vector3(start.x,start.y,crossingZ));Add(new Vector3(-6.65f,start.y,crossingZ)); }
-                if(start.x<=-6.649f)
-                { Add(new Vector3(-6.65f,start.y,-6.90f));Add(new Vector3(.67f,start.y,-6.90f)); }
-                else if(start.z<-5.13f&&start.x<.67f)Add(new Vector3(.67f,start.y,-6.90f));
-                else Add(new Vector3(lane,start.y,start.z));
-            }
-            else if(fromAmenity)
-            {
-                if(Starts(from,"waiting.toilet.")){Add(new Vector3(start.x,start.y,5.65f));Add(new Vector3(3.40f,start.y,5.65f));}
-                else {Add(new Vector3(start.x,start.y,-3.42f));Add(new Vector3(3.40f,start.y,-3.42f));}
-                if(!toSeat){Add(new Vector3(3.40f,start.y,WaitingWestLane));Add(new Vector3(lane,start.y,WaitingWestLane));}
-            }
-            else if(fromDesk) { float z=staff?-1.15f:-4.05f;Add(new Vector3(start.x,start.y,z));Add(new Vector3(lane,start.y,z)); }
-            else if(fromSeat) { Add(new Vector3(3.40f,start.y,start.z));if(!toAmenity){Add(new Vector3(3.40f,start.y,WaitingWestLane));Add(new Vector3(lane,start.y,WaitingWestLane));} }
-            else if(fromCare) { Add(new Vector3(start.x,start.y,1.03f));Add(new Vector3(lane,start.y,1.03f)); }
-            else if(fromQueue && !toDesk)
-            { Add(new Vector3(lane,start.y,start.z));Add(new Vector3(lane,start.y,-4.05f)); }
-            else if(!fromQueue)Add(new Vector3(lane,start.y,start.z));
-            if(toParking)
-            { Add(new Vector3(lane,end.y,-6.90f));Add(new Vector3(-6.65f,end.y,-6.90f));Add(new Vector3(-6.65f,end.y,end.z-.58f));Add(new Vector3(end.x,end.y,end.z-.58f)); }
-            else if(toAmenity)
-            {
-                if(!fromSeat){Add(new Vector3(lane,end.y,WaitingEastLane));Add(new Vector3(3.40f,end.y,WaitingEastLane));}
-                if(Starts(to,"waiting.toilet.")){Add(new Vector3(3.40f,end.y,5.65f));Add(new Vector3(end.x,end.y,5.65f));}
-                else {Add(new Vector3(3.40f,end.y,-3.42f));Add(new Vector3(end.x,end.y,-3.42f));}
-            }
-            else if(toDesk)
-            {
-                float z=staff?-1.15f:-4.05f;
-                if(!fromQueue)Add(new Vector3(lane,end.y,z));
-                else if(start.z<-5.13f)
-                { Add(new Vector3(lane,start.y,start.z));Add(new Vector3(lane,end.y,z)); }
-                else Add(new Vector3(start.x,end.y,z));
-                Add(new Vector3(end.x,end.y,z));
-            }
-            else if(toSeat) { if(!fromAmenity){Add(new Vector3(lane,end.y,WaitingEastLane));Add(new Vector3(3.40f,end.y,WaitingEastLane));}Add(new Vector3(3.40f,end.y,end.z)); }
-            else if(toCare) { Add(new Vector3(lane,end.y,1.03f));Add(new Vector3(end.x,end.y,1.03f)); }
-            else if(toQueue) { Add(new Vector3(lane,end.y,-4.05f));Add(new Vector3(end.x,end.y,-4.05f)); }
-            else Add(new Vector3(lane,end.y,end.z));
-            Add(end);
-        }
-        internal void BuildSavedPath(IList<ClinicMovementPoint> path,float y)
-        {count=0;length=0;foreach(var point in path)Add(new Vector3(point.X,y,point.Z));}
-        private static bool Starts(string value,string prefix)=>value!=null&&value.StartsWith(prefix,StringComparison.Ordinal);
-        private void Add(Vector3 point)
-        { if(count>0){float distance=Vector3.Distance(points[count-1],point);if(distance<.001f)return;length+=distance;}points[count++]=point; }
-        internal Vector3 Sample(float progress,out Vector3 direction)
-        {
-            direction=Vector3.forward;if(count==0)return Vector3.zero;if(count==1)return points[0];
-            float remaining=length*Mathf.Clamp01(progress);
-            for(int i=1;i<count;i++)
-            { var delta=points[i]-points[i-1];float distance=delta.magnitude;if(remaining<=distance||i==count-1){direction=delta.normalized;return Vector3.Lerp(points[i-1],points[i],distance==0?1:remaining/distance);}remaining-=distance; }
-            return points[count-1];
-        }
-    }
 }

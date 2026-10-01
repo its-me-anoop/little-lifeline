@@ -1,57 +1,58 @@
 using UnityEngine;
+using static IdleClinic.Presentation.ClinicFloorPlan;
 
 namespace IdleClinic.Presentation
 {
-    /// <summary>Permanent interior dressing stays outside the graph's reserved actor lanes.</summary>
+    /// <summary>Permanent interior dressing: the hall's runner and wayfinding, and the basic furniture of the office, staff
+    /// room and store. Everything stays outside the reserved walking lanes; equipment bought per room stands elsewhere.</summary>
     internal static class ClinicFurnishings
     {
-        internal static void Build(ClinicArt art,Transform parent)
+        /// <summary>Builds the dressing; returns the fixed furniture of the office, staff room and store (in that order), which
+        /// shows once each room is built.</summary>
+        internal static GameObject[] Build(ClinicArt art,Transform parent)
         {
             var root=art.Group("Clinic interior details",parent);
-            Rug(art,root,"Reception welcome rug",new Vector3(-2.9f,.15f,-3.92f),new Vector3(4.5f,.009f,.56f),"TilePeach");
-            // First aid and the waiting room take their rugs from the room style, so the floor pattern shows.
-            // The circulation line is flush with the floor; nothing occupies a walking socket.
-            art.Box("Corridor sage runner",root,new Vector3(.68f,.15f,-.15f),new Vector3(.40f,.008f,8.3f),"TileSage");
-            for(int i=0;i<5;i++)
-            {
-                art.Cylinder("Wayfinding care dot",root,new Vector3(.68f,.16f,-3.3f+i*1.55f),new Vector3(.14f,.008f,.14f),"Gold");
-            }
-            NoticeBoard(art,root,"Reception notice board",new Vector3(-5.53f,1.40f,-1.45f),90,1.1f);
-            NoticeBoard(art,root,"Waiting notice board",new Vector3(2.45f,1.75f,4.75f),0,1.05f);
-            var storage=art.Group("Reception record storage",root,new Vector3(-5.23f,.14f,-2.30f));
-            Cabinet(art,storage,Vector3.zero,new Vector3(.52f,.90f,.60f),"Sage");
-            for(int i=0;i<4;i++)art.Box("Appointment folders",storage,new Vector3(-.18f+i*.11f,1.00f,0),new Vector3(.075f,.21f,.28f),i%2==0?"Apricot":"Blue");
-            var care=art.Group("Care supplies cabinet",root,new Vector3(-5.18f,.14f,2.35f));
-            Cabinet(art,care,Vector3.zero,new Vector3(.58f,.80f,.80f),"Sage");
-            for(int i=0;i<3;i++)art.Box("Folded care towels",care,new Vector3(0,.83f+i*.045f,0),new Vector3(.42f,.04f,.38f),"Linen");
-            var sink=art.Group("Treatment handwash sink",root,new Vector3(-5.17f,.14f,1.05f));
-            Cabinet(art,sink,Vector3.zero,new Vector3(.55f,.73f,.62f),"TileBlue");
-            art.Box("Handwash basin",sink,new Vector3(0,.77f,0),new Vector3(.61f,.12f,.68f),"Linen");
-            art.Box("Basin hollow",sink,new Vector3(0,.837f,0),new Vector3(.42f,.007f,.42f),"Blue");
-            art.Cylinder("Wash tap",sink,new Vector3(-.20f,.94f,0),new Vector3(.06f,.25f,.06f),"Gold");
-            art.Box("Wash tap spout",sink,new Vector3(-.12f,1.045f,0),new Vector3(.20f,.06f,.06f),"Gold");
-            art.Model("Plant",root,new Vector3(1.57f,.14f,-3.34f));
-            var display=art.Group("Welcome community display",root,new Vector3(3.2f,.14f,-4.15f));
-            art.Box("Welcome display planter",display,new Vector3(0,.32f,0),new Vector3(1.9f,.64f,.6f),"Sage");
-            for(int i=0;i<5;i++)
-            {
-                art.Orb("Welcome display foliage",display,new Vector3(-.7f+i*.35f,.73f,0),new Vector3(.42f,.38f,.42f),i%2==0?"Leaf":"Sage");
-                art.Orb("Welcome display flower",display,new Vector3(-.7f+i*.35f,.94f,0),new Vector3(.13f,.12f,.13f),"Apricot");
-            }
-            art.Box("Welcome display warm wood cap",display,new Vector3(0,.57f,0),new Vector3(1.98f,.06f,.68f),"Wood");
-            // Floor terrazzo chips give the pale surfaces texture without filling the circulation with props.
-            for(int room=0;room<3;room++)for(int i=0;i<24;i++)
-            {
-                float x=room==2?1.55f+(i%4)*1.01f:-5.35f+(i%6)*.86f;
-                float z=room==0?-4.38f+(i/6)*1.04f:room==1?.38f+(i/6)*1.17f:-1.3f+(i/4)*1.05f;
-                var chip=art.Box("Terrazzo aggregate",root,new Vector3(x+(i%3)*.043f,.145f,z),new Vector3(.045f,.005f,.08f),i%3==0?"Clay":i%3==1?"TileSage":"TileBlue");
-                chip.transform.localRotation=Quaternion.Euler(0,i*37,0);
-            }
+            // The hall: a runner from the doors to the fire exit, and care dots guiding the way to the treatment rooms.
+            art.Box("Corridor sage runner",root,new Vector3(-.1f,.15f,.9f),new Vector3(.5f,.008f,Back-Front-2.4f),"TileSage");
+            for(int i=0;i<6;i++)art.Cylinder("Wayfinding care dot",root,new Vector3(-.1f,.16f,-3.4f+i*1.6f),new Vector3(.14f,.008f,.14f),"Gold");
+            art.Box("Corridor sign",root,new Vector3(HallWest+.08f,1.35f,-.05f),new Vector3(.02f,.2f,.6f),"SageDark");
+            return new[]{Office(art,root),StaffRoom(art,root),Store(art,root)};
         }
-        private static void Rug(ClinicArt art,Transform parent,string name,Vector3 position,Vector3 size,string role)
+        private static GameObject Office(ClinicArt art,Transform root)
         {
-            var rug=art.Group(name,parent,position);art.Box("Woven border",rug,Vector3.zero,size,"Wood");
-            art.Box("Woven inset",rug,new Vector3(0,.005f,0),new Vector3(size.x-.12f,size.y,size.z-.12f),role);
+            var office=art.Group("Office furniture",root);
+            // The manager's desk faces the door, with a chair behind it and two for visitors in front.
+            art.Box("Office desk top",office,new Vector3(2.25f,.89f,1.85f),new Vector3(1.3f,.05f,.7f),"Walnut");
+            for(int side=-1;side<=1;side+=2)art.Box("Office desk pedestal",office,new Vector3(2.25f+side*.55f,.5f,1.85f),new Vector3(.18f,.72f,.64f),"Charcoal");
+            art.Box("Office desk modesty panel",office,new Vector3(2.25f,.6f,1.55f),new Vector3(.95f,.4f,.03f),"Charcoal");
+            Chair(art,office,new Vector3(2.25f,Floor,2.35f),0,"Leather");
+            Chair(art,office,new Vector3(1.9f,Floor,1.15f),180,"Fabric");Chair(art,office,new Vector3(2.6f,Floor,1.15f),180,"Fabric");
+            return office.gameObject;
+        }
+        private static GameObject StaffRoom(ClinicArt art,Transform root)
+        {
+            var staff=art.Group("Staff room furniture",root);
+            // A kitchenette along the east wall, clear of the swing of the door from the reception.
+            art.Box("Kitchenette base",staff,new Vector3(East-.38f,.58f,1.9f),new Vector3(.6f,.88f,1.4f),"Linen");
+            art.Box("Kitchenette worktop",staff,new Vector3(East-.38f,1.04f,1.9f),new Vector3(.64f,.04f,1.44f),"Quartz");
+            art.Box("Kitchenette plinth",staff,new Vector3(East-.67f,.19f,1.9f),new Vector3(.03f,.1f,1.36f),"Charcoal");
+            for(int i=0;i<3;i++)art.Box("Kitchenette door",staff,new Vector3(East-.685f,.62f,1.37f+i*.46f),new Vector3(.01f,.66f,.42f),"Oak");
+            return staff.gameObject;
+        }
+        private static GameObject Store(ClinicArt art,Transform root)
+        {
+            var store=art.Group("Store shelving",root);
+            // Hooks and a labelled rail along the north wall; the shelving and stock arrive as equipment.
+            art.Box("Store wall rail",store,new Vector3(4.55f,1.2f,Back-.1f),new Vector3(2.0f,.05f,.04f),"BrushedSteel");
+            for(int i=0;i<5;i++)art.Box("Store label",store,new Vector3(3.75f+i*.4f,1.3f,Back-.1f),new Vector3(.14f,.08f,.01f),"Paper");
+            return store.gameObject;
+        }
+        private static void Chair(ClinicArt art,Transform parent,Vector3 position,float yaw,string fabric)
+        {
+            var chair=art.Group("Chair",parent,position);chair.localRotation=Quaternion.Euler(0,yaw,0);
+            art.Box("Chair seat",chair,new Vector3(0,.45f,0),new Vector3(.44f,.06f,.42f),fabric);
+            art.Box("Chair back",chair,new Vector3(0,.72f,.2f),new Vector3(.44f,.48f,.05f),fabric);
+            for(int x=-1;x<=1;x+=2)for(int z=-1;z<=1;z+=2)art.Box("Chair leg",chair,new Vector3(x*.19f,.21f,z*.17f),new Vector3(.03f,.42f,.03f),"Charcoal");
         }
         internal static void Cabinet(ClinicArt art,Transform parent,Vector3 position,Vector3 size,string role)
         {

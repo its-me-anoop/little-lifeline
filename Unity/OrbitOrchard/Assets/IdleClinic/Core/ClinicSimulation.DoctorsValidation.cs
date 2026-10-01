@@ -31,7 +31,7 @@ namespace IdleClinic.Core
             var roomKinds = new HashSet<ClinicRoom>();
             foreach (var room in state.Rooms)
             {
-                if (room == null || !Defined(room.Kind) || !roomKinds.Add(room.Kind) || !room.Built || room.Tier < 1 || room.Tier > ClinicRules.MaximumTier(state)
+                if (room == null || !Defined(room.Kind) || ClinicRules.IsServiceRoom(room.Kind) || !roomKinds.Add(room.Kind) || !room.Built || room.Tier < 1 || room.Tier > ClinicRules.MaximumTier(state)
                     || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
                     || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
                     || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)

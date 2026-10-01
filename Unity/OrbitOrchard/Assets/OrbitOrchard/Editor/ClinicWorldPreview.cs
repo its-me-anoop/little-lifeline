@@ -57,6 +57,42 @@ namespace OrbitOrchard.Editor
             }
             finally{UnityEngine.Object.DestroyImmediate(root);}
         }
+        /// <summary>The starter clinic's floor plan: a new clinic, then every room built and fully equipped.</summary>
+        public static void CaptureStarter()
+        {
+            string output=Environment.GetEnvironmentVariable("CLINIC_QA_OUTPUT");if(string.IsNullOrWhiteSpace(output))throw new InvalidOperationException("CLINIC_QA_OUTPUT is required.");Directory.CreateDirectory(output);
+            int version=int.TryParse(Environment.GetEnvironmentVariable("CLINIC_QA_GEAR"),out var v)?v:10;
+            var root=new GameObject("Starter clinic preview fixture");var world=root.AddComponent<ClinicWorld>();
+            try
+            {
+                world.Initialize(ClinicLocation.StarterClinic);world.SetRenderSize(900,1600);
+                var fresh=ClinicSimulation.CreateNew(743);fresh.Advance(2);world.Render(fresh.State,.1f);world.Home(true);world.Render(fresh.State,.1f);CaptureFrame(world,output,"starter-new-home");
+                var state=ClinicSimulation.CreateNew(743).State;state.Tutorial=ClinicTutorialStep.Complete;state.WaitingRoomUnlocked=true;
+                foreach(var room in state.Rooms){room.Built=true;room.Tier=20;room.DecorationLevel=1;room.FacilitiesLevel=room.EquipmentLevel=10;room.StationCount=room.Kind==ClinicRoom.Reception||room.Kind==ClinicRoom.FirstAid?2:0;}
+                foreach(var a in state.Amenities){a.Level=3;}
+                state.ReceptionDesks.Clear();state.TreatmentStations.Clear();state.Staff.Clear();state.Patients.Clear();
+                for(int i=0;i<2;i++)
+                {
+                    state.ReceptionDesks.Add(new ReceptionDeskState{Id=i,Till=i==0?420:0});state.TreatmentStations.Add(new TreatmentStationState{Id=i});
+                    foreach(var role in new[]{ClinicStaffRole.Receptionist,ClinicStaffRole.Nurse})
+                    {string anchor=ClinicRules.StationStaffAnchor(role,i);state.Staff.Add(new ClinicStaffState{Id=ClinicRules.StaffId(role,i),Role=role,StationId=i,FromAnchor=anchor,ToAnchor=anchor});}
+                    string desk=ClinicRules.DeskPatientAnchor(i),bay=ClinicRules.TreatmentPatientAnchor(i);
+                    state.Patients.Add(new ClinicPatientState{Id=10+i,AppearanceId=i,Phase=ClinicPatientPhase.CheckingIn,FromAnchor=desk,ToAnchor=desk,PhaseEndsTick=900});
+                    state.Patients.Add(new ClinicPatientState{Id=20+i,AppearanceId=4+i,Phase=ClinicPatientPhase.Treating,FromAnchor=bay,ToAnchor=bay,PhaseEndsTick=900});
+                }
+                for(int i=0;i<9;i++)state.Patients.Add(new ClinicPatientState{Id=30+i,AppearanceId=i%12,Phase=ClinicPatientPhase.ReceptionQueue,FromAnchor=ClinicRules.QueueAnchor(i),ToAnchor=ClinicRules.QueueAnchor(i)});
+                for(int i=0;i<12;i++)state.Patients.Add(new ClinicPatientState{Id=50+i,AppearanceId=(i+3)%12,Phase=ClinicPatientPhase.Seated,FromAnchor="waiting.seat."+i,ToAnchor="waiting.seat."+i,SeatId=i});
+                state.Tick=40;ClinicWorld.PreviewGear=version;world.Render(state,.1f,true);world.Home(true);world.Render(state,.1f,true);CaptureFrame(world,output,"starter-complete-home");
+                world.SetRenderSize(1600,1100);
+                View(world,new Vector3(3.3f,0,-2.6f),3.6f);CaptureFrame(world,output,"starter-reception");
+                View(world,new Vector3(-3.4f,0,2.9f),3.9f);CaptureFrame(world,output,"starter-treatment");
+                View(world,new Vector3(-3.4f,0,-2.6f),3.6f);CaptureFrame(world,output,"starter-lounge");
+                View(world,new Vector3(3.3f,0,2.8f),3.9f);CaptureFrame(world,output,"starter-back-rooms");
+                View(world,new Vector3(.5f,0,0),8.2f);CaptureFrame(world,output,"starter-overview");
+                Debug.Log("Starter preview captures written to "+output);
+            }
+            finally{ClinicWorld.PreviewGear=0;UnityEngine.Object.DestroyImmediate(root);}
+        }
         private static void View(ClinicWorld world,Vector3 center,float size)
         {
             var t=typeof(ClinicWorld);t.GetField("center",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(world,center);t.GetField("size",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(world,size);t.GetMethod("ApplyCamera",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(world,null);

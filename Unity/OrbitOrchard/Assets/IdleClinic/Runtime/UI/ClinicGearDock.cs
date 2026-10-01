@@ -20,11 +20,17 @@ namespace IdleClinic.App
             allowed=ClinicGear.UnlockedCount(state,room.Kind)*ClinicGear.StepsPerItem;
         }
 
-        private static string GearTask(ClinicRoom kind)=>kind==ClinicRoom.Reception?"check-in":kind==ClinicRoom.FirstAid?"treatment":kind==ClinicRoom.Waiting?"the wait to be called":kind==ClinicRoom.Consultation?"consultations":"dispensing";
-        private static string GearTimeLabel(ClinicRoom kind)=>kind==ClinicRoom.Reception?"Check-in time":kind==ClinicRoom.FirstAid?"Treatment time"
+        private static string GearTask(ClinicRoom kind)=>kind==ClinicRoom.Office?"raises the visit fee":kind==ClinicRoom.StaffRoom?"makes every member of staff quicker"
+            :kind==ClinicRoom.Store?"makes room for more waiting patients":"shortens "+(kind==ClinicRoom.Reception?"check-in":kind==ClinicRoom.FirstAid?"treatment":kind==ClinicRoom.Waiting?"the wait to be called":kind==ClinicRoom.Consultation?"consultations":"dispensing");
+        private static string GearTimeLabel(ClinicRoom kind)=>kind==ClinicRoom.Office?"Visit fee":kind==ClinicRoom.StaffRoom?"Staff speed":kind==ClinicRoom.Store?"Places to wait"
+            :kind==ClinicRoom.Reception?"Check-in time":kind==ClinicRoom.FirstAid?"Treatment time"
             :kind==ClinicRoom.Waiting?"Time to call a patient":kind==ClinicRoom.Consultation?"Consultation time":"Dispensing time";
         private string GearTime(ClinicRoom kind)
         {
+            var inv=System.Globalization.CultureInfo.InvariantCulture;
+            if(kind==ClinicRoom.Office)return Money(ClinicRules.VisitFee(State))+" (+"+ClinicRules.OfficeFeePercent(State).ToString(inv)+"%)";
+            if(kind==ClinicRoom.StaffRoom)return "+"+ClinicRules.StaffRoomSpeedPercent(State).ToString(inv)+"%";
+            if(kind==ClinicRoom.Store)return "+"+ClinicRules.StoreQueuePlaces(State).ToString(inv)+" queue · +"+ClinicRules.StoreSeats(State).ToString(inv)+" seats";
             var role=RoomRole(kind);
             var ticks=kind==ClinicRoom.Waiting||!role.HasValue?ClinicRules.WaitingCallTicks(State):ClinicRules.StationServiceTicks(State,role.Value,0);
             return (ticks/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
@@ -46,7 +52,7 @@ namespace IdleClinic.App
             var words=Box(intro,"track-words");words.pickingMode=PickingMode.Ignore;
             Text(words,!focusOpen?"ARRIVES WITH ROOM SIZE "+ClinicGear.UnlockTier(State,focus):focusVersion>=ClinicGear.MaximumVersion?"FULLY UPGRADED":"NEXT VERSION · "+ClinicGear.VersionName(shownVersion).ToUpperInvariant(),"eyebrow",true);
             Display(Text(words,ClinicGear.ItemName(kind,focus),"track-title",true));
-            Text(words,unlocked+" of "+ClinicGear.ItemCount+" pieces unlocked. Every piece has ten versions, basic to advanced. Each upgrade shortens "+GearTask(kind)+" and helps the clinic grow.","track-description");
+            Text(words,unlocked+" of "+ClinicGear.ItemCount+" pieces unlocked. Every piece has ten versions, basic to advanced. Each upgrade "+GearTask(kind)+" and helps the clinic grow.","track-description");
             var effect=Box(panel,"effect-row");effect.pickingMode=PickingMode.Ignore;
             Text(effect,GearTimeLabel(kind),"effect-label",true);
             var values=Box(effect,"effect-values");values.pickingMode=PickingMode.Ignore;

@@ -13,7 +13,7 @@ namespace IdleClinic.App
     public static class ClinicSelectionPolicy
     {
         // Clear floor between the desks and queue, away from both payment targets.
-        public static Vector3 ReceptionFloorPoint=>new Vector3(-2.8f,.14f,-3.8f);
+        public static Vector3 ReceptionFloorPoint=>new Vector3(3.15f,.14f,-3.3f);
         public static bool CanSelectObject(ClinicState state,ClinicHit hit)
         {
             if(state.Tutorial!=ClinicTutorialStep.Complete)return false;
@@ -285,6 +285,9 @@ namespace IdleClinic.App
                 case ClinicHitKind.Pharmacy:Select(ClinicRoom.Pharmacy);break;
                 case ClinicHitKind.Waiting:
                 case ClinicHitKind.Expansion:Select(ClinicRoom.Waiting);break;
+                case ClinicHitKind.Office:Select(ClinicRoom.Office);break;
+                case ClinicHitKind.StaffRoom:Select(ClinicRoom.StaffRoom);break;
+                case ClinicHitKind.Store:Select(ClinicRoom.Store);break;
                 default:CloseContext();break;
             }
         }
@@ -301,8 +304,8 @@ namespace IdleClinic.App
                     var kind=room.Kind;RegisterAccessibleButton(target,"Select "+RoomName(kind),()=>Select(kind));
                 }
                 var point=room.Kind==ClinicRoom.Reception&&State.Location==ClinicLocation.StarterClinic?ClinicSelectionPolicy.ReceptionFloorPoint:world.GetRoomPoint(room.Kind);
-                PositionMarker(target,world.WorldToViewport(point),(room.Built||State.WaitingRoomUnlocked)
-                    &&ClinicSelectionPolicy.CanSelectRoom(State,room.Kind));
+                bool offered=ClinicRules.IsServiceRoom(room.Kind)?room.Built||State.Room(ClinicRules.ServiceRoomPrerequisite(room.Kind)).Built:room.Built||State.WaitingRoomUnlocked;
+                PositionMarker(target,world.WorldToViewport(point),offered&&ClinicSelectionPolicy.CanSelectRoom(State,room.Kind));
             }
             var compactReception=wideWorldMarkers||ReceptionCashIsCrowded();
             foreach(var desk in State.ReceptionDesks)

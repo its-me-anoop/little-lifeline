@@ -140,7 +140,8 @@ namespace IdleClinic.Core
             if (!balance.DeepProgression) return legacy;
             long track = MaximumTrackLevel(state) - 1, decor = MaximumDecorationLevel(state) - 1;
             long percent = 100 + balance.FirstAidFacilitiesFeePercent * track + balance.DecorationFeePercent * decor * (IsDoctors(state) ? 5 : 3)
-                + (IsDoctors(state) ? (balance.ConsultationFacilitiesFeePercent + balance.PharmacyFacilitiesFeePercent) * track : 0);
+                + (IsDoctors(state) ? (balance.ConsultationFacilitiesFeePercent + balance.PharmacyFacilitiesFeePercent) * track : 0)
+                + (OffersServiceRooms(state) ? balance.OfficeFeePercent : 0);
             return Math.Max(legacy, balance.VisitFeeBase * LocationMultiplier(state) * percent / 100);
         }
         public static List<string> StarterCompletion(ClinicState state)

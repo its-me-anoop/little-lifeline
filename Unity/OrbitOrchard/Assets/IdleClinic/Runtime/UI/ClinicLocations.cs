@@ -79,7 +79,7 @@ namespace IdleClinic.App
             {
                 Text(next,remaining+" improvements left to unlock","location-progress",true);
                 var checklist=Box(next,"location-checklist");checklist.name="clinic-unlock-checklist";
-                foreach(var room in starter.Rooms)
+                foreach(var room in starter.Rooms.Where(r=>!ClinicRules.IsServiceRoom(r.Kind)))
                 {
                     var kind=room.Kind;
                     var complete=room.Built&&room.Tier==ClinicRules.MaximumTier(starter)

@@ -28,9 +28,11 @@ namespace IdleClinic.Presentation
             left.localScale=right.localScale=new Vector3(openingWidth/1.65f,1,1);
             if(entrance)
             {
-                art.Box("Clinic name plaque",root,new Vector3(0,2.37f,0),new Vector3(3.48f,.55f,.14f),"SageDark");
-                art.Box("Name plaque brass trim",root,new Vector3(0,2.08f,0),new Vector3(3.48f,.035f,.15f),"Gold");
-                art.Model("ClinicSign",root,new Vector3(0,2.37f,-.08f));
+                // The name spans the lobby only, so it never hides the lounge or the queue beside it.
+                float plaque=Mathf.Min(3.48f,openingWidth+.5f);
+                art.Box("Clinic name plaque",root,new Vector3(0,2.37f,0),new Vector3(plaque,.55f,.14f),"SageDark");
+                art.Box("Name plaque brass trim",root,new Vector3(0,2.08f,0),new Vector3(plaque,.035f,.15f),"Gold");
+                art.Model("ClinicSign",root,new Vector3(0,2.37f,-.08f)).transform.localScale=new Vector3(plaque/3.48f,plaque/3.48f,1);
             }
         }
         private static Transform Panel(ClinicArt art,Transform parent,string name,float x,bool slim)

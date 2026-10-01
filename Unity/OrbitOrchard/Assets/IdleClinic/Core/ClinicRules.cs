@@ -49,9 +49,9 @@ namespace IdleClinic.Core
         // Under rules 5 the longer facilities tracks spread the same queue places and seats over more levels,
         // so the top level still fills exactly the places the building has.
         public static int UnpaidQueueCapacity(ClinicState state) => (IsDoctors(state) ? 12 : 6)
-            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, IsDoctors(state) ? 11 : 5, 1);
+            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, IsDoctors(state) ? 11 : 5, 1) + StoreQueuePlaces(state);
         public static int WaitingCapacity(ClinicState state) => state.Room(ClinicRoom.Waiting).Built
-            ? (IsDoctors(state) ? 8 : 4) + SpreadLevels(state, state.Room(ClinicRoom.Waiting).FacilitiesLevel, IsDoctors(state) ? 22 : 10, 2) : 2;
+            ? (IsDoctors(state) ? 8 : 4) + SpreadLevels(state, state.Room(ClinicRoom.Waiting).FacilitiesLevel, IsDoctors(state) ? 22 : 10, 2) + StoreSeats(state) : 2;
         /// <summary>Places added by a facilities level: a fixed step per level under earlier rules, and the same total
         /// spread evenly over the whole track under rules 5.</summary>
         private static int SpreadLevels(ClinicState state, int level, int totalPlaces, int legacyStep)
@@ -68,7 +68,8 @@ namespace IdleClinic.Core
         {
             var balance = ClinicBalance.For(state);
             var percent = 100 + balance.FirstAidFacilitiesFeePercent * (state.Room(ClinicRoom.FirstAid).FacilitiesLevel - 1)
-                + balance.DecorationFeePercent * state.Rooms.Where(r => r.Built).Sum(r => r.DecorationLevel - 1);
+                + balance.DecorationFeePercent * state.Rooms.Where(r => r.Built && !IsServiceRoom(r.Kind)).Sum(r => r.DecorationLevel - 1)
+                + OfficeFeePercent(state);
             if (IsDoctors(state)) percent += balance.ConsultationFacilitiesFeePercent * (state.Room(ClinicRoom.Consultation).FacilitiesLevel - 1)
                 + balance.PharmacyFacilitiesFeePercent * (state.Room(ClinicRoom.Pharmacy).FacilitiesLevel - 1);
             return balance.VisitFeeBase * LocationMultiplier(state) * percent / 100;
@@ -154,6 +155,7 @@ namespace IdleClinic.Core
                 + balance.TrainingSpeedPercent * ((staff?.TrainingLevel ?? 1) - 1 + trainingLevelsAdded);
             var ticks = (int)((balance.ServiceBaseTicks[(int)role] * LocationMultiplier(state) * 100L + speed - 1) / speed);
             if (gear) ticks = ClinicGear.Apply(state, kind, ticks, gearStepsAdded);
+            ticks = Rested(state, ticks);
             return role == ClinicStaffRole.Nurse && Deep(state) ? Math.Max(FastestTreatment(state), ticks) : ticks;
         }
         public static string ParkingPatientAnchor(int id) => "parking.bay." + id + ".patient";
@@ -178,6 +180,7 @@ namespace IdleClinic.Core
         public static string DeskCashAnchor(int id) => "reception.desk." + id + ".cash";
         public static string TreatmentPatientAnchor(int id) => "firstaid.station." + id + ".patient";
         public static string TreatmentStaffAnchor(int id) => "firstaid.station." + id + ".staff";
+        public const int StarterQueuePlaces = 14, StarterSeats = 17;
         public static string QueueAnchor(int id) => "reception.queue." + id;
         public static string WaitingAnchor(bool built, int id) => (built ? "waiting.seat." : "firstaid.standing.") + id;
     }

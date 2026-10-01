@@ -38,7 +38,7 @@ namespace IdleClinic.Tests
             Assert.That(ClinicRules.TreatmentTicks(doctors), Is.EqualTo(360));
             Assert.That(ClinicRules.StationServiceTicks(doctors, ClinicStaffRole.Doctor, 0), Is.EqualTo(480));
             Assert.That(ClinicRules.StationServiceTicks(doctors, ClinicStaffRole.Pharmacist, 0), Is.EqualTo(240));
-            foreach (var room in starter.Rooms)
+            foreach (var room in starter.Rooms.Where(r => !ClinicRules.IsServiceRoom(r.Kind)))
             {
                 foreach (UpgradeTrack track in Enum.GetValues(typeof(UpgradeTrack)))
                     Assert.That(ClinicRules.UpgradeCost(doctors, room.Kind, track), Is.EqualTo(2 * ClinicRules.UpgradeCost(starter, room.Kind, track)));
@@ -58,7 +58,8 @@ namespace IdleClinic.Tests
             var maxed = DoctorsProgressionFixture.MaxStarter();
             Assert.That(ClinicRules.StarterCompletion(maxed.State), Is.Empty);
             var variants = new List<Action<ClinicState>>();
-            foreach (var room in maxed.State.Rooms)
+            // The office, staff room and store are optional and never gate the doctors clinic.
+            foreach (var room in maxed.State.Rooms.Where(r => !ClinicRules.IsServiceRoom(r.Kind)))
             {
                 var kind = room.Kind;
                 variants.Add(s => s.Room(kind).Tier--);
@@ -203,7 +204,9 @@ namespace IdleClinic.Tests
         [Test] public void V2MigrationRejectsInvalidLegacyBeforeChangingSchemaAndKeepsPaidCareAndCash()
         {
             // A genuine v2 save was played under rules 2/3 pricing, before barrier parking charges existed.
+            // Version 2 saves predate the office, staff room and store.
             var legacy = DoctorsProgressionFixture.MaxStarter(3).State; legacy.SchemaVersion = legacy.RulesVersion = 2;
+            legacy.Rooms.RemoveAll(r => ClinicRules.IsServiceRoom(r.Kind));
             long wallet = legacy.Wallet, earned = legacy.TotalEarned;
             Assert.That(ClinicStateMigration.TryMigrateV2(legacy), Is.True); Assert.That(legacy.SchemaVersion, Is.EqualTo(3));
             Assert.That(legacy.Wallet, Is.EqualTo(wallet)); Assert.That(legacy.TotalEarned, Is.EqualTo(earned));

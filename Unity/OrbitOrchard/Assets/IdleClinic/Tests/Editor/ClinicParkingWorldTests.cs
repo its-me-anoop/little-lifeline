@@ -103,9 +103,11 @@ namespace IdleClinic.Tests
         {
             var state=ClinicSimulation.CreateNew().State;world.Render(state,0,true);
             var closure=Find("Future toilet doorway closure");Assert.That(closure.gameObject.activeInHierarchy,Is.True);
-            Assert.That(closure.GetComponent<Renderer>().bounds.max.y,Is.EqualTo(Find("Toilet doorway transom").GetComponent<Renderer>().bounds.min.y).Within(.001f));
+            var board=Find("Toilet closure board").GetComponent<Renderer>().bounds;var jamb=Find("WC doorway").GetComponentsInChildren<Renderer>().First(r=>r.name=="Doorway jamb").bounds;
+            Assert.That(board.size.z,Is.GreaterThanOrEqualTo(.99f),"The panel spans the whole WC doorway.");
+            Assert.That(jamb.max.y-board.max.y,Is.InRange(-.02f,.1f),"The panel rises to the cut wall height.");
             state.Amenity(ClinicAmenity.Toilet).Level=1;world.Render(state,0,true);Assert.That(closure.gameObject.activeInHierarchy,Is.False);
-            Assert.That(Find("Toilet door panel").GetComponent<Renderer>().bounds.max.y,Is.EqualTo(Find("Toilet doorway transom").GetComponent<Renderer>().bounds.min.y).Within(.001f));
+            Assert.That(Find("WC doorway").GetComponentsInChildren<Renderer>().Any(r=>r.name=="Door leaf panel"),Is.True);
         }
 
         private static bool Overlaps(Transform a,Transform b)

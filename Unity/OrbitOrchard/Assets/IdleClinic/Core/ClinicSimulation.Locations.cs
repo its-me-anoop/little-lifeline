@@ -12,7 +12,8 @@ namespace IdleClinic.Core
             var state = new ClinicState { Location = location, Seed = seed, Tutorial = ClinicTutorialStep.Complete,
                 WaitingRoomUnlocked = true, NextPatientId = 1, NextArrivalTick = ClinicRules.ArrivalIntervalTicks };
             foreach (ClinicRoom kind in Enum.GetValues(typeof(ClinicRoom)))
-                state.Rooms.Add(new ClinicRoomState { Kind = kind, Built = true, StationCount = kind == ClinicRoom.Waiting ? 0 : 1 });
+                if (!ClinicRules.IsServiceRoom(kind))
+                    state.Rooms.Add(new ClinicRoomState { Kind = kind, Built = true, StationCount = kind == ClinicRoom.Waiting ? 0 : 1 });
             state.ReceptionDesks.Add(new ReceptionDeskState { Id = 0 });
             state.TreatmentStations.Add(new TreatmentStationState { Id = 0 });
             state.ConsultationStations.Add(new TreatmentStationState { Id = 0 });

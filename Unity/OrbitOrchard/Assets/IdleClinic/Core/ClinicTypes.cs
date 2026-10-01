@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace IdleClinic.Core
 {
     public enum ClinicLocation { StarterClinic = 0, DoctorsClinic = 1 }
-    public enum ClinicRoom { Reception, FirstAid, Waiting, Consultation, Pharmacy }
+    public enum ClinicRoom { Reception, FirstAid, Waiting, Consultation, Pharmacy, Office, StaffRoom, Store }
     public enum UpgradeTrack { Equipment, Facilities, Decoration }
     public enum ClinicStaffRole { Receptionist, Nurse, Doctor, Pharmacist }
     public enum ClinicAmenity { Parking, Toilet, Vending, Taxi }
@@ -20,7 +20,7 @@ namespace IdleClinic.Core
         WalkingToTaxiBoarding
     }
     public enum ClinicTaxiPhase { Approaching, Boarding, Departing, WaitingToDepart, WaitingForPassenger }
-    public enum ClinicConstructionKind { WaitingRoom, RoomRenovation }
+    public enum ClinicConstructionKind { WaitingRoom, RoomRenovation, NewRoom }
     public enum ClinicEventKind
     {
         PatientArrived, CheckInStarted, PaymentReceived, CashCollected, NurseHired,

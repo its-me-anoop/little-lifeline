@@ -460,7 +460,8 @@ namespace IdleClinic.App
             if(value>=10000)return (value/1000d).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+"K";
             return value.ToString("N0",System.Globalization.CultureInfo.InvariantCulture);
         }
-        private static string RoomName(ClinicRoom room)=>room==ClinicRoom.Reception?"Reception":room==ClinicRoom.FirstAid?"First aid":room==ClinicRoom.Consultation?"Consultations":room==ClinicRoom.Pharmacy?"Pharmacy":"Waiting room";
+        private static string RoomName(ClinicRoom room)=>room==ClinicRoom.Reception?"Reception":room==ClinicRoom.FirstAid?"First aid":room==ClinicRoom.Consultation?"Consultations":room==ClinicRoom.Pharmacy?"Pharmacy"
+            :room==ClinicRoom.Office?"Office":room==ClinicRoom.StaffRoom?"Staff room":room==ClinicRoom.Store?"Store":"Waiting room";
         private static string TimeLabel(double seconds)
         {
             if(seconds<60)return Math.Ceiling(Math.Max(0,seconds))+"s";

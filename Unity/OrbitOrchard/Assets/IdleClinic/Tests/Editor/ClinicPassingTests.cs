@@ -15,28 +15,30 @@ namespace IdleClinic.Tests
         [SetUp] public void SetUp(){host=new GameObject("Clinic passing test");world=host.AddComponent<ClinicWorld>();world.Initialize();}
         [TearDown] public void TearDown()=>UnityEngine.Object.DestroyImmediate(host);
 
-        [TestCase("care",false)][TestCase("care",true)]
+        [TestCase("treatment 1",false)][TestCase("treatment 1",true)]
         [TestCase("entrance",false)][TestCase("entrance",true)]
-        [TestCase("waiting",false)][TestCase("waiting",true)]
+        [TestCase("treatment 2",false)][TestCase("treatment 2",true)]
         public void OpposingPatientsKeepBodyClearanceThroughSharedDoors(string doorway,bool reduced)
         {
-            string firstFrom="reception.desk.0.patient",firstTo="firstaid.station.1.patient";
+            // A patient walks in while the last one walks out: they meet in the doorway, each keeping to their own side.
+            string firstFrom="reception.desk.0.patient",firstTo="firstaid.station.0.patient";
             string secondFrom="firstaid.station.0.patient",secondTo="exit";
-            bool horizontal=doorway=="waiting";float crossing=doorway=="care"?-.15f:-5.13f;
+            bool horizontal=doorway!="entrance";float crossing=horizontal?-1f:-5.13f;
             if(doorway=="entrance"){firstFrom="entrance";firstTo="reception.queue.0";}
-            if(horizontal){firstTo="waiting.seat.13";secondFrom="waiting.seat.0";secondTo="firstaid.station.1.patient";crossing=1.67f;}
+            if(doorway=="treatment 2"){firstFrom="reception.desk.1.patient";firstTo="firstaid.station.1.patient";secondFrom="firstaid.station.1.patient";}
             var firstRoute=new RouteProbe(world,firstFrom,firstTo);var secondRoute=new RouteProbe(world,secondFrom,secondTo);
             var state=ClinicSimulation.CreateNew().State;state.Patients.Clear();state.Staff.Clear();
             state.Room(ClinicRoom.Waiting).Built=true;state.Room(ClinicRoom.Waiting).FacilitiesLevel=6;
             state.Room(ClinicRoom.FirstAid).StationCount=2;
             state.Patients.Add(Journey(901,3,firstFrom,firstTo,firstRoute.CrossingProgress(crossing,horizontal)));
             state.Patients.Add(Journey(902,9,secondFrom,secondTo,secondRoute.CrossingProgress(crossing,horizontal)));
-            state.Patients[1].Phase=doorway=="waiting"?ClinicPatientPhase.WalkingToTreatment:ClinicPatientPhase.Leaving;
+            state.Patients[1].Phase=ClinicPatientPhase.Leaving;
             int window=doorway=="entrance"?200:100;
             state.Tick=1000-window;world.Render(state,0,true);
             var first=Find("Patient 901");var second=Find("Patient 902");
+            string door=doorway=="entrance"?"Clinic entrance doorway":doorway=="treatment 1"?"Treatment room 1 doorway":"Treatment room 2 doorway";
             var walls=Find("Joined clinic walls").GetComponentsInChildren<Renderer>()
-                .Concat(new[]{"Clinic entrance doorway","Care wing doorway","Waiting corridor doorway"}.SelectMany(n=>Find(n).GetComponentsInChildren<Renderer>())).ToArray();
+                .Concat(Find(door).GetComponentsInChildren<Renderer>().Where(r=>r.name!="Door leaf panel"&&r.name!="Door leaf edge"&&r.name!="Door handle")).ToArray();
             float minimum=float.MaxValue;bool before=false,after=false;var initialFoot=Foot(first);float footMovement=0;
             for(int tick=1000-window;tick<=1000+window;tick+=5)
             {

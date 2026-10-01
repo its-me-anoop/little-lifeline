@@ -39,6 +39,7 @@ namespace IdleClinic.App
             if(settingsOpen){BuildSettings();ApplySafeArea();return;}
             if(selectedObject.HasValue){BuildManagementDock(selectedObject.Value);ApplySafeArea();return;}
             var room=State.Room(selectedRoom.Value);
+            if(!room.Built&&ClinicRules.IsServiceRoom(room.Kind)){BuildServiceRoomPlot(room);ApplySafeArea();return;}
             if(!room.Built)
             {
                 var job=State.Construction.FirstOrDefault(c=>c.Room==ClinicRoom.Waiting);
@@ -83,6 +84,25 @@ namespace IdleClinic.App
             if(actions.childCount==0)actions.RemoveFromHierarchy();
             ApplySafeArea();
         }
+
+        /// <summary>An office, staff room or store still to build: what it will do, and the build once the room before it is open.</summary>
+        private void BuildServiceRoomPlot(ClinicRoomState room)
+        {
+            var job=State.Construction.FirstOrDefault(c=>c.Room==room.Kind);
+            if(job!=null){BuildConstructionReadout(job);return;}
+            Text(dock,ServiceRoomPromise(room.Kind),"room-detail");
+            var before=ClinicRules.ServiceRoomPrerequisite(room.Kind);
+            var ready=State.Room(before).Built;
+            if(!ready)Text(dock,"Opens once the "+RoomName(before).ToLowerInvariant()+" is built","room-detail");
+            var seconds=ClinicRules.RoomBuildSeconds(State,room.Kind);
+            var line=Box(dock,"action-row");
+            Purchase(line,ClinicGlyph.Room,"Build the "+RoomName(room.Kind).ToLowerInvariant(),ClinicRules.RoomBuildCost(State,room.Kind),
+                ()=>State.Room(before).Built&&!simulation.BuildersBusy,()=>simulation.BuildRoom(room.Kind),(seconds/60)+" min build","primary-action");
+            if(ready&&simulation.BuildersBusy)BuildBuilderBusy(dock);
+        }
+        private static string ServiceRoomPromise(ClinicRoom kind)=>kind==ClinicRoom.Office?"Every piece of office equipment raises what each patient pays."
+            :kind==ClinicRoom.StaffRoom?"A good break room makes every member of staff a little quicker."
+            :"More supplies in store make room for more patients to queue and wait.";
 
         private static string TrackName(UpgradeTrack track)=>track==UpgradeTrack.Equipment?"Equipment":track==UpgradeTrack.Facilities?"Facilities":"Decor";
 

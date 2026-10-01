@@ -49,7 +49,7 @@ namespace IdleClinic.Tests
             var tiers = Enumerable.Range(0, 20).Select(item => ClinicGear.UnlockTier(state, item)).ToList();
             Assert.That(tiers[0], Is.EqualTo(1)); Assert.That(tiers[19], Is.EqualTo(40));
             Assert.That(tiers, Is.Ordered.Ascending.And.Unique);
-            foreach (ClinicRoom room in Enum.GetValues(typeof(ClinicRoom))) Assert.That(ClinicGear.Active(state, room), Is.True, room.ToString());
+            foreach (ClinicRoom room in Enum.GetValues(typeof(ClinicRoom))) Assert.That(ClinicGear.Active(state, room), Is.EqualTo(!ClinicRules.IsServiceRoom(room)), room.ToString());
         }
 
         [Test] public void LockedPiecesCannotBeUpgradedAndTheOldTracksAreRetired()

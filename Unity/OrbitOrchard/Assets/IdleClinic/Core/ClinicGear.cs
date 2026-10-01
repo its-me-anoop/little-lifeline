@@ -47,7 +47,8 @@ namespace IdleClinic.Core
         }
 
         public static bool Allowed(ClinicState state, ClinicRoom kind)
-            => kind == ClinicRoom.Reception || kind == ClinicRoom.FirstAid || kind == ClinicRoom.Waiting || ClinicRules.IsDoctors(state);
+            => kind == ClinicRoom.Reception || kind == ClinicRoom.FirstAid || kind == ClinicRoom.Waiting
+                || (ClinicRules.IsDoctors(state) ? kind == ClinicRoom.Consultation || kind == ClinicRoom.Pharmacy : ClinicRules.IsServiceRoom(kind));
         /// <summary>Whether this room prices its equipment per piece.</summary>
         public static bool Active(ClinicState state, ClinicRoom kind)
         {
@@ -149,8 +150,8 @@ namespace IdleClinic.Core
         public static string VersionName(int version) => version >= 1 && version <= MaximumVersion ? VersionNames[version - 1] : "";
         private static readonly string[][] Names =
         {
-            new[] { "Appointment book", "Desk bell", "Ticket dispenser", "Reception computer", "Receipt printer", "Card reader", "Brochure rack", "Wall clock", "Notice board", "Sanitizer stand",
-                    "Sign-in tablet", "Security camera", "Water cooler", "Umbrella stand", "Magazine table", "Reception planter", "Wall screen", "Air purifier", "Cash safe", "Queue display" },
+            new[] { "Visitor book", "Desk bell", "Card reader", "Desk phone", "Receipt printer", "Sanitizer station", "Leaflet stand", "Wall clock", "Notice board", "Self check-in kiosk",
+                    "Water cooler", "Security camera", "Queue barrier", "Umbrella stand", "Reception planter", "Information screen", "Filing cabinet", "Air purifier", "Cash safe", "Queue display" },
             new[] { "First aid kit", "Bandage rack", "Exam lamp", "Blood pressure monitor", "Thermometer station", "Sterilizer", "Dressing trolley", "Wash basin", "Oxygen cylinder", "Defibrillator",
                     "Pulse oximeter", "Stethoscope wall", "Medicine cabinet", "Cold pack fridge", "Splint rack", "Wheelchair", "Stretcher", "IV drip stand", "ECG cart", "Portable scanner" },
             new[] { "Reading rack", "Water dispenser", "Coat rack", "Waiting room TV", "Floor lamp", "Toy corner", "Coffee table", "Magazine stand", "Potted tree", "Fish tank",
@@ -158,7 +159,13 @@ namespace IdleClinic.Core
             new[] { "Exam couch", "Doctor's desk", "Desktop computer", "Otoscope set", "Wall blood pressure unit", "Weighing scale", "Height chart", "Skeleton model", "X-ray light box", "Anatomy poster",
                     "Privacy screen", "Consulting sink", "Doctor's stool", "Printer", "Filing cabinet", "Exam light", "ECG monitor", "Ultrasound cart", "Nebulizer", "Laptop cart" },
             new[] { "Dispensing counter", "Pill counting tray", "Shelving", "Medicine fridge", "Label printer", "Precision scale", "Controlled drugs safe", "Barcode scanner", "Mortar and pestle", "Pill robot",
-                    "Blister packer", "Syrup shelf", "Counter display", "Vitamin rack", "Advice screen", "Ticket machine", "Bottle washer", "Herb cabinet", "Delivery trolley", "Automated cabinet" }
+                    "Blister packer", "Syrup shelf", "Counter display", "Vitamin rack", "Advice screen", "Ticket machine", "Bottle washer", "Herb cabinet", "Delivery trolley", "Automated cabinet" },
+            new[] { "Laptop", "Desk lamp", "Document tray", "Desk phone", "Pen cup", "Nameplate", "Photo frame", "Desk plant", "Bookcase", "Filing cabinet",
+                    "Printer station", "Coat stand", "Office plant", "Rug", "Whiteboard", "Recycling bins", "Side table", "Display cabinet", "Climate unit", "Floor lamp" },
+            new[] { "Coffee machine", "Kettle", "Microwave", "Toaster", "TV unit", "Bistro table", "Mug tree", "Fruit bowl", "Magazines", "Fridge",
+                    "Armchair", "Radio", "Coat stand", "Staff room plant", "Recycling bins", "Shoe rack", "Water boiler", "Rug", "Massage chair", "Side lamp" },
+            new[] { "Supply boxes", "Hand truck", "Step ladder", "Water pallet", "Glove dispensers", "Gown rail", "Scanner desk", "Label printer", "Cleaning cart", "Oxygen cage",
+                    "Medical fridge", "Spare wheelchairs", "Bin station", "Linen cart", "IV pole rack", "Inventory tablet", "Shelving unit", "Secure cabinet", "Dehumidifier", "Pallet jack" }
         };
         private static readonly string[] VersionNames =
         {

@@ -31,6 +31,9 @@ namespace IdleClinic.Core
                 if (patient.QueueMovePath == null) patient.QueueMovePath = new List<ClinicMovementPoint>();
             if (ClinicRules.IsDoctors(State))
             { RestoreLegacyTaxiWaitingReservations(); ReindexQueue(); }
+            // Clinics on rules 5 gain the office, staff room and store as empty plots, ready to build.
+            if (ClinicRules.OffersServiceRooms(State) && State.Rooms.Count == 3)
+                foreach (var kind in ClinicRules.ServiceRooms) State.Rooms.Add(new ClinicRoomState { Kind = kind });
         }
 
         public static ClinicSimulation CreateNew(ulong seed = 42)
@@ -210,6 +213,24 @@ namespace IdleClinic.Core
             StartConstruction(ClinicRoom.Waiting, ClinicConstructionKind.WaitingRoom, 1,
                 ClinicRules.WaitingRoomCost, ClinicRules.WaitingRoomBuildSeconds);
             return Yes("Waiting room construction started.", ClinicRules.WaitingRoomCost);
+        }
+
+        /// <summary>Build the office, staff room or store (rules 5, starter clinic), each once the room before it is open.</summary>
+        public ClinicCommandResult BuildRoom(ClinicRoom kind)
+        {
+            if (kind == ClinicRoom.Waiting) return BuildWaitingRoom();
+            if (!TutorialComplete() || !Defined(kind) || !ClinicRules.IsServiceRoom(kind) || !ClinicRules.OffersServiceRooms(State)) return No("This room cannot be built here.");
+            var room = State.Room(kind);
+            if (room == null) return No("This clinic has no space for that room.");
+            if (room.Built || IsUnderConstruction(kind)) return No("This room is already built or being prepared.");
+            var before = ClinicRules.ServiceRoomPrerequisite(kind);
+            if (!State.Room(before).Built) return No("Build the " + ClinicRules.RoomLabel(before) + " first.");
+            if (BuildersBusy) return No(BuildersBusyMessage);
+            if (State.NextConstructionId == int.MaxValue) return No("This clinic cannot start another construction job.");
+            var cost = ClinicRules.RoomBuildCost(State, kind);
+            if (!CanSpend(cost)) return No("Save " + cost + " coins for the " + ClinicRules.RoomLabel(kind) + ".");
+            StartConstruction(kind, ClinicConstructionKind.NewRoom, 1, cost, ClinicRules.RoomBuildSeconds(State, kind));
+            return Yes("The " + ClinicRules.RoomLabel(kind) + " is being built.", cost);
         }
 
         public ClinicCommandResult AddTreatmentStation()
@@ -673,8 +694,8 @@ namespace IdleClinic.Core
                 anchors.Add(ClinicRules.TreatmentPatientAnchor(id));
                 anchors.Add(ClinicRules.WaitingAnchor(false, id));
             }
-            for (var id = 0; id < 11; id++) anchors.Add(ClinicRules.QueueAnchor(id));
-            for (var id = 0; id < 14; id++) anchors.Add(ClinicRules.WaitingAnchor(true, id));
+            for (var id = 0; id < ClinicRules.StarterQueuePlaces; id++) anchors.Add(ClinicRules.QueueAnchor(id));
+            for (var id = 0; id < ClinicRules.StarterSeats; id++) anchors.Add(ClinicRules.WaitingAnchor(true, id));
             for (var id = 0; id < 6; id++) anchors.Add(ClinicRules.ParkingPatientAnchor(id));
             anchors.Add(ClinicRules.AmenityPatientAnchor(ClinicAmenity.Toilet));
             anchors.Add(ClinicRules.AmenityPatientAnchor(ClinicAmenity.Vending));
@@ -738,15 +759,25 @@ namespace IdleClinic.Core
                 || !ValidParkingLedger(state, legacy || v2)
                 || state.TotalEarned < 50 * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)
                 || state.TotalEarned > (legacy ? 125 : ClinicRules.MaximumVisitFee(state)) * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)) return false;
-            if (state.Rooms == null || state.Rooms.Count != 3 || state.ReceptionDesks == null || state.ReceptionDesks.Count < 1 || state.ReceptionDesks.Count > 2
+            // The office, staff room and store are present together or not at all, and only where the rules offer them.
+            // Under earlier rules they may stand only as unbuilt plots.
+            var serviceRooms = !legacy && !v2 && state.Rooms != null && state.Rooms.Count == 6;
+            if (state.Rooms == null || state.Rooms.Count != 3 && !serviceRooms || state.ReceptionDesks == null || state.ReceptionDesks.Count < 1 || state.ReceptionDesks.Count > 2
                 || state.Staff == null || state.Patients == null || state.Patients.Count > ClinicRules.MaximumPatients || state.Construction == null || state.Construction.Count > 3) return false;
             var roomKinds = new HashSet<ClinicRoom>();
             foreach (var room in state.Rooms)
-                if (room == null || !Defined(room.Kind) || (int)room.Kind > 2 || !roomKinds.Add(room.Kind) || room.Tier < 1 || room.Tier > (legacy || v2 ? 3 : ClinicRules.MaximumTier(state))
+                if (room == null || !Defined(room.Kind) || (int)room.Kind > 2 && !(serviceRooms && ClinicRules.IsServiceRoom(room.Kind)) || !roomKinds.Add(room.Kind) || room.Tier < 1 || room.Tier > (legacy || v2 ? 3 : ClinicRules.MaximumTier(state))
                     || room.EquipmentLevel < 1 || room.EquipmentLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Equipment)
                     || room.FacilitiesLevel < 1 || room.FacilitiesLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Facilities)
                     || room.DecorationLevel < 1 || room.DecorationLevel > ClinicRules.OwnedLevelLimit(state, room.Tier, UpgradeTrack.Decoration)
                     || room.StationCount < 0 || room.StationCount > 2 || !ClinicGear.IsValid(room)) return false;
+            foreach (var room in state.Rooms)
+            {
+                if (!ClinicRules.IsServiceRoom(room.Kind)) continue;
+                if (room.StationCount != 0 || room.Built && (!ClinicRules.OffersServiceRooms(state) || !state.Room(ClinicRules.ServiceRoomPrerequisite(room.Kind)).Built)
+                    || !room.Built && (room.Tier != 1 || room.EquipmentLevel != 1 || room.FacilitiesLevel != 1 || room.DecorationLevel != 1
+                        || room.GearLevels != null && room.GearLevels.Count != 0)) return false;
+            }
             var reception = state.Room(ClinicRoom.Reception);
             var firstAid = state.Room(ClinicRoom.FirstAid);
             var waiting = state.Room(ClinicRoom.Waiting);
@@ -810,7 +841,7 @@ namespace IdleClinic.Core
                     || (legacy && ((int)patient.Phase > (int)ClinicPatientPhase.Leaving
                         || !IsLegacyPatientAnchor(patient.FromAnchor) || !IsLegacyPatientAnchor(patient.ToAnchor)
                         || (patient.Phase == ClinicPatientPhase.Arriving || patient.Phase == ClinicPatientPhase.Leaving) && patient.PhaseEndsTick - patient.PhaseStartedTick > 30))
-                    || patient.Payment < 0 || patient.Payment > (legacy ? 125 : 140) || patient.DeskId < -1 || patient.DeskId >= deskIds.Count
+                    || patient.Payment < 0 || patient.Payment > (legacy ? 125 : Math.Max(140, ClinicRules.MaximumVisitFee(state))) || patient.DeskId < -1 || patient.DeskId >= deskIds.Count
                     || patient.ParkingFeeDue && (patient.ParkingBayId < 0 || state.RulesVersion < 4)
                     || patient.SeatId < -1 || patient.SeatId >= ClinicRules.WaitingCapacity(state)) return false;
                 var atReception = patient.Phase == ClinicPatientPhase.WalkingToReception || patient.Phase == ClinicPatientPhase.CheckingIn;
@@ -863,7 +894,13 @@ namespace IdleClinic.Core
                 if (job == null || job.Id < 0 || job.Id >= state.NextConstructionId || !jobIds.Add(job.Id) || !Defined(job.Room) || !Defined(job.Kind)
                     || !jobRooms.Add(job.Room) || job.StartedTick < 0 || job.StartedTick > state.Tick || job.EndsTick <= state.Tick || job.PaidCost <= 0) return false;
                 var room = state.Room(job.Room);
-                if (job.Kind == ClinicConstructionKind.WaitingRoom)
+                if (job.Kind == ClinicConstructionKind.NewRoom)
+                {
+                    if (!ClinicRules.IsServiceRoom(job.Room) || room == null || room.Built || job.TargetTier != 1
+                        || !state.Room(ClinicRules.ServiceRoomPrerequisite(job.Room)).Built
+                        || job.PaidCost != ClinicRules.RoomBuildCost(state, job.Room) || job.EndsTick - job.StartedTick != ClinicRules.RoomBuildSeconds(state, job.Room) * 10L) return false;
+                }
+                else if (job.Kind == ClinicConstructionKind.WaitingRoom)
                 {
                     if (job.Room != ClinicRoom.Waiting || room.Built || !state.WaitingRoomUnlocked || job.TargetTier != 1
                         || job.PaidCost != ClinicRules.WaitingRoomCost || job.EndsTick - job.StartedTick != 200) return false;

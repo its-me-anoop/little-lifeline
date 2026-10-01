@@ -10,6 +10,7 @@ namespace IdleClinic.Presentation
         internal const int Layer=10;
         private readonly Dictionary<string,GameObject> models=new Dictionary<string,GameObject>();
         private readonly Dictionary<string,Material> materials=new Dictionary<string,Material>();
+        private readonly List<UnityEngine.Object> surfaceAssets=new List<UnityEngine.Object>();
         private readonly Mesh cube,sphere,cylinder;
         internal ClinicArt() { cube=ClinicPrimitives.Cube();sphere=ClinicPrimitives.Sphere();cylinder=ClinicPrimitives.Cylinder(); }
         internal GameObject Model(string name,Transform parent,Vector3 position,Quaternion rotation=default)
@@ -45,6 +46,7 @@ namespace IdleClinic.Presentation
             material=new Material(Shader.Find(role=="Paper" ? "Unlit/Color" : "Standard")){name="Clinic "+role,enableInstancing=true};
             material.color=Color(role);
             if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:role=="Platinum"?.5f:role=="Graphite"?.3f:0); }
+            ClinicSurfaces.Apply(material,role,surfaceAssets);
             materials.Add(role,material);return material;
         }
         /// <summary>A separately coloured copy of a role's material, kept under its own key (for example one room's floor).</summary>
@@ -84,6 +86,21 @@ namespace IdleClinic.Presentation
                 case "Aqua":return new Color(.30f,.72f,.72f);
                 case "Glow":return new Color(.55f,.95f,.80f);
                 case "Crimson":return new Color(.72f,.22f,.20f);
+                // Reception furniture: real-world surfaces (ClinicSurfaces paints the textured ones).
+                case "Walnut":return new Color(.36f,.23f,.14f);
+                case "Oak":return new Color(.70f,.54f,.36f);
+                case "Quartz":return new Color(.93f,.92f,.89f);
+                case "BrushedSteel":return new Color(.66f,.68f,.69f);
+                case "Fabric":return new Color(.45f,.56f,.52f);
+                case "Leather":return new Color(.34f,.22f,.15f);
+                case "Cork":return new Color(.72f,.55f,.36f);
+                case "ScreenUI":return new Color(.30f,.52f,.66f);
+                case "Acrylic":return new Color(.84f,.91f,.92f);
+                case "Brass":return new Color(.78f,.62f,.30f);
+                case "Rubber":return new Color(.14f,.15f,.15f);
+                case "Terracotta":return new Color(.72f,.42f,.30f);
+                case "Soil":return new Color(.25f,.18f,.12f);
+                case "Charcoal":return new Color(.17f,.19f,.20f);
                 case "Tyre":return new Color(.12f,.13f,.13f);
                 case "LampLight":return new Color(.98f,.93f,.76f);
                 case "TailLight":return new Color(.70f,.12f,.12f);
@@ -130,6 +147,6 @@ namespace IdleClinic.Presentation
         }
         private static void SetLayer(Transform root) { root.gameObject.layer=Layer;foreach(Transform child in root)SetLayer(child); }
         internal static void Destroy(UnityEngine.Object value) { if(Application.isPlaying)UnityEngine.Object.Destroy(value);else UnityEngine.Object.DestroyImmediate(value); }
-        public void Dispose() { foreach(var material in materials.Values)Destroy(material);Destroy(cube);Destroy(sphere);Destroy(cylinder); }
+        public void Dispose() { foreach(var material in materials.Values)Destroy(material);foreach(var asset in surfaceAssets)Destroy(asset);Destroy(cube);Destroy(sphere);Destroy(cylinder); }
     }
 }

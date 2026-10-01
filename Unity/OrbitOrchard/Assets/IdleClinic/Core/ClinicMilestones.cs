@@ -77,7 +77,7 @@ namespace IdleClinic.Core
             {
                 var tier = target;
                 list.Add(new ClinicMilestone("starter.all.tier" + tier, "Renovate every starter room to tier " + tier, 5 + tier,
-                    (s, d) => s.Rooms.All(r => r.Built && r.Tier >= tier)));
+                    (s, d) => s.Rooms.Where(r => !ClinicRules.IsServiceRoom(r.Kind)).All(r => r.Built && r.Tier >= tier)));
             }
             foreach (var target in new[] { 10, 20, 30, 40 })
             {

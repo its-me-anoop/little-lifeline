@@ -99,7 +99,7 @@ namespace IdleClinic.App
             var role=RoomRole(room);
             if(role.HasValue)
                 foreach(var id in StationIds(State,role.Value))ObjectShortcut(heading,StationHit(role.Value,id),RoleGlyph(role.Value),id+1);
-            else if(State.Room(room).Built)
+            else if(room==ClinicRoom.Waiting&&State.Room(room).Built)
             {
                 ObjectShortcut(heading,AmenityHit(ClinicAmenity.Toilet),ClinicGlyph.Toilet);
                 ObjectShortcut(heading,AmenityHit(ClinicAmenity.Vending),ClinicGlyph.Vending);

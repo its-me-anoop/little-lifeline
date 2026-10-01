@@ -86,6 +86,16 @@ namespace IdleClinic.Core
         public ClinicGrowth GearItemGrowth { get; private set; }
         public ClinicGrowth GearVersionGrowth { get; private set; }
 
+        /// <summary>Rules 5, starter clinic: the coins and build time of the office, staff room and store (indexed by ClinicRoom).</summary>
+        public long[] RoomBuildCost { get; private set; }
+        public int[] RoomBuildSeconds { get; private set; }
+        /// <summary>What a fully equipped office adds to the visit fee, a staff room takes off service times (both per
+        /// cent), and a store adds in queue places and corridor seats.</summary>
+        public int OfficeFeePercent { get; private set; }
+        public int StaffRoomSpeedPercent { get; private set; }
+        public int StoreQueuePlaces { get; private set; }
+        public int StoreSeats { get; private set; }
+
         // Indexed by ClinicAmenity.
         public long[] AmenityBase { get; }
         public ClinicGrowth AmenityGrowth { get; }
@@ -124,15 +134,20 @@ namespace IdleClinic.Core
                 { 80, 60, 40 },   // First aid
                 { 35, 45, 40 },   // Waiting
                 { 110, 90, 40 },  // Consultation
-                { 95, 75, 40 }    // Pharmacy
+                { 95, 75, 40 },   // Pharmacy
+                { 100, 80, 40 },  // Office
+                { 115, 90, 40 },  // Staff room
+                { 90, 70, 40 }    // Store
             };
             UpgradeGrowth = new ClinicGrowth(8, 5);
-            RenovationBase = new long[] { 180, 250, 120, 300, 220 };
+            RenovationBase = new long[] { 180, 250, 120, 300, 220, 330, 400, 300 };
             RenovationGrowth = new ClinicGrowth(5, 2);
             RenovationBaseSeconds = 60;
             RenovationTimeGrowth = new ClinicGrowth(3, 1);
             MaximumConstructionSeconds = int.MaxValue;
             AmenityBase = new long[] { 220, 140, 180, 260 };
+            RoomBuildCost = new long[8];
+            RoomBuildSeconds = new int[8];
             AmenityGrowth = new ClinicGrowth(2, 1);
             SameGrowthInBothClinics();
             if (rulesVersion < 4) return;
@@ -149,10 +164,13 @@ namespace IdleClinic.Core
                 { 48, 36, 24 },   // First aid
                 { 21, 27, 24 },   // Waiting
                 { 66, 54, 24 },   // Consultation
-                { 57, 45, 24 }    // Pharmacy
+                { 57, 45, 24 },   // Pharmacy
+                { 60, 48, 24 },   // Office
+                { 69, 54, 24 },   // Staff room
+                { 54, 42, 24 }    // Store
             };
             UpgradeGrowth = new ClinicGrowth(17, 10);
-            RenovationBase = new long[] { 108, 150, 72, 180, 132 };
+            RenovationBase = new long[] { 108, 150, 72, 180, 132, 200, 240, 180 };
             RenovationGrowth = new ClinicGrowth(3, 1);
             RenovationBaseSeconds = 30;
             RenovationTimeGrowth = new ClinicGrowth(4, 1);
@@ -190,6 +208,13 @@ namespace IdleClinic.Core
             // piece's first upgrade costs what the old equipment level did.
             GearItemGrowth = new ClinicGrowth(6, 5);
             GearVersionGrowth = new ClinicGrowth(27, 20);
+            // The starter clinic's back-of-house rooms, built in order once the waiting room is open.
+            RoomBuildCost = new long[] { 0, 0, 0, 0, 0, 1500, 6000, 18000 };
+            RoomBuildSeconds = new[] { 0, 0, 0, 0, 0, 60, 120, 180 };
+            OfficeFeePercent = 100;
+            StaffRoomSpeedPercent = 30;
+            StoreQueuePlaces = 3;
+            StoreSeats = 3;
         }
 
         /// <summary>Before rules 5 both clinics climb at the same rate per level.</summary>

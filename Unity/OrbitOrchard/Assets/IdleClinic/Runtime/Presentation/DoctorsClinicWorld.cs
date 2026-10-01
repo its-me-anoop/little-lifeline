@@ -45,7 +45,7 @@ namespace IdleClinic.Presentation
             vendingTip=art.Cylinder("Doctors patient tip",parent,VendingCashPoint,new Vector3(.14f,.035f,.14f),"Gold").transform;
             transport=new DoctorsClinicTransport(art,parent);construction=new ClinicConstruction(art,parent,new[]{new Vector3(-12.6f,.14f,-5.5f),new Vector3(-12.6f,.14f,.6f),new Vector3(10.6f,.14f,-2.0f),new Vector3(10.6f,.14f,6.9f),new Vector3(10.6f,.14f,1.5f)});
         }
-        internal Vector3 RoomPoint(ClinicRoom room)=>RoomBounds[(int)room].center+Vector3.up*1.1f;
+        internal Vector3 RoomPoint(ClinicRoom room)=>RoomBounds[Mathf.Clamp((int)room,0,RoomBounds.Length-1)].center+Vector3.up*1.1f;
         internal Vector3 WorkstationPoint(ClinicStaffRole role,int id)=>workstations[(int)role,Mathf.Clamp(id,0,role==ClinicStaffRole.Pharmacist?1:3)].transform.position+new Vector3(0,1.10f,-.15f);
         internal Vector3 AmenityPoint(ClinicAmenity kind)=>kind==ClinicAmenity.Parking?DoctorsParkingLayout.SignPoint:kind==ClinicAmenity.Toilet?new Vector3(12.2f,1.2f,-4.65f):kind==ClinicAmenity.Vending?new Vector3(9.05f,1.1f,-.70f):new Vector3(19.8f,1.4f,-8.90f);
         internal void Render(ClinicState state,ClinicActors actors,float delta,bool reduced)
@@ -175,7 +175,7 @@ namespace IdleClinic.Presentation
             for(int i=0;i<ClinicRules.TaxiWaitingCapacity;i++)
             {string name=ClinicRules.TaxiWaitingAnchor(i);var point=ClinicDoctorsNavigation.Anchor(name);anchor(name,new Vector3(point.x,.14f,point.z),Vector3.back);}
             anchor("waiting.vending.patient",new Vector3(9.05f,.14f,-1.82f),Vector3.forward);anchor("waiting.vending.cash",VendingCashPoint,Vector3.forward);
-            foreach(ClinicRoom room in Enum.GetValues(typeof(ClinicRoom)))anchor(room==ClinicRoom.FirstAid?"firstaid.progress":room.ToString().ToLowerInvariant()+".progress",RoomPoint(room),Vector3.forward);
+            foreach(ClinicRoom room in Enum.GetValues(typeof(ClinicRoom)))if(!ClinicRules.IsServiceRoom(room))anchor(room==ClinicRoom.FirstAid?"firstaid.progress":room.ToString().ToLowerInvariant()+".progress",RoomPoint(room),Vector3.forward);
         }
         private GameObject Toilet(int index)
         {

@@ -20,8 +20,17 @@ COLORS = {
     "Wood": (.59, .40, .27), "Rose": (.68, .37, .38), "Chrome": (.76, .77, .75), "Platinum": (.82, .84, .86),
     "Graphite": (.24, .27, .30), "Aqua": (.30, .72, .72), "Glow": (.55, .95, .80), "Crimson": (.72, .22, .20),
     "Glass": (.20, .27, .31), "Tyre": (.12, .13, .13), "Clay": (.74, .55, .41), "Leaf": (.31, .49, .30),
+    # Real-world surfaces. Textured ones (see TEXTURED) get world-scale UVs; the game paints them procedurally.
+    "Walnut": (.36, .23, .14), "Oak": (.70, .54, .36), "Quartz": (.93, .92, .89), "BrushedSteel": (.66, .68, .69),
+    "Fabric": (.45, .56, .52), "Leather": (.34, .22, .15), "ScreenUI": (.30, .52, .66), "Paper": (.97, .96, .92),
+    "Acrylic": (.84, .91, .92), "LampLight": (.98, .93, .76), "Brass": (.78, .62, .30), "Rubber": (.14, .15, .15),
+    "Terracotta": (.72, .42, .30), "Soil": (.25, .18, .12), "Cork": (.72, .55, .36), "Charcoal": (.17, .19, .20),
 }
-METALLIC = {"Gold": .45, "Chrome": .75, "Platinum": .6, "Graphite": .3}
+METALLIC = {"Gold": .45, "Chrome": .75, "Platinum": .6, "Graphite": .3, "BrushedSteel": .7, "Brass": .6}
+# Surfaces that carry a texture in the game: world-scale cube-projected UVs (one UV unit per metre).
+TEXTURED = {"Walnut", "Oak", "Quartz", "BrushedSteel", "Fabric", "Leather", "Cork"}
+# Surfaces that show a whole picture on each face (screens and printed paper).
+FACE_MAPPED = {"ScreenUI"}
 MATS = {}
 for role, rgb in COLORS.items():
     mat = bpy.data.materials.new(role); mat.diffuse_color = (*rgb, 1); mat.use_nodes = True
@@ -46,6 +55,12 @@ def u(p): return Vector((-p[0], -p[2], p[1]))
 def material(ob, role, smooth=False):
     ob.data.materials.append(MATS[role])
     for face in ob.data.polygons: face.use_smooth = smooth
+    if role in TEXTURED or role in FACE_MAPPED:
+        bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True); bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
+        if role in TEXTURED: bpy.ops.uv.cube_project(cube_size=1.0)
+        else: bpy.ops.uv.reset()
+        bpy.ops.object.mode_set(mode="OBJECT")
     return ob
 
 
