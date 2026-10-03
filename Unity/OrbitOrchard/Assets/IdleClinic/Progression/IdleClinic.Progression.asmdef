@@ -1,0 +1,7 @@
+{
+  "name": "IdleClinic.Progression",
+  "rootNamespace": "IdleClinic.Progression",
+  "references": [],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

@@ -1,0 +1,13 @@
+namespace IdleClinic.Progression
+{
+    public enum ProgressionEventKind { TaskStarted, TaskCompleted, RoomUnlocked, PatientArrived, TreatmentStarted, TreatmentCompleted }
+
+    public struct ProgressionEvent
+    {
+        public ProgressionEventKind Kind;
+        public BossTask Task;
+        public RoomId Room;
+        public long Cost;
+        public long Payment;
+    }
+}
