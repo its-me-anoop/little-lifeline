@@ -1,0 +1,9 @@
+{
+  "name": "IdleClinic.ProgressionEditor",
+  "rootNamespace": "IdleClinic.ProgressionEditor",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

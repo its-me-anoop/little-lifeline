@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using IdleClinic.App;
+using IdleClinic.ProgressionView;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -14,7 +15,8 @@ namespace OrbitOrchard.Editor
 {
     public static class OrchardBuild
     {
-        private const string ScenePath = "Assets/IdleClinic/Scenes/Clinic.unity";
+        private const string ScenePath = "Assets/IdleClinic/Scenes/Progression.unity";
+        private const string ClassicScenePath = "Assets/IdleClinic/Scenes/Clinic.unity";
         [MenuItem("Idle Clinic/Prepare project")]
         public static void Prepare()
         {
@@ -31,19 +33,25 @@ namespace OrbitOrchard.Editor
                 panel.themeStyleSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>("Assets/OrbitOrchard/UI/OrchardTheme.tss");
                 AssetDatabase.CreateAsset(panel, "Assets/IdleClinic/Resources/ClinicPanel.asset");
             }
-            if (!File.Exists(ScenePath))
+            if (!File.Exists(ClassicScenePath))
             {
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                var classic = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 var app = new GameObject("Little Lifeline");
                 var doc = app.AddComponent<UIDocument>(); doc.panelSettings = panel;
                 app.AddComponent<ClinicApp>();
+                EditorSceneManager.SaveScene(classic, ClassicScenePath);
+            }
+            if (!File.Exists(ScenePath))
+            {
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                new GameObject("Progression").AddComponent<ProgressionStage>();
                 EditorSceneManager.SaveScene(scene, ScenePath);
             }
             PlayerSettings.companyName = "Flutterly";
             PlayerSettings.productName = "Little Lifeline";
-            PlayerSettings.bundleVersion = "4.2";
+            PlayerSettings.bundleVersion = "4.3";
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
-            PlayerSettings.iOS.buildNumber = "20";
+            PlayerSettings.iOS.buildNumber = "21";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;
@@ -190,5 +198,7 @@ namespace OrbitOrchard.Editor
         }
         [MenuItem("Idle Clinic/Open game scene")]
         public static void OpenGame() { Prepare(); EditorSceneManager.OpenScene(ScenePath); }
+        [MenuItem("Idle Clinic/Open 4.2 classic scene")]
+        public static void OpenClassic() { Prepare(); EditorSceneManager.OpenScene(ClassicScenePath); }
     }
 }
