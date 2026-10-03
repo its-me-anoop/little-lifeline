@@ -68,7 +68,7 @@ namespace IdleClinic.ProgressionView
             if (game.BossTravelling && game.BossDestination != null)
             {
                 if (!wasTravelling) walkFrom = rooms[game.BossLocation].WorkSpot;
-                boss.Show(null);
+                boss.Travelling();
                 boss.Walk(walkFrom, rooms[game.BossDestination.Value].WorkSpot, game.BossTravelProgress);
             }
             else
@@ -86,10 +86,9 @@ namespace IdleClinic.ProgressionView
             var shown = Mathf.Min(game.State.PatientsWaiting, 8);
             while (queue.Count < shown)
             {
-                var patient = Shapes.Empty(root, Vector3.zero, "Waiting patient");
-                var tint = Color.HSVToRGB(Random.value, .45f, .9f);
-                Shapes.Make(PrimitiveType.Capsule, patient.transform, new Vector3(0, 0.55f, 0), new Vector3(0.4f, 0.5f, 0.4f), tint);
-                Shapes.Make(PrimitiveType.Sphere, patient.transform, new Vector3(0, 1.2f, 0), Vector3.one * 0.32f, new Color(.95f, .8f, .65f));
+                var models = new[] { "Patient_01_Man_Coral", "Patient_02_Woman_Lavender", "Patient_03_Man_Mint", "Patient_04_Woman_Sunflower", "Patient_05_OlderMan_Blue", "Patient_06_OlderWoman_Rose" };
+                var patient = Models.Spawn(models[queue.Count % models.Length], root, Vector3.zero, 0, false);
+                Models.Play(patient, "Idle");
                 queue.Add(patient);
             }
             for (var i = 0; i < queue.Count; i++)

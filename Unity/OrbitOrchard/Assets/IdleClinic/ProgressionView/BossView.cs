@@ -3,11 +3,12 @@ using UnityEngine;
 
 namespace IdleClinic.ProgressionView
 {
-    /// <summary>The boss: a suited capsule with a broom or hammer, walking between rooms along the corridors.</summary>
+    /// <summary>The boss: the clinic director with a broom or hammer, walking between rooms along the corridors.</summary>
     internal sealed class BossView
     {
         private readonly Transform root;
-        private readonly GameObject broom, hammer;
+        private readonly GameObject broom, hammer, body;
+        private string clip;
         private readonly float corridorX;
         private Vector3 resting;
 
@@ -17,13 +18,11 @@ namespace IdleClinic.ProgressionView
         {
             this.corridorX = corridorX;
             root = Shapes.Empty(parent, start, "Boss").transform;
-            Shapes.Make(PrimitiveType.Capsule, root, new Vector3(0, 0.75f, 0), new Vector3(0.6f, 0.75f, 0.6f), new Color(.15f, .2f, .35f), "Suit");
-            Shapes.Make(PrimitiveType.Cube, root, new Vector3(0, 0.95f, 0.29f), new Vector3(0.1f, 0.4f, 0.04f), new Color(.85f, .2f, .25f), "Tie");
-            Shapes.Make(PrimitiveType.Sphere, root, new Vector3(0, 1.7f, 0), Vector3.one * 0.5f, new Color(.95f, .8f, .65f), "Head");
-            broom = Shapes.Empty(root, new Vector3(0.5f, 0, 0.2f), "Broom");
+            body = Models.Spawn("Boss_ClinicDirector", root, Vector3.zero, 0, false);
+            broom = Shapes.Empty(root, new Vector3(0.45f, 0, 0.25f), "Broom");
             Shapes.Make(PrimitiveType.Cylinder, broom.transform, new Vector3(0, 0.8f, 0), new Vector3(0.06f, 0.8f, 0.06f), new Color(.8f, .65f, .3f));
             Shapes.Box(broom.transform, new Vector3(0, 0.05f, 0), new Vector3(0.5f, 0.12f, 0.15f), new Color(.9f, .8f, .35f));
-            hammer = Shapes.Empty(root, new Vector3(0.5f, 0.5f, 0.2f), "Hammer");
+            hammer = Shapes.Empty(root, new Vector3(0.45f, 0.4f, 0.25f), "Hammer");
             Shapes.Make(PrimitiveType.Cylinder, hammer.transform, new Vector3(0, 0.3f, 0), new Vector3(0.07f, 0.4f, 0.07f), new Color(.5f, .35f, .2f));
             Shapes.Box(hammer.transform, new Vector3(0, 0.7f, 0), new Vector3(0.35f, 0.18f, 0.18f), new Color(.5f, .5f, .55f));
             resting = start;
@@ -34,14 +33,26 @@ namespace IdleClinic.ProgressionView
         {
             broom.SetActive(working == BossTaskKind.Clean);
             hammer.SetActive(working == BossTaskKind.LevelUp || working == BossTaskKind.UpgradeFurniture);
+            Pose(working == null ? "Idle" : working == BossTaskKind.Hire ? "CheckIn" : "Treat");
+        }
+
+        private void Pose(string name)
+        {
+            if (clip == name) return;
+            clip = name; Models.Play(body, name);
+        }
+
+        public void Travelling()
+        {
+            broom.SetActive(false); hammer.SetActive(false);
+            Pose("Walk");
         }
 
         public void Stand(Vector3 spot, double workProgress, bool working)
         {
             resting = spot;
-            var sway = working ? Mathf.Sin((float)workProgress * Mathf.PI * 14) : 0;
-            root.position = spot + new Vector3(sway * 0.35f, working ? Mathf.Abs(sway) * 0.08f : 0, 0);
-            root.rotation = Quaternion.Euler(0, working ? 0 : 180, 0);
+            root.position = spot;
+            root.rotation = Quaternion.Euler(0, 180, 0);
         }
 
         /// <summary>Corridor route: out to the middle corridor, along it, then into the target room.</summary>
@@ -58,7 +69,7 @@ namespace IdleClinic.ProgressionView
             var position = Vector3.Lerp(a, b, t);
             var heading = b - a;
             if (heading.sqrMagnitude > 0.0001f) root.rotation = Quaternion.LookRotation(heading);
-            root.position = position + new Vector3(0, Mathf.Abs(Mathf.Sin((float)progress * 24)) * 0.15f, 0);
+            root.position = position;
         }
     }
 }

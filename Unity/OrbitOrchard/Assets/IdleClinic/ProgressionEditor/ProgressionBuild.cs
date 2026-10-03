@@ -32,6 +32,11 @@ namespace IdleClinic.ProgressionEditor
             CreateScene();
             var output = Environment.GetEnvironmentVariable("PROGRESSION_IOS_EXPORT");
             if (string.IsNullOrEmpty(output)) output = "Builds/iOSProgression";
+            // A separate app id and name, so installing the prototype never replaces the real clinic on a device.
+            var previousId = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.iOS);
+            var previousName = PlayerSettings.productName;
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, previousId + ".boss");
+            PlayerSettings.productName = "Boss Prototype";
             var previousArchitecture = PlayerSettings.iOS.simulatorSdkArchitecture;
             try
             {
@@ -48,6 +53,8 @@ namespace IdleClinic.ProgressionEditor
             }
             finally
             {
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, previousId);
+                PlayerSettings.productName = previousName;
                 PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
                 PlayerSettings.iOS.simulatorSdkArchitecture = previousArchitecture;
                 EditorBuildSettings.scenes = restoreScenes;

@@ -14,11 +14,6 @@ namespace IdleClinic.ProgressionView
             new Color(.45f, .44f, .43f), new Color(.62f, .8f, .72f), new Color(.55f, .72f, .9f),
             new Color(.76f, .66f, .9f), new Color(.95f, .78f, .52f), new Color(.95f, .65f, .7f)
         };
-        private static readonly Color[] Pieces =
-        {
-            new Color(.6f, .45f, .3f), new Color(.2f, .6f, .5f), new Color(.2f, .45f, .85f),
-            new Color(.55f, .3f, .8f), new Color(.9f, .55f, .15f), new Color(.85f, .25f, .45f)
-        };
 
         public readonly RoomId Id;
         public readonly Transform Root;
@@ -26,7 +21,9 @@ namespace IdleClinic.ProgressionView
         private readonly Renderer floor;
         private readonly GameObject[] dust;
         private readonly GameObject boxes;
-        private readonly GameObject[] furniture;
+        private readonly GameObject fitting;
+        private readonly System.Collections.Generic.List<GameObject> parts;
+        private readonly System.Collections.Generic.List<GameObject> seats = new System.Collections.Generic.List<GameObject>();
         private readonly GameObject staff;
         private readonly GameObject patient;
 
@@ -56,23 +53,55 @@ namespace IdleClinic.ProgressionView
             boxes = Shapes.Empty(Root, Vector3.zero, "Empty boxes");
             for (var i = 0; i < 3; i++) BuildOpenBox(boxes.transform, new Vector3(-1.5f + i * 1.4f, 0, 1.1f - (i % 2) * 0.9f), 15f * i);
 
-            furniture = new GameObject[definition.Furniture.Length];
-            for (var i = 0; i < furniture.Length; i++)
-                furniture[i] = Shapes.Box(Root, new Vector3(i == 0 ? -1.1f : 1.1f, 0.3f, 1.5f), new Vector3(1f, 0.6f, 0.8f), Pieces[0], definition.Furniture[i]);
+            var spec = Specs[id];
+            fitting = Models.Spawn(spec.Model, Root, spec.Offset, spec.Yaw);
+            fitting.transform.localScale = Vector3.one * spec.Scale;
+            parts = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform piece in fitting.transform.Find("Model")) parts.Add(piece.gameObject);
+
+            if (id == RoomId.Waiting) BuildSeats();
+            if (id == RoomId.Parking) { fitting.SetActive(false); }
 
             if (definition.Staff != StaffRole.None)
             {
-                staff = Shapes.Empty(Root, new Vector3(0.2f, 0, 0.3f), "Staff");
-                var tint = definition.Staff == StaffRole.Receptionist ? new Color(.2f, .6f, .65f) : new Color(.9f, .45f, .6f);
-                Shapes.Make(PrimitiveType.Capsule, staff.transform, new Vector3(0, 0.6f, 0), new Vector3(0.45f, 0.6f, 0.45f), tint, "Body");
-                Shapes.Make(PrimitiveType.Sphere, staff.transform, new Vector3(0, 1.4f, 0), Vector3.one * 0.38f, new Color(.95f, .8f, .65f), "Head");
+                var model = definition.Staff == StaffRole.Receptionist ? "Receptionist_01_Man_NavySuit"
+                    : id == RoomId.NursingStation1 ? "Nurse_02_Woman_BlueScrubs" : "Nurse_01_Man_TealScrubs";
+                staff = Models.Spawn(model, Root, spec.Staff, spec.StaffYaw, false);
+                Models.Play(staff, "Idle");
             }
             if (definition.Staff == StaffRole.Nurse)
             {
-                patient = Shapes.Empty(Root, new Vector3(-1.1f, 0.75f, 1.5f), "Patient");
-                Shapes.Make(PrimitiveType.Capsule, patient.transform, Vector3.zero, new Vector3(0.4f, 0.45f, 0.4f), new Color(.95f, .6f, .5f), "Patient body").transform.localRotation = Quaternion.Euler(0, 0, 90);
+                patient = Models.Spawn("Patient_01_Man_Coral", Root, spec.Patient, spec.PatientYaw, false);
+                Models.Play(patient, "Sit");
                 patient.SetActive(false);
             }
+        }
+
+        private struct Spec
+        {
+            public string Model; public Vector3 Offset; public float Yaw, Scale;
+            public Vector3 Staff; public float StaffYaw; public Vector3 Patient; public float PatientYaw;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<RoomId, Spec> Specs = new System.Collections.Generic.Dictionary<RoomId, Spec>
+        {
+            { RoomId.Office, new Spec { Model = "BossOffice_Furniture", Offset = new Vector3(0, 0, 0.4f), Yaw = 0, Scale = 1 } },
+            { RoomId.Reception, new Spec { Model = "ReceptionDesk_TwoWorkstations", Offset = new Vector3(0, 0, 1.2f), Yaw = 0, Scale = 1, Staff = new Vector3(-0.6f, 0, 2.0f), StaffYaw = 180 } },
+            { RoomId.NursingStation1, new Spec { Model = "NursingStation_1", Offset = new Vector3(0, 0, 0.6f), Yaw = 0, Scale = 1, Staff = new Vector3(0.4f, 0, 1.3f), StaffYaw = 180, Patient = new Vector3(-0.9f, 0.5f, 0.4f), PatientYaw = 0 } },
+            { RoomId.Waiting, new Spec { Model = "WaitingChair", Offset = new Vector3(0, 0, 1.4f), Yaw = 0, Scale = 1 } },
+            { RoomId.NursingStation2, new Spec { Model = "NursingStation_2", Offset = new Vector3(0, 0, 0.6f), Yaw = 0, Scale = 1, Staff = new Vector3(0.4f, 0, 1.3f), StaffYaw = 180, Patient = new Vector3(-0.9f, 0.5f, 0.4f), PatientYaw = 0 } },
+            { RoomId.Parking, new Spec { Model = "ParkingBarrier", Offset = new Vector3(0, 0, 1.6f), Yaw = 0, Scale = 1 } },
+        };
+
+        private void BuildSeats()
+        {
+            var original = fitting;
+            for (var i = 0; i < 6; i++)
+            {
+                var seat = Models.Spawn("WaitingChair", Root, new Vector3(-1.6f + (i % 3) * 1.6f, 0, 1.7f - (i / 3) * 1.5f), 180);
+                seats.Add(seat);
+            }
+            original.SetActive(false);
         }
 
         private static void BuildOpenBox(Transform parent, Vector3 at, float yaw)
@@ -103,14 +132,13 @@ namespace IdleClinic.ProgressionView
             Root.localScale = new Vector3(1, bounce, 1);
 
             var built = room.Level >= 1;
-            for (var i = 0; i < furniture.Length; i++)
-            {
-                furniture[i].SetActive(built);
-                var level = room.FurnitureLevels[i];
-                furniture[i].transform.localScale = new Vector3(0.9f + 0.12f * level, 0.5f + 0.18f * level, 0.7f + 0.06f * level);
-                furniture[i].transform.localPosition = new Vector3(i == 0 ? -1.1f : 1.1f, furniture[i].transform.localScale.y * 0.5f, 1.5f);
-                furniture[i].GetComponent<Renderer>().sharedMaterial.color = Pieces[Mathf.Min(level, Pieces.Length - 1)];
-            }
+            fitting.SetActive(built && Id != RoomId.Waiting && Id != RoomId.Parking);
+            // Level one shows the basics; every furniture upgrade adds more of the authored pieces.
+            var sum = 0; foreach (var f in room.FurnitureLevels) sum += f;
+            var share = room.Level < 2 ? 0.4f + 0.6f * sum / (room.FurnitureLevels.Length * Mathf.Max(1, room.Level)) : 1f;
+            for (var i = 0; i < parts.Count; i++) parts[i].SetActive(i < Mathf.CeilToInt(parts.Count * share));
+            for (var i = 0; i < seats.Count; i++) seats[i].SetActive(built && i < 2 + sum * 2 + (room.Level >= 2 ? 6 : 0));
+            if (Id == RoomId.Parking) fitting.SetActive(built);
             if (staff != null) staff.SetActive(room.StaffHired);
         }
     }
