@@ -27,12 +27,15 @@ namespace IdleClinic.Progression.Tests
         public void TheOpeningFollowsTheStoryBeat()
         {
             Run(600);
+            var completed = Completed();
             CollectionAssert.AreEqual(new[]
             {
                 "Clean:Office", "LevelUp:Office",
                 "Clean:Reception", "LevelUp:Reception", "Hire:Reception",
-                "Clean:NursingStation1", "LevelUp:NursingStation1", "Hire:NursingStation1"
-            }, Completed().Take(8).ToList());
+                "Clean:NursingStation1", "LevelUp:NursingStation1"
+            }, completed.Take(7).ToList());
+            // Patients back up while the boss saves for the nurse, so the waiting room opens and is cleaned around the hire.
+            CollectionAssert.IsSubsetOf(new[] { "Hire:NursingStation1", "Clean:Waiting" }, completed.Skip(7).Take(3).ToList());
         }
 
         [Test]

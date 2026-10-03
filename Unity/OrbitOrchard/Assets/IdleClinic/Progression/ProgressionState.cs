@@ -49,6 +49,9 @@ namespace IdleClinic.Progression
         public double FurnitureSeconds = 2;
         public double HireSeconds = 1;
         public double TravelSeconds = 2;
+        // How many patients can wait for a nurse: reception's standing room, plus seats per level of a built waiting room.
+        public int BaseWaitingCapacity = 4;
+        public int WaitingCapacityPerLevel = 4;
         public double ArrivalSeconds = 4;
         public long CheckInFee = 10;
         public double TreatmentSeconds = 8;

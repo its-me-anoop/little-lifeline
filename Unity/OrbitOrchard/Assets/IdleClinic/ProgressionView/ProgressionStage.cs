@@ -8,7 +8,7 @@ namespace IdleClinic.ProgressionView
     /// <summary>Scene entry point: owns the rules, steps them with the frame time and draws the HUD.</summary>
     public sealed class ProgressionStage : MonoBehaviour
     {
-        private static readonly int[] Speeds = { 1, 4, 16, 64 };
+        private static readonly int[] Speeds = { 1, 4, 16, 64, 256, 1024 };
         private ClinicProgression game;
         private ProgressionWorld world;
         private Camera view;
@@ -114,7 +114,7 @@ namespace IdleClinic.ProgressionView
             GUI.Box(new Rect(8, top, width - 16, 74), GUIContent.none);
             GUI.Label(new Rect(18, top + 4, width - 36, 30), "Coins " + Coins(game.State.Wallet), headline);
             GUI.Label(new Rect(18, top + 32, width - 36, 20), Status(), label);
-            GUI.Label(new Rect(18, top + 52, width - 36, 20), "Upgrades " + game.State.UpgradesPurchased + "   Next costs " + Coins(game.NextUpgradeCost) + "   Waiting " + game.State.PatientsWaiting, onDark);
+            GUI.Label(new Rect(18, top + 52, width - 36, 20), "Upgrades " + game.State.UpgradesPurchased + "   Next costs " + Coins(game.NextUpgradeCost) + "   Waiting " + game.State.PatientsWaiting + "/" + game.WaitingCapacity, onDark);
 
             for (var i = 0; i < Speeds.Length; i++)
                 if (GUI.Toggle(new Rect(8 + i * 62, height - bottom - 34, 58, 30), speedIndex == i, Speeds[i] + "x", chip)) speedIndex = i;

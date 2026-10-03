@@ -44,6 +44,9 @@ namespace IdleClinic.Progression
             }
         }
 
+        public int Capacity => settings.BaseWaitingCapacity
+            + (state.IsUnlocked(RoomId.Waiting) ? settings.WaitingCapacityPerLevel * state.Room(RoomId.Waiting).Level : 0);
+
         private double ArrivalInterval()
         {
             var parking = state.Room(RoomId.Parking).Level;
@@ -52,6 +55,11 @@ namespace IdleClinic.Progression
 
         private void Arrive()
         {
+            if (state.PatientsWaiting >= Capacity)
+            {
+                Occurred?.Invoke(new ProgressionEvent { Kind = ProgressionEventKind.PatientTurnedAway });
+                return;
+            }
             var fee = Boosted(settings.CheckInFee);
             state.PatientsWaiting++;
             state.Wallet += fee;

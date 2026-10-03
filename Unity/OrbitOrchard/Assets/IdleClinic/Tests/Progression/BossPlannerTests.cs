@@ -107,8 +107,25 @@ namespace IdleClinic.Progression.Tests
             state.PatientsWaiting = 3;
             state.Room(RoomId.Office).Level = 2;
             UnlockRules.Apply(state);
-            // Reception and the rest are still at level one, so they are brought up first.
+            // The new rooms are cleaned the moment they open; the level-one rooms are brought up after that.
+            AssertTask(Next(state), BossTaskKind.Clean, RoomId.NursingStation2);
+            state.Room(RoomId.NursingStation2).IsClean = true;
+            AssertTask(Next(state), BossTaskKind.Clean, RoomId.Parking);
+            state.Room(RoomId.Parking).IsClean = true;
             AssertTask(Next(state), BossTaskKind.LevelUp, RoomId.Reception);
+        }
+
+        [Test]
+        public void ANewRoomIsCleanedAheadOfEarlierRoomsWaitingForTheirNextLevel()
+        {
+            var state = ProgressionTestKit.NewGame();
+            ProgressionTestKit.BuildStarterRooms(state, 1);
+            ProgressionTestKit.Complete(state, RoomId.Waiting, 1);
+            state.Room(RoomId.Office).Level = 2;
+            state.PatientsWaiting = 3;
+            UnlockRules.Apply(state);
+            Assert.IsTrue(state.IsUnlocked(RoomId.Parking));
+            AssertTask(Next(state), BossTaskKind.Clean, RoomId.NursingStation2);
         }
 
         [Test]
@@ -119,6 +136,7 @@ namespace IdleClinic.Progression.Tests
             ProgressionTestKit.Complete(state, RoomId.Waiting, 2);
             state.PatientsWaiting = 3;
             UnlockRules.Apply(state);
+            ProgressionTestKit.Complete(state, RoomId.Parking, 2);
             AssertTask(Next(state), BossTaskKind.Clean, RoomId.NursingStation2);
             state.Room(RoomId.NursingStation2).IsClean = true;
             AssertTask(Next(state), BossTaskKind.LevelUp, RoomId.NursingStation2);

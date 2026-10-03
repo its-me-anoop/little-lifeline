@@ -18,6 +18,7 @@ namespace IdleClinic.Progression
         public double BossProgress => boss.Progress;
         public BossTask? NextTask => planner.Next(State);
         public long CostOf(BossTask task) => boss.CostOf(task);
+        public int WaitingCapacity => patients.Capacity;
         public long NextUpgradeCost => costs.CostOfUpgrade(State.UpgradesPurchased);
         public bool BossTravelling => boss.IsTravelling;
         public double BossTravelProgress => boss.TravelProgress;

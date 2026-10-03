@@ -22,6 +22,10 @@ namespace IdleClinic.Progression
     {
         public BossTask? Next(ProgressionState state)
         {
+            // Rooms that open mid-game are cleaned at once, however expensive the next paid step is.
+            foreach (var definition in RoomCatalog.All)
+                if (definition.Unlock != UnlockRule.Always && state.IsUnlocked(definition.Id) && !state.Room(definition.Id).IsClean)
+                    return new BossTask { Kind = BossTaskKind.Clean, Room = definition.Id };
             foreach (var definition in RoomCatalog.All)
             {
                 var id = definition.Id;
