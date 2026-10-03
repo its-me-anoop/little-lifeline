@@ -1,0 +1,6 @@
+{
+  "name": "IdleClinic.ProgressionView",
+  "rootNamespace": "IdleClinic.ProgressionView",
+  "references": ["IdleClinic.Progression"],
+  "autoReferenced": true
+}

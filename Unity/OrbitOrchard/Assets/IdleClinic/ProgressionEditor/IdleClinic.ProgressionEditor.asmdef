@@ -1,0 +1,7 @@
+{
+  "name": "IdleClinic.ProgressionEditor",
+  "rootNamespace": "IdleClinic.ProgressionEditor",
+  "references": ["IdleClinic.ProgressionView", "OrbitOrchard.Editor"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

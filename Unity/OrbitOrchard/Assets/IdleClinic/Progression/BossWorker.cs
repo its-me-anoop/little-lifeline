@@ -10,10 +10,15 @@ namespace IdleClinic.Progression
         private readonly ICostPolicy costs;
         private readonly ProgressionSettings settings;
         private double remaining;
+        private BossTask? pending;
 
         public event Action<ProgressionEvent> Occurred;
 
         public BossTask? Current { get; private set; }
+        public RoomId Location { get; private set; } = RoomId.Office;
+        public RoomId? Destination { get; private set; }
+        public bool IsTravelling => Destination != null;
+        public double TravelProgress => IsTravelling && settings.TravelSeconds > 0 ? 1 - remaining / settings.TravelSeconds : 0;
         public double Progress { get; private set; }
 
         public BossWorker(ProgressionState state, IBossPlanner planner, ICostPolicy costs, ProgressionSettings settings)
@@ -25,9 +30,16 @@ namespace IdleClinic.Progression
         {
             while (seconds > 0)
             {
-                if (Current == null && !TryStart()) return;
+                if (Current == null && !IsTravelling && !TryBegin()) return;
                 var step = Math.Min(seconds, remaining);
                 remaining -= step; seconds -= step;
+                if (IsTravelling)
+                {
+                    if (remaining > 1e-9) return;
+                    Location = Destination.Value; Destination = null;
+                    Start(pending.Value);
+                    continue;
+                }
                 var duration = Duration(Current.Value);
                 Progress = duration <= 0 ? 1 : 1 - remaining / duration;
                 if (remaining > 1e-9) return;
@@ -35,7 +47,7 @@ namespace IdleClinic.Progression
             }
         }
 
-        private bool TryStart()
+        private bool TryBegin()
         {
             // Re-planned whenever the boss is free, so a newly opened room can jump the queue.
             var next = planner.Next(state);
@@ -43,11 +55,19 @@ namespace IdleClinic.Progression
             var task = next.Value;
             var cost = CostOf(task);
             if (cost > state.Wallet) return false;
+            if (task.Room == Location || settings.TravelSeconds <= 0) { Location = task.Room; Start(task); return true; }
+            pending = task; Destination = task.Room; remaining = settings.TravelSeconds;
+            Occurred?.Invoke(new ProgressionEvent { Kind = ProgressionEventKind.BossTravelStarted, Task = task, Room = task.Room });
+            return true;
+        }
+
+        private void Start(BossTask task)
+        {
+            var cost = CostOf(task);
             state.Wallet -= cost;
             if (IsUpgrade(task)) state.UpgradesPurchased++;
             Current = task; remaining = Duration(task); Progress = 0;
             Occurred?.Invoke(new ProgressionEvent { Kind = ProgressionEventKind.TaskStarted, Task = task, Room = task.Room, Cost = cost });
-            return true;
         }
 
         private void Finish()
@@ -70,7 +90,7 @@ namespace IdleClinic.Progression
         private static bool IsUpgrade(BossTask task) =>
             task.Kind == BossTaskKind.LevelUp || task.Kind == BossTaskKind.UpgradeFurniture;
 
-        private long CostOf(BossTask task)
+        public long CostOf(BossTask task)
         {
             switch (task.Kind)
             {

@@ -8,17 +8,27 @@ namespace IdleClinic.Progression
         private const double MaxStep = 0.1;
         private readonly BossWorker boss;
         private readonly PatientFlow patients;
+        private readonly IBossPlanner planner = new BossPlanner();
+        private readonly ICostPolicy costs;
 
         public event Action<ProgressionEvent> Occurred;
 
         public ProgressionState State { get; }
         public BossTask? BossTask => boss.Current;
         public double BossProgress => boss.Progress;
+        public BossTask? NextTask => planner.Next(State);
+        public long CostOf(BossTask task) => boss.CostOf(task);
+        public long NextUpgradeCost => costs.CostOfUpgrade(State.UpgradesPurchased);
+        public bool BossTravelling => boss.IsTravelling;
+        public double BossTravelProgress => boss.TravelProgress;
+        public RoomId BossLocation => boss.Location;
+        public RoomId? BossDestination => boss.Destination;
 
         public ClinicProgression(ProgressionSettings settings)
         {
             State = ProgressionState.NewGame(settings);
-            boss = new BossWorker(State, new BossPlanner(), new DoublingCostPolicy(settings.BaseUpgradeCost), settings);
+            costs = new DoublingCostPolicy(settings.BaseUpgradeCost);
+            boss = new BossWorker(State, planner, costs, settings);
             patients = new PatientFlow(State, settings);
             boss.Occurred += Raise;
             patients.Occurred += Raise;

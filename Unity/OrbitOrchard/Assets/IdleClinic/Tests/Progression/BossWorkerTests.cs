@@ -16,7 +16,7 @@ namespace IdleClinic.Progression.Tests
             settings = new ProgressionSettings
             {
                 StartingWallet = 100, BaseUpgradeCost = 10, HireCost = 15,
-                CleanSeconds = 5, BuildSeconds = 4, FurnitureSeconds = 2, HireSeconds = 1
+                CleanSeconds = 5, BuildSeconds = 4, FurnitureSeconds = 2, HireSeconds = 1, TravelSeconds = 0
             };
             state = ProgressionState.NewGame(settings);
             boss = new BossWorker(state, new BossPlanner(), new DoublingCostPolicy(settings.BaseUpgradeCost), settings);
@@ -140,6 +140,65 @@ namespace IdleClinic.Progression.Tests
             boss.Tick(4.1); // office to level 2
             Assert.IsTrue(state.IsUnlocked(RoomId.Parking));
             Assert.IsTrue(events.Exists(e => e.Kind == ProgressionEventKind.RoomUnlocked && e.Room == RoomId.Parking));
+        }
+
+        [Test]
+        public void BossStartsInTheOffice()
+        {
+            Assert.AreEqual(RoomId.Office, boss.Location);
+            Assert.IsFalse(boss.IsTravelling);
+        }
+
+        [Test]
+        public void BossWalksToTheNextRoomBeforeHeStartsWorkThere()
+        {
+            settings.TravelSeconds = 2;
+            ProgressionTestKit.Complete(state, RoomId.Office, 1);
+            state.Room(RoomId.Office).FurnitureLevels[0] = 0;
+            boss.Tick(0.1);
+            Assert.IsTrue(boss.IsTravelling);
+            Assert.AreEqual(RoomId.Reception, boss.Destination);
+            Assert.IsNull(boss.Current);
+            Assert.AreEqual(100, state.Wallet);
+            boss.Tick(0.9);
+            Assert.AreEqual(0.5, boss.TravelProgress, 0.001);
+            boss.Tick(1.1);
+            Assert.AreEqual(RoomId.Reception, boss.Location);
+            Assert.IsFalse(boss.IsTravelling);
+            Assert.AreEqual(BossTaskKind.Clean, boss.Current.Value.Kind);
+        }
+
+        [Test]
+        public void NoTravelWhenTheNextJobIsInTheRoomHeIsIn()
+        {
+            settings.TravelSeconds = 2;
+            boss.Tick(0.1);
+            Assert.IsFalse(boss.IsTravelling);
+            Assert.AreEqual(BossTaskKind.Clean, boss.Current.Value.Kind);
+        }
+
+        [Test]
+        public void BossDoesNotWalkAwayWhenHeCannotAffordTheNextStep()
+        {
+            settings.TravelSeconds = 2;
+            ProgressionTestKit.Complete(state, RoomId.Office, 1);
+            state.Room(RoomId.Office).FurnitureLevels[0] = 0;
+            state.Room(RoomId.Reception).IsClean = true;
+            state.Room(RoomId.Reception).Level = 1; // next step is hiring, which costs 15
+            state.Wallet = 5;
+            boss.Tick(5.0);
+            Assert.AreEqual(RoomId.Office, boss.Location);
+            Assert.IsFalse(boss.IsTravelling);
+        }
+
+        [Test]
+        public void StartingToWalkIsAnnounced()
+        {
+            settings.TravelSeconds = 2;
+            ProgressionTestKit.Complete(state, RoomId.Office, 1);
+            state.Room(RoomId.Office).FurnitureLevels[0] = 0;
+            boss.Tick(0.1);
+            Assert.IsTrue(events.Exists(e => e.Kind == ProgressionEventKind.BossTravelStarted && e.Room == RoomId.Reception));
         }
     }
 }

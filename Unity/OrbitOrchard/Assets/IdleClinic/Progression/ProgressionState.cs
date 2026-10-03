@@ -48,6 +48,7 @@ namespace IdleClinic.Progression
         public double BuildSeconds = 4;
         public double FurnitureSeconds = 2;
         public double HireSeconds = 1;
+        public double TravelSeconds = 2;
         public double ArrivalSeconds = 4;
         public long CheckInFee = 10;
         public double TreatmentSeconds = 8;
