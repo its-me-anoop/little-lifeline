@@ -2,6 +2,8 @@
 
 A miniature 3D clinic you grow one room at a time.
 
+**4.3:** the game now starts with just the boss in a dusty, empty building. He cleans, builds and staffs the office, reception and first nursing station, opens the waiting room once patients back up, and the office gates every level-up for the rest. The rules are plain C# in `Assets/IdleClinic/Progression` with their tests in `Assets/IdleClinic/Tests/Progression`; the view is `Assets/IdleClinic/ProgressionView`. Progress saves to `boss-progression.json` on the device and catches up for up to eight hours away. The 4.2 clinic scene (`Clinic.unity`, **Idle Clinic → Open 4.2 classic scene**) and its save are untouched but no longer launched.
+
 Little Lifeline is a Unity idle management game for iPhone and iPad. Patients arrive by car or taxi, check in at reception, see a doctor, receive first aid and collect medication. Collect their payments, hire staff and upgrade rooms, workstations and training. Fully upgrading the starter clinic opens a larger doctors clinic, with its own staff, six room tiers and a shared wallet.
 
 - Progress saves atomically on the device, with a recoverable backup. Offline earnings accrue for up to eight hours; construction continues for the whole absence.

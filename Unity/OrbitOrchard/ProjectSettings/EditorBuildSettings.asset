@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/IdleClinic/Scenes/Clinic.unity
-    guid: 3a6cdc46bc8e443278caee550205a827
+    path: Assets/IdleClinic/Scenes/Progression.unity
+    guid: 665495492fd464b9d8b929f75feacd4c
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

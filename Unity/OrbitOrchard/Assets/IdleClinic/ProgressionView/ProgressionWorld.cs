@@ -47,6 +47,12 @@ namespace IdleClinic.ProgressionView
             game.Occurred += OnEvent;
         }
 
+        public void Dispose()
+        {
+            game.Occurred -= OnEvent;
+            Object.Destroy(root.gameObject);
+        }
+
         private void OnEvent(ProgressionEvent e)
         {
             if (e.Kind == ProgressionEventKind.TreatmentStarted) treating.Add(e.Room);

@@ -26,6 +26,28 @@ namespace IdleClinic.Progression
             this.state = state; this.planner = planner; this.costs = costs; this.settings = settings;
         }
 
+        public void CaptureInto(BossSnapshot snapshot)
+        {
+            snapshot.Location = (int)Location; snapshot.Remaining = remaining;
+            var task = Current ?? (IsTravelling ? pending : null);
+            snapshot.HasTask = task != null;
+            if (task != null) { snapshot.TaskKind = (int)task.Value.Kind; snapshot.TaskRoom = (int)task.Value.Room; snapshot.TaskFurniture = task.Value.FurnitureIndex; }
+            snapshot.Travelling = IsTravelling;
+            snapshot.Destination = (int)(Destination ?? RoomId.Office);
+        }
+
+        public void RestoreFrom(BossSnapshot snapshot)
+        {
+            Location = (RoomId)snapshot.Location; remaining = snapshot.Remaining;
+            Current = null; pending = null; Destination = null; Progress = 0;
+            if (!snapshot.HasTask) return;
+            var task = new BossTask { Kind = (BossTaskKind)snapshot.TaskKind, Room = (RoomId)snapshot.TaskRoom, FurnitureIndex = snapshot.TaskFurniture };
+            if (snapshot.Travelling) { pending = task; Destination = (RoomId)snapshot.Destination; return; }
+            Current = task;
+            var duration = Duration(task);
+            Progress = duration <= 0 ? 1 : 1 - remaining / duration;
+        }
+
         public void Tick(double seconds)
         {
             while (seconds > 0)
@@ -37,7 +59,8 @@ namespace IdleClinic.Progression
                 {
                     if (remaining > 1e-9) return;
                     Location = Destination.Value; Destination = null;
-                    Start(pending.Value);
+                    var arrived = pending.Value; pending = null;
+                    Start(arrived);
                     continue;
                 }
                 var duration = Duration(Current.Value);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using IdleClinic.Progression;
@@ -9,7 +10,11 @@ namespace IdleClinic.ProgressionView
     public sealed class ProgressionStage : MonoBehaviour
     {
         private static readonly int[] Speeds = { 1, 4, 16, 64, 256, 1024 };
+        private ProgressionSession session;
         private ClinicProgression game;
+        private OfflineReport welcome;
+        private bool confirmReset;
+        private float saveClock;
         private ProgressionWorld world;
         private Camera view;
         private int speedIndex;
@@ -20,9 +25,10 @@ namespace IdleClinic.ProgressionView
         {
             Application.targetFrameRate = 60;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            game = new ClinicProgression(new ProgressionSettings());
-            game.Occurred += Log;
-            world = new ProgressionWorld(game);
+            session = new ProgressionSession(ProgressionSaveStore.AtDefaultLocation(), () => DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                new ProgressionSettings(), 8 * 3600);
+            welcome = session.Report;
+            Mount();
 
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional; sun.intensity = 1.1f; sun.shadows = LightShadows.Soft;
@@ -37,6 +43,26 @@ namespace IdleClinic.ProgressionView
             gameObject.AddComponent<AudioListener>();
             FitCamera();
         }
+
+        private void Mount()
+        {
+            if (world != null) world.Dispose();
+            game = session.Game;
+            game.Occurred += Log;
+            log.Clear();
+            world = new ProgressionWorld(game);
+            if (view != null) FitCamera();
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (session == null) return;
+            if (paused) { session.Save(); return; }
+            var report = session.Resume();
+            if (report.IsWorthShowing) welcome = report;
+        }
+
+        private void OnApplicationQuit() { if (session != null) session.Save(); }
 
         private void FitCamera()
         {
@@ -57,8 +83,11 @@ namespace IdleClinic.ProgressionView
         private void Update()
         {
             if (Screen.width != lastWidth || Screen.height != lastHeight) { lastWidth = Screen.width; lastHeight = Screen.height; FitCamera(); }
-            game.Tick(Time.deltaTime * Speeds[speedIndex]);
+            // A long frame (the app was suspended) is handled by Resume, so never fast-forward through it here.
+            game.Tick(Mathf.Min(Time.deltaTime, 0.25f) * Speeds[speedIndex]);
             world.Refresh();
+            saveClock += Time.unscaledDeltaTime;
+            if (saveClock >= 5f) { saveClock = 0; session.Save(); }
         }
 
         private int lastWidth, lastHeight;
@@ -117,11 +146,48 @@ namespace IdleClinic.ProgressionView
             GUI.Label(new Rect(18, top + 52, width - 36, 20), "Upgrades " + game.State.UpgradesPurchased + "   Next costs " + Coins(game.NextUpgradeCost) + "   Waiting " + game.State.PatientsWaiting + "/" + game.WaitingCapacity, onDark);
 
             for (var i = 0; i < Speeds.Length; i++)
-                if (GUI.Toggle(new Rect(8 + i * 62, height - bottom - 34, 58, 30), speedIndex == i, Speeds[i] + "x", chip)) speedIndex = i;
+                if (GUI.Toggle(new Rect(8 + i * 56, height - bottom - 34, 52, 30), speedIndex == i, Speeds[i] + "x", chip)) speedIndex = i;
             for (var i = 0; i < log.Count; i++)
                 GUI.Label(new Rect(8, height - bottom - 44 - (log.Count - i) * 18, width - 16, 18), log[i], small);
 
-            foreach (var room in world.Rooms) DrawRoomLabel(room, scale);
+            if (!welcome.IsWorthShowing && !confirmReset) foreach (var room in world.Rooms) DrawRoomLabel(room, scale);
+
+            if (GUI.Button(new Rect(width - 74, top + 6, 62, 26), "Reset", chip)) confirmReset = true;
+            if (welcome.IsWorthShowing) DrawWelcome(width, height);
+            else if (confirmReset) DrawConfirm(width, height);
+        }
+
+        private static Texture2D solid;
+
+        private static void Panel(Rect box)
+        {
+            if (solid == null) { solid = new Texture2D(1, 1); solid.SetPixel(0, 0, new Color(.16f, .2f, .22f)); solid.Apply(); }
+            GUI.DrawTexture(box, solid);
+        }
+
+        private void DrawWelcome(float width, float height)
+        {
+            var box = new Rect(width * 0.1f, height * 0.36f, width * 0.8f, 150);
+            Panel(box);
+            GUI.Label(new Rect(box.x + 14, box.y + 8, box.width - 28, 28), "Welcome back", headline);
+            var minutes = Mathf.RoundToInt((float)welcome.SecondsApplied / 60f);
+            GUI.Label(new Rect(box.x + 14, box.y + 44, box.width - 28, 20), "Your clinic kept going for " + (minutes >= 120 ? minutes / 60 + " hours" : minutes + " min"), label);
+            GUI.Label(new Rect(box.x + 14, box.y + 68, box.width - 28, 40),
+                "Coins " + Coins(welcome.WalletBefore) + " to " + Coins(welcome.WalletAfter) + "\nUpgrades bought: " + welcome.UpgradesBought, onDark);
+            if (GUI.Button(new Rect(box.x + box.width - 94, box.y + box.height - 40, 80, 30), "OK", chip)) welcome = default;
+        }
+
+        private void DrawConfirm(float width, float height)
+        {
+            var box = new Rect(width * 0.1f, height * 0.38f, width * 0.8f, 120);
+            Panel(box);
+            GUI.Label(new Rect(box.x + 14, box.y + 8, box.width - 28, 28), "Start a new game?", headline);
+            GUI.Label(new Rect(box.x + 14, box.y + 42, box.width - 28, 20), "Your progress will be erased.", label);
+            if (GUI.Button(new Rect(box.x + 14, box.y + box.height - 40, 90, 30), "Cancel", chip)) confirmReset = false;
+            if (GUI.Button(new Rect(box.x + box.width - 104, box.y + box.height - 40, 90, 30), "Erase", chip))
+            {
+                confirmReset = false; session.Reset(); Mount();
+            }
         }
 
         private void DrawRoomLabel(RoomView room, float scale)

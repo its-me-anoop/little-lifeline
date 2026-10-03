@@ -20,6 +20,21 @@ namespace IdleClinic.Progression
             this.state = state; this.settings = settings;
         }
 
+        public void CaptureInto(FlowSnapshot snapshot)
+        {
+            snapshot.Armed = armed; snapshot.UntilArrival = untilArrival;
+            snapshot.Treating = (bool[])treating.Clone(); snapshot.TreatmentRemaining = (double[])treatmentRemaining.Clone();
+        }
+
+        public void RestoreFrom(FlowSnapshot snapshot)
+        {
+            armed = snapshot.Armed; untilArrival = snapshot.UntilArrival;
+            for (var i = 0; i < treating.Length && i < snapshot.Treating.Length; i++)
+            {
+                treating[i] = snapshot.Treating[i]; treatmentRemaining[i] = snapshot.TreatmentRemaining[i];
+            }
+        }
+
         public void Tick(double seconds)
         {
             var receptionOpen = state.Room(RoomId.Reception).StaffHired;

@@ -27,6 +27,33 @@ namespace IdleClinic.Progression
         public bool IsUnlocked(RoomId id) => unlocked.Contains(id);
         public void Unlock(RoomId id) => unlocked.Add(id);
 
+        public void CaptureInto(ProgressionSnapshot snapshot)
+        {
+            snapshot.Wallet = Wallet; snapshot.UpgradesPurchased = UpgradesPurchased; snapshot.PatientsWaiting = PatientsWaiting;
+            snapshot.Rooms = new RoomSnapshot[RoomCatalog.All.Count];
+            for (var i = 0; i < snapshot.Rooms.Length; i++)
+            {
+                var id = RoomCatalog.All[i].Id; var room = rooms[id];
+                snapshot.Rooms[i] = new RoomSnapshot
+                {
+                    Id = (int)id, Unlocked = IsUnlocked(id), IsClean = room.IsClean, Level = room.Level,
+                    Furniture = (int[])room.FurnitureLevels.Clone(), StaffHired = room.StaffHired
+                };
+            }
+        }
+
+        public void RestoreFrom(ProgressionSnapshot snapshot)
+        {
+            Wallet = snapshot.Wallet; UpgradesPurchased = snapshot.UpgradesPurchased; PatientsWaiting = snapshot.PatientsWaiting;
+            foreach (var saved in snapshot.Rooms)
+            {
+                var id = (RoomId)saved.Id; var room = rooms[id];
+                room.IsClean = saved.IsClean; room.Level = saved.Level; room.StaffHired = saved.StaffHired;
+                for (var i = 0; i < room.FurnitureLevels.Length && i < saved.Furniture.Length; i++) room.FurnitureLevels[i] = saved.Furniture[i];
+                if (saved.Unlocked) Unlock(id);
+            }
+        }
+
         public static ProgressionState NewGame(ProgressionSettings settings)
         {
             var state = new ProgressionState { Wallet = settings.StartingWallet };

@@ -35,6 +35,20 @@ namespace IdleClinic.Progression
             patients.Occurred += Raise;
         }
 
+        public ProgressionSnapshot Capture()
+        {
+            var snapshot = new ProgressionSnapshot();
+            State.CaptureInto(snapshot); boss.CaptureInto(snapshot.Boss); patients.CaptureInto(snapshot.Patients);
+            return snapshot;
+        }
+
+        /// <summary>Carries on from a saved game. A missing snapshot leaves the game as it is.</summary>
+        public void Restore(ProgressionSnapshot snapshot)
+        {
+            if (snapshot == null || snapshot.Rooms == null) return;
+            State.RestoreFrom(snapshot); boss.RestoreFrom(snapshot.Boss); patients.RestoreFrom(snapshot.Patients);
+        }
+
         public void Tick(double seconds)
         {
             // Fixed steps keep the result identical however the frames fall.

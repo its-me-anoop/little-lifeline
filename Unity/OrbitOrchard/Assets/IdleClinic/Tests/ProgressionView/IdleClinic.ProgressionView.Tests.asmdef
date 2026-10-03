@@ -1,0 +1,8 @@
+{
+  "name": "IdleClinic.ProgressionView.Tests",
+  "rootNamespace": "IdleClinic.ProgressionView.Tests",
+  "references": ["IdleClinic.Progression", "IdleClinic.ProgressionView"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
