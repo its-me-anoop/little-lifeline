@@ -462,3 +462,8 @@ Button:active { scale: .96 .96; }
 
 .narrow .shop-builder-headline { font-size: 30px; }
 .narrow .shop-builder-benefit { font-size: 14px; }
+
+/* 4.3 (23): optional guide lessons */
+.guide-skip { position: absolute; flex-direction: row; align-items: center; min-height: 44px; padding: 0 14px 0 12px; border-radius: 22px; background-color: rgb(251,250,240); border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.guide-skip-label { font-size: 14px; margin-left: 6px; color: rgb(48,74,61); }
+.lesson-row .offer-detail { white-space: normal; }

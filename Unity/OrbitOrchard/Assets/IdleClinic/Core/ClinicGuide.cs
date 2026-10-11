@@ -11,7 +11,13 @@ namespace IdleClinic.Core
     {
         public int GoalsClaimed { get; }
         public long GemsSpent { get; }
-        public ClinicGuideProgress(int goalsClaimed, long gemsSpent) { GoalsClaimed = goalsClaimed; GemsSpent = gemsSpent; }
+        /// <summary>Construction jobs the player finished early with Finish, free in the last minute or paid with gems.</summary>
+        public long WorkFinishedEarly { get; }
+        /// <summary>A save from before 4.3 (23) that had spent gems: its finish lesson may already have been shown as done.</summary>
+        public bool LegacyGemSpend { get; }
+        public ClinicGuideProgress(int goalsClaimed, long gemsSpent) : this(goalsClaimed, gemsSpent, 0, false) { }
+        public ClinicGuideProgress(int goalsClaimed, long gemsSpent, long workFinishedEarly, bool legacyGemSpend)
+        { GoalsClaimed = goalsClaimed; GemsSpent = gemsSpent; WorkFinishedEarly = workFinishedEarly; LegacyGemSpend = legacyGemSpend; }
     }
 
     public sealed class ClinicGuideStep
@@ -27,12 +33,19 @@ namespace IdleClinic.Core
         public string Control { get; }
         /// <summary>The clinic where this step happens; the guide sends players there first.</summary>
         public ClinicLocation Location { get; }
+        /// <summary>An optional lesson can be skipped without spending; the guide then moves on to the next lesson.</summary>
+        public bool Optional { get; }
+        /// <summary>For an optional lesson: how to carry on without spending gems.</summary>
+        public string FreeAlternative { get; }
         private readonly Func<ClinicState, ClinicState, ClinicGuideProgress, bool> done;
 
         internal ClinicGuideStep(string id, string title, string why, long gems, ClinicGuideFocus focus, Func<ClinicState, ClinicState, ClinicGuideProgress, bool> done,
             ClinicRoom room = ClinicRoom.Reception, ClinicAmenity amenity = ClinicAmenity.Parking, string control = null,
-            ClinicLocation location = ClinicLocation.StarterClinic)
-        { Id = id; Title = title; Why = why; GemReward = gems; Focus = focus; Room = room; Amenity = amenity; Control = control; Location = location; this.done = done; }
+            ClinicLocation location = ClinicLocation.StarterClinic, string freeAlternative = null)
+        {
+            Id = id; Title = title; Why = why; GemReward = gems; Focus = focus; Room = room; Amenity = amenity; Control = control; Location = location; this.done = done;
+            FreeAlternative = freeAlternative; Optional = freeAlternative != null;
+        }
 
         public bool IsDone(ClinicState starter, ClinicState doctors, ClinicGuideProgress progress) => starter != null && done(starter, doctors, progress);
     }
@@ -49,8 +62,9 @@ namespace IdleClinic.Core
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).EquipmentLevel >= 2 || ClinicGear.Steps(s, ClinicRoom.FirstAid) >= 1, ClinicRoom.FirstAid, control: "upgrade-firstaid-equipment"),
             new ClinicGuideStep("guide.waiting", "Build the waiting room", "Seats stop the queue spilling into the street.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Waiting).Built, ClinicRoom.Waiting, control: "build-waiting-room"),
-            new ClinicGuideStep("guide.decor", "Decorate reception", "Decor is optional and bought with gems. Each level adds 5% to every visit fee.", 5,
-                ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Reception).DecorationLevel >= 2, ClinicRoom.Reception, control: "upgrade-reception-decoration"),
+            new ClinicGuideStep("guide.decor", "Decorate reception · optional", "Decor costs gems and adds 5% to every visit fee. Nothing else needs it.", 5,
+                ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.Reception).DecorationLevel >= 2, ClinicRoom.Reception, control: "upgrade-reception-decoration",
+                freeAlternative: "Skip it to keep your gems. Every other lesson is free."),
             new ClinicGuideStep("guide.renovate", "Renovate first aid", "Renovations raise upgrade limits and make room for another station.", 5,
                 ClinicGuideFocus.Room, (s, d, p) => d != null || s.Room(ClinicRoom.FirstAid).Tier >= 2, ClinicRoom.FirstAid, control: "expand-room"),
             new ClinicGuideStep("guide.nurse", "Hire a second nurse", "Two nurses treat twice as many patients.", 10,
@@ -65,8 +79,11 @@ namespace IdleClinic.Core
                 ClinicGuideFocus.Amenity, (s, d, p) => d != null || s.Amenity(ClinicAmenity.Vending).Level >= 1, amenity: ClinicAmenity.Vending, control: "build-vending-machine"),
             new ClinicGuideStep("guide.goals", "Collect a goal reward", "Tap the gem counter to see every goal.", 5,
                 ClinicGuideFocus.Gems, (s, d, p) => p.GoalsClaimed >= 1),
-            new ClinicGuideStep("guide.finish", "Finish a renovation with gems", "Start a renovation, then tap Finish beside its timer.", 5,
-                ClinicGuideFocus.Room, (s, d, p) => p.GemsSpent > 0, ClinicRoom.Reception, control: "expand-room"),
+            // Until 4.3 (23) this completed on any gem spending, including decor. Only finishing work early counts now;
+            // saves that had spent gems before the fix keep the lesson they may already have seen as done.
+            new ClinicGuideStep("guide.finish", "Finish a renovation early · optional", "Tap Finish beside a renovation timer. It is free in the last minute.", 5,
+                ClinicGuideFocus.Room, (s, d, p) => p.WorkFinishedEarly > 0 || p.LegacyGemSpend, ClinicRoom.Reception, control: "expand-room",
+                freeAlternative: "Wait for the last minute, when Finish is free, or skip this lesson."),
             new ClinicGuideStep("guide.doctors", "Open the doctors clinic", "Complete every starter upgrade, then open it from your clinics.", 25,
                 ClinicGuideFocus.Locations, (s, d, p) => d != null),
             // The doctors clinic: consultations, the pharmacy, taxis and the climb to tier 6.
@@ -97,5 +114,12 @@ namespace IdleClinic.Core
             => new ClinicGuideStep(id, title, why, gems, focus, (s, d, p) => d != null && done(d), room, amenity, control, ClinicLocation.DoctorsClinic);
 
         public static ClinicGuideStep Find(string id) => Steps.FirstOrDefault(s => s.Id == id);
+
+        public static bool CanSkip(ClinicGuideStep step) => step != null && step.Optional;
+
+        /// <summary>The next lesson: the first one not yet collected, passing over optional lessons the player skipped.
+        /// A skipped free lesson (from a stale or edited save) is never passed over.</summary>
+        public static ClinicGuideStep Current(ICollection<string> claimed, ICollection<string> skipped)
+            => Steps.FirstOrDefault(s => (claimed == null || !claimed.Contains(s.Id)) && !(s.Optional && skipped != null && skipped.Contains(s.Id)));
     }
 }

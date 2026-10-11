@@ -119,7 +119,7 @@ namespace IdleClinic.App
         {
             while (true)
             {
-                foreach (var element in new[] { header, hint, cameraTools, hudChips, overlay, dock, scrim, guideCard, welcomeCard, banner })
+                foreach (var element in new[] { header, hint, cameraTools, hudChips, overlay, dock, scrim, guideCard, guideSkip, welcomeCard, banner })
                     if (element != null) element.style.display = UnityEngine.UIElements.DisplayStyle.None;
                 yield return null;
             }

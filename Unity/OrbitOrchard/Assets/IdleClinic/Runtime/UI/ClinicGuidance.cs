@@ -15,6 +15,8 @@ namespace IdleClinic.App
         private Label guideEyebrow, guideTitle, guideWhy, guideReward;
         private ClinicIcon guideGlyph, guideRewardGem;
         private Button guideHighlighted;
+        // Optional lessons (gem decor, finishing early) can be skipped: the guide then carries on with free lessons.
+        private Button guideSkip;
 
         private void BuildGuide()
         {
@@ -36,6 +38,12 @@ namespace IdleClinic.App
             var arrow = new ClinicIcon(ClinicGlyph.Arrow, 26, new Color(.98f, .96f, .90f)); arrow.style.rotate = new Rotate(90);
             guidePointer.Add(arrow);
             guidePointer.style.display = DisplayStyle.None;
+            guideSkip = IconButton(root, ClinicGlyph.Close, "Skip this optional lesson and keep your gems", OnGuideSkip, "guide-skip");
+            guideSkip.name = "guide-skip";
+            guideSkip.RemoveFromClassList(Button.ussClassName);
+            var skipIcon = guideSkip.Q<ClinicIcon>(); skipIcon.style.width = 16; skipIcon.style.height = 16;
+            Text(guideSkip, "Skip · keep gems", "guide-skip-label", true);
+            guideSkip.style.display = DisplayStyle.None;
         }
 
         private ClinicGuideStep CurrentGuide()
@@ -52,13 +60,14 @@ namespace IdleClinic.App
         private void UpdateGuide()
         {
             if (guideCard == null) return;
-            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){UpdateOpeningGuide();return;}
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){ShowGuideSkip(false);UpdateOpeningGuide();return;}
             guideRewardGem.parent.style.display=DisplayStyle.Flex;
             var step = CurrentGuide();
             var dockOpen = dock.style.display == DisplayStyle.Flex;
             var done = step != null && saves.IsGuideStepDone(step);
             var display = step == null || dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
             if (guideCard.style.display != display) { guideCard.style.display = display; ApplySafeArea(); }
+            ShowGuideSkip(display == DisplayStyle.Flex && ClinicGuide.CanSkip(step) && !done);
             if (step != null)
             {
                 guideEyebrow.text = done ? "DONE" : "NEXT STEP";
@@ -80,6 +89,25 @@ namespace IdleClinic.App
                 target?.AddToClassList("guide-target");
                 guideHighlighted = target;
             }
+        }
+
+        private void ShowGuideSkip(bool show)
+        {
+            if (guideSkip == null) return;
+            var display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (guideSkip.style.display == display) return;
+            guideSkip.style.display = display; ApplySafeArea();
+        }
+
+        /// <summary>Skip the current optional lesson. Nothing is spent or earned; it stays listed under Goals.</summary>
+        private void OnGuideSkip()
+        {
+            var step = CurrentGuide();
+            if (step == null || !ClinicGuide.CanSkip(step) || saves.IsGuideStepDone(step)) return;
+            if (!saves.SkipGuideStep(step.Id, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "That lesson could not be skipped.", 6); return; }
+            RebindAfterCommit();
+            var next = saves.CurrentGuideStep();
+            Notify("Lesson skipped. It stays under Gems & goals › Goals." + (next == null ? "" : " Next: " + next.Title), 5);
         }
 
         /// <summary>Per frame: a small arrow floats above where the next step happens.</summary>

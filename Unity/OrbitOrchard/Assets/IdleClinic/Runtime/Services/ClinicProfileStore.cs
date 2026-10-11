@@ -214,11 +214,48 @@ namespace IdleClinic.Services
         }
 
         public ClinicGuideProgress GuideProgress => Profile?.premium == null ? default
-            : new ClinicGuideProgress(Profile.premium.milestonesClaimed.Count(id => !id.StartsWith(ClinicGuide.Prefix, StringComparison.Ordinal)), Profile.premium.gemsSpent);
+            : new ClinicGuideProgress(Profile.premium.milestonesClaimed.Count(id => !id.StartsWith(ClinicGuide.Prefix, StringComparison.Ordinal)), Profile.premium.gemsSpent,
+                Profile.guide?.workFinishedEarly ?? 0, Profile.guide?.legacyGemSpend ?? false);
 
-        /// <summary>The first unclaimed guide step, done or not; null once the whole guide is collected.</summary>
+        /// <summary>The first unclaimed guide step, done or not, passing over optional lessons the player skipped;
+        /// null once every lesson is collected or skipped.</summary>
         public ClinicGuideStep CurrentGuideStep()
-            => Profile?.premium == null ? null : ClinicGuide.Steps.FirstOrDefault(s => !Profile.premium.milestonesClaimed.Contains(s.Id));
+            => Profile?.premium == null ? null : ClinicGuide.Current(Profile.premium.milestonesClaimed, Profile.guide?.skipped);
+
+        /// <summary>Optional lessons the player skipped and has not collected, in guide order. Each can be resumed or,
+        /// once actually done, collected.</summary>
+        public IReadOnlyList<ClinicGuideStep> SkippedGuideSteps()
+            => Profile?.guide?.skipped == null ? new List<ClinicGuideStep>()
+                : ClinicGuide.Steps.Where(s => Profile.guide.skipped.Contains(s.Id) && !Profile.premium.milestonesClaimed.Contains(s.Id)).ToList();
+
+        public bool IsGuideStepSkipped(string id) => Profile?.guide?.skipped?.Contains(id) == true;
+
+        /// <summary>Skip an optional lesson without spending or earning anything. The guide moves on to the next lesson.</summary>
+        public bool SkipGuideStep(string id, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var step = ClinicGuide.Find(id);
+            if (step == null) { Error = "That step is not available."; return false; }
+            if (!ClinicGuide.CanSkip(step)) { Error = "Only optional lessons can be skipped."; return false; }
+            if (Profile.premium.milestonesClaimed.Contains(id)) { Error = "That lesson is already complete."; return false; }
+            if (IsGuideStepSkipped(id)) { Error = "That lesson is already skipped."; return false; }
+            var candidate = Copy(Profile);
+            candidate.Normalize();
+            if (candidate.guide.skipped.Count >= ClinicGuideState.MaximumSkipped) { Error = "That lesson could not be skipped."; return false; }
+            candidate.guide.skipped.Add(id);
+            return CommitCandidate(candidate, now);
+        }
+
+        /// <summary>Bring a skipped optional lesson back into the guide.</summary>
+        public bool ResumeGuideStep(string id, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            if (!IsGuideStepSkipped(id)) { Error = "That lesson is already in your guide."; return false; }
+            var candidate = Copy(Profile);
+            candidate.Normalize();
+            candidate.guide.skipped.Remove(id);
+            return CommitCandidate(candidate, now);
+        }
 
         public bool IsGuideStepDone(ClinicGuideStep step)
             => step != null && Profile != null && step.IsDone(Profile.state, Profile.doctorsState, GuideProgress);
@@ -233,6 +270,8 @@ namespace IdleClinic.Services
             var candidate = Copy(Profile);
             if (!candidate.premium.Earn(step.GemReward)) { Error = "Your gem balance is full."; return false; }
             ClinicPremiumState.Record(candidate.premium.milestonesClaimed, id);
+            candidate.Normalize();
+            candidate.guide.skipped.Remove(id);
             return CommitCandidate(candidate, now);
         }
 
@@ -247,6 +286,8 @@ namespace IdleClinic.Services
             var cost = ClinicPremiumRules.SkipCost(state, job);
             if (!candidate.premium.Spend(cost)) { Error = "You need " + cost + " gems to finish this now."; return false; }
             if (!new ClinicSimulation(state).CompleteConstructionNow(jobId).Success) { Error = "That work has already finished."; return false; }
+            candidate.Normalize();
+            if (candidate.guide.workFinishedEarly < long.MaxValue) candidate.guide.workFinishedEarly++;
             return CommitCandidate(candidate, now);
         }
 
@@ -301,29 +342,70 @@ namespace IdleClinic.Services
         // ---- Daily goals and login streak ---------------------------------------------------------------
         public int Today(DateTimeOffset now) => ClinicDaily.Day(now);
 
-        /// <summary>Start a new day's goals from the current totals. Kept in memory until the next save.</summary>
+        /// <summary>Start a new day's goals from the current totals, choosing goals that ordinary play can meet. They stay fixed
+        /// for the whole day. Kept in memory until the next save.</summary>
         public void EnsureDay(DateTimeOffset now)
         {
             if (Profile == null) return;
             Profile.Normalize();
             var daily = Profile.daily; var today = Today(now);
             if (daily.firstSeenUtcTicks == 0) daily.firstSeenUtcTicks = now.UtcDateTime.Ticks;
-            if (daily.day == today) return;
-            var totals = ClinicDailyTotals.Of(Profile.state, Profile.doctorsState);
-            daily.day = today; daily.claimed.Clear();
-            daily.baseTreatments = totals.Treatments; daily.baseCollected = totals.Collected; daily.baseSpent = totals.Spent; daily.baseParking = totals.ParkingFees;
+            if (daily.day != today)
+            {
+                var totals = DailyTotals;
+                daily.day = today; daily.claimed.Clear(); daily.bonusPaid = false;
+                daily.baseTreatments = totals.Treatments; daily.baseCollected = totals.Collected; daily.baseSpent = totals.Spent; daily.baseParking = totals.ParkingFees;
+                daily.goals = PlanDailyGoals(today, totals, totals);
+            }
+            // A save from before fixed goals: set today's once, keeping collected goals and the stored start-of-day totals.
+            else if (daily.goals.Count == 0) daily.goals = PlanDailyGoals(today, daily.Baseline, DailyTotals);
+        }
+
+        private List<ClinicDailyGoalRecord> PlanDailyGoals(int day, ClinicDailyTotals dayStart, ClinicDailyTotals current)
+        {
+            var active = Profile.ActiveState;
+            var context = new ClinicDailyContext
+            {
+                Active = active,
+                HasParking = (active.Amenity(ClinicAmenity.Parking)?.Level ?? 0) > 0 && ClinicRules.ParkingExitFee(active) > 0,
+                HasVending = (active.Amenity(ClinicAmenity.Vending)?.Level ?? 0) > 0,
+                SpendableCoins = SpendableCoins(),
+                DayStart = dayStart, Now = current,
+                Keep = Profile.daily.claimed
+            };
+            return ClinicDaily.Plan(day, context).Select(ClinicDailyGoalRecord.From).ToList();
+        }
+
+        /// <summary>Coins of improvements still open in both clinics, measured on copies so the live clinics are untouched.</summary>
+        private long SpendableCoins()
+        {
+            long total = 0;
+            foreach (var state in new[] { Profile.state, Profile.doctorsState })
+            {
+                if (state == null) continue;
+                try
+                {
+                    var copy = JsonUtility.FromJson<ClinicState>(JsonUtility.ToJson(state));
+                    var game = new ClinicSimulation(copy);
+                    game.EnsureOfficeAnchor();
+                    var open = ClinicPurchases.NextCostsTotal(game);
+                    total = total > ClinicRules.MaximumCurrency - open ? ClinicRules.MaximumCurrency : total + open;
+                }
+                catch (Exception) { return long.MaxValue; }
+            }
+            return total;
         }
 
         public IReadOnlyList<ClinicDailyGoal> DailyGoals(DateTimeOffset now)
         {
             EnsureDay(now);
-            var active = Profile.ActiveState;
-            return ClinicDaily.Goals(Profile.daily.day, active, (active.Amenity(ClinicAmenity.Parking)?.Level ?? 0) > 0 && ClinicRules.ParkingExitFee(active) > 0);
+            return Profile.daily.goals.Select(g => g.ToGoal()).ToList();
         }
         public ClinicDailyTotals DailyTotals => ClinicDailyTotals.Of(Profile.state, Profile.doctorsState);
         public bool IsDailyClaimed(string id) => Profile?.daily?.claimed.Contains(id) == true;
-        public long DailyProgress(ClinicDailyGoal goal) => goal.Progress(DailyTotals, Profile.daily.Baseline);
-        public bool IsDailyDone(ClinicDailyGoal goal) => goal.IsDone(DailyTotals, Profile.daily.Baseline);
+        public long DailyProgress(ClinicDailyGoal goal) => goal.Progress(DailyTotals);
+        public bool IsDailyDone(ClinicDailyGoal goal) => goal.IsDone(DailyTotals);
+        public bool DailyBonusPaid => Profile?.daily?.bonusPaid == true;
         public int DailyReady(DateTimeOffset now) => DailyGoals(now).Count(g => IsDailyDone(g) && !IsDailyClaimed(g.Id)) + (LoginRewardReady(now) ? 1 : 0);
 
         public bool ClaimDailyGoal(string id, DateTimeOffset now)
@@ -335,7 +417,11 @@ namespace IdleClinic.Services
             if (!IsDailyDone(goal)) { Error = "Finish the goal to collect its reward."; return false; }
             var candidate = Copy(Profile);
             candidate.daily.claimed.Add(id);
-            var gems = goal.GemReward + (candidate.daily.claimed.Count == ClinicDaily.GoalsPerDay ? ClinicDaily.AllGoalsGemBonus : 0);
+            // The all-goals bonus pays once, when the last of today's goals is collected.
+            var completesSet = candidate.daily.goals.Count > 0 && candidate.daily.goals.All(g => candidate.daily.claimed.Contains(g.id));
+            var bonus = completesSet && !candidate.daily.bonusPaid ? ClinicDaily.AllGoalsGemBonus : 0;
+            if (bonus > 0) candidate.daily.bonusPaid = true;
+            var gems = goal.GemReward + bonus;
             if (!candidate.premium.Earn(gems) || !ClinicSimulation.TryGrantReward(candidate.ActiveState, goal.CoinReward)) { Error = "Your balance is full."; return false; }
             return CommitCandidate(candidate, now);
         }
@@ -642,7 +728,7 @@ namespace IdleClinic.Services
 
         private static bool IsValid(ClinicProfile profile)
             => IsValidClinics(profile, ClinicProfile.CurrentSchemaVersion) && profile.premium != null && profile.premium.IsValid()
-                && (profile.daily == null || profile.daily.IsValid());
+                && (profile.daily == null || profile.daily.IsValid()) && (profile.guide == null || profile.guide.IsValid());
 
         private static bool IsValidClinics(ClinicProfile profile, int version)
         {

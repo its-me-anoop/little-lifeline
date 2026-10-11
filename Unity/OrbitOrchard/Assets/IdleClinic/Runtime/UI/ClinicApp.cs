@@ -317,6 +317,13 @@ namespace IdleClinic.App
             }
             var guideWidth=Math.Min(520,safe.width-32);
             if(guideCard!=null){guideCard.style.bottom=bottom+16;guideCard.style.left=safe.xMin+(safe.width-guideWidth)/2;guideCard.style.width=guideWidth;}
+            if(guideSkip!=null&&guideCard!=null)
+            {
+                // The skip control sits just above the lesson card's right edge, clear of the reward.
+                var cardHeight=float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
+                guideSkip.style.bottom=bottom+16+cardHeight+8;
+                guideSkip.style.right=w-(safe.xMin+(safe.width-guideWidth)/2+guideWidth);
+            }
             // The camera tools hide while a panel is open, so a panel may rise to just below the balances.
             LimitDockContent(sheet?h-(top+76)-bottom-20:h-bottom-12-(top+76));
             // The lower toolbar sits below camera cutouts; a top cutout must not
@@ -325,7 +332,8 @@ namespace IdleClinic.App
             cameraTools.style.display=dockOpen?DisplayStyle.None:DisplayStyle.Flex;
             var guideHeight=guideCard==null||guideCard.style.display==DisplayStyle.None?0:
                 float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
-            cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32:20);
+            var skipHeight=guideSkip==null||guideSkip.style.display==DisplayStyle.None?0:52;
+            cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32+skipHeight:20);
             LayoutWelcome(safe,top);
             // Sheet notifications sit at the foot, leaving the heading and navigation readable.
             toast.style.top=sheet?new StyleLength(StyleKeyword.Auto):new StyleLength(top+132);

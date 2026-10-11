@@ -42,7 +42,7 @@ namespace IdleClinic.App
 
         private string GemDockKey() => gemTab + ":" + shopExtrasOpen + ":" + pendingConfirm + ":" + profile.daily?.claimed.Count + ":" + profile.daily?.loginDay + ":" + saves.BoostActive(DateTimeOffset.UtcNow) + ":" + saves.OfflineLimitHours + ":"
             + profile.premium.gems + ":" + claimableGoals + ":" + profile.premium.milestonesClaimed.Count
-            + ":" + saves.HasUnlock(ClinicUnlocks.ExtraBuilder)
+            + ":" + saves.HasUnlock(ClinicUnlocks.ExtraBuilder) + ":" + (profile.guide?.skipped.Count ?? 0) + ":" + (profile.guide?.workFinishedEarly ?? 0)
             + ":" + string.Join(";", apple?.Products.Select(p => p.id + "=" + p.price) ?? Enumerable.Empty<string>())
             + ":" + apple?.StoreStatus + ":" + (apple?.IsPurchasing ?? false) + ":" + (apple?.IsRestoring ?? false);
 
@@ -137,7 +137,8 @@ namespace IdleClinic.App
                 else RewardPair(row2, goal.GemReward, goal.CoinReward, false);
             }
             var bonus = Box(content, "bonus-row"); bonus.pickingMode = PickingMode.Ignore;
-            Text(bonus, "Finish all three for " + ClinicDaily.AllGoalsGemBonus + " bonus gems. New goals every day.", "bonus-text");
+            Text(bonus, saves.DailyBonusPaid ? "All three collected · " + ClinicDaily.AllGoalsGemBonus + " bonus gems paid. New goals tomorrow."
+                : "Finish all three for " + ClinicDaily.AllGoalsGemBonus + " bonus gems. Goals stay fixed until midnight (UTC).", "bonus-text");
             var dots = Box(bonus, "bonus-dots"); dots.pickingMode = PickingMode.Ignore;
             for (var i = 0; i < goals.Count; i++) Box(dots, "bonus-dot" + (i < finished ? " bonus-dot-done" : ""));
         }
@@ -178,6 +179,7 @@ namespace IdleClinic.App
                 Text(row, goal.Title, "gem-goal-title goal-fill", true);
                 RewardPair(row, goal.GemReward, 0, false);
             }
+            BuildSkippedLessons(content);
             if (readyGoals.Count == 0 && upcoming.Count == 0) Text(content, "Every goal is complete.", "gem-note");
             else if (claimed.Count > 0)
             {
@@ -185,6 +187,51 @@ namespace IdleClinic.App
                 done.Add(new ClinicIcon(ClinicGlyph.Check, 18, LeafInk));
                 Text(done, claimed.Count + (claimed.Count == 1 ? " goal complete" : " goals complete"), "gem-note");
             }
+        }
+
+        /// <summary>Optional lessons the player skipped: collect them once actually done, or put them back in the guide.</summary>
+        private void BuildSkippedLessons(VisualElement content)
+        {
+            var skipped = saves.SkippedGuideSteps();
+            if (skipped.Count == 0) return;
+            Section(content, "Optional lessons", "Skipped · nothing spent");
+            foreach (var step in skipped)
+            {
+                var id = step.Id; var done = saves.IsGuideStepDone(step);
+                var row = Box(content, "goal-row lesson-row"); row.EnableInClassList("goal-ready", done);
+                var words = Box(row, "goal-words"); words.pickingMode = PickingMode.Ignore;
+                Text(words, step.Title, "gem-goal-title", true);
+                Text(words, done ? "Done. Collect the reward." : step.FreeAlternative, "offer-detail");
+                if (done)
+                {
+                    var collect = IconButton(row, ClinicGlyph.Gem, "Collect " + step.GemReward + " gems for " + step.Title, () => ClaimSkippedLesson(id), "collect-small");
+                    collect.Q<ClinicIcon>().Tint = GemOnInk;
+                    Display(Text(collect, "+" + step.GemReward, "collect-label", true));
+                }
+                else
+                {
+                    var resume = IconButton(row, ClinicGlyph.Goal, "Put " + step.Title + " back in the guide", () => ResumeLesson(id), "soft-action");
+                    resume.name = "resume-" + id;
+                    resume.Q<ClinicIcon>().Tint = LeafInk;
+                    Text(resume, "Add back", "soft-action-label", true);
+                }
+            }
+        }
+
+        private void ClaimSkippedLesson(string id)
+        {
+            var step = ClinicGuide.Find(id);
+            if (!saves.ClaimGuideStep(id, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "That reward could not be collected.", 6); return; }
+            RebindAfterCommit(); Feedback(1); clinicAudio.PlayReward();
+            Notify("+" + step.GemReward + " gems · " + step.Title, 4);
+        }
+
+        private void ResumeLesson(string id)
+        {
+            if (!saves.ResumeGuideStep(id, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "That lesson could not be added back.", 6); return; }
+            RebindAfterCommit();
+            var current = saves.CurrentGuideStep();
+            Notify(current != null && current.Id == id ? "Back in your guide: " + current.Title : "Added back. It returns after your current lesson.", 5);
         }
 
         private bool shopExtrasOpen;

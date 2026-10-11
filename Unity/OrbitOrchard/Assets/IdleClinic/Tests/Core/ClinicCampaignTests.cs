@@ -69,8 +69,9 @@ namespace IdleClinic.Tests
                 }
             }
             Assert.That(ClinicMilestones.All.Where(m => !m.IsMet(s, d)).Select(m => m.Id), Is.Empty);
-            // Every guide step is reachable too, including the doctors clinic's.
-            var progress = new ClinicGuideProgress(1, 1);
+            // Every guide step is reachable too, including the doctors clinic's. The finish lesson needs work finished
+            // early (free in the last minute), not merely some gem spending.
+            var progress = new ClinicGuideProgress(1, 0, 1, false);
             Assert.That(ClinicGuide.Steps.Where(g => !g.IsDone(s, d, progress)).Select(g => g.Id), Is.Empty);
             Assert.That(d.TotalParkingFees, Is.GreaterThan(0));
             var till = d.Amenity(ClinicAmenity.Parking).Till;
