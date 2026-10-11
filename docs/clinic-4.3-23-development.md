@@ -153,7 +153,7 @@ Store status line instead).
    not device evidence.
 6. Free progression is measured with scripted players, not people. Late starter play is dominated by 2-hour builds with
    one builder; this is reported, not changed.
-7. While the *open the doctors clinic* lesson is open, the card shows the next goal instead of the lesson text (the lesson
-   reward still appears when it is done). Worth a design check in play.
+7. While the *open the doctors clinic* lesson is open, the card shows the next starter goal, marked *DOCTORS CLINIC ·*,
+   instead of the lesson text (the lesson reward still appears when it is done). Worth a design check in play.
 8. Switching a save between 4.3 (22) and 4.3 (23) can re-credit the finish-early lesson once (see migration).
 9. Inherited: the default macOS Python 3.9 fails the release tooling tests on syntax; use Python 3.11 or later.

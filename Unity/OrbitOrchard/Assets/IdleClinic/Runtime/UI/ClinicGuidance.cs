@@ -77,7 +77,7 @@ namespace IdleClinic.App
                 ShowGuideSkip(false);
                 var goalDisplay = dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
                 if (guideCard.style.display != goalDisplay) { guideCard.style.display = goalDisplay; ApplySafeArea(); }
-                RenderNextGoal();
+                RenderNextGoal(step != null);
                 if (guideHighlighted != null) { guideHighlighted.RemoveFromClassList("guide-target"); guideHighlighted = null; }
                 return;
             }
@@ -128,7 +128,8 @@ namespace IdleClinic.App
             return nextGoal != null;
         }
 
-        private void RenderNextGoal()
+        /// <param name="towardsLesson">The open lesson is "open the doctors clinic": say that this goal leads there.</param>
+        private void RenderNextGoal(bool towardsLesson)
         {
             guideRewardGem.parent.style.display = DisplayStyle.None;
             guidePointer.style.display = DisplayStyle.None;
@@ -152,6 +153,8 @@ namespace IdleClinic.App
                 guideWhy.text = Money(Math.Min(goal.Cost, goal.Wallet + goal.Tills)) + " of " + Money(goal.Cost) + " coins"
                     + (eta > 0 ? " · about " + TimeLabel(eta) : "") + (goal.Tills > 0 ? " · collect your counters" : "");
             }
+            // During the doctors clinic lesson every starter improvement is a step towards it.
+            if (towardsLesson) guideEyebrow.text = "DOCTORS CLINIC · " + guideEyebrow.text;
         }
 
         /// <summary>Take the player to where the next goal happens.</summary>
