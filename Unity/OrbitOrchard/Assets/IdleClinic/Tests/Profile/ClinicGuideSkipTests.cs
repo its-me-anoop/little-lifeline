@@ -98,6 +98,23 @@ namespace IdleClinic.Tests
             Assert.That(store.SkippedGuideSteps(), Is.Empty, "A collected lesson is no longer listed as skipped.");
         }
 
+        [Test] public void ACompletedSkippedLessonCountsTowardTheReadyBadgesUntilCollectedOnce()
+        {
+            // Review d84ac3e #3: a reward waiting under Goals must show on the gem button and the Goals tab.
+            var store = AtDecorLesson();
+            Assert.That(store.SkipGuideStep("guide.decor", now), Is.True, store.Error);
+            var goals = store.GoalsReady(); var all = store.RewardsReady(now);
+            Assert.That(store.ReadySkippedLessons(), Is.Zero, "Skipped but not done: nothing to collect yet.");
+            Assert.That(store.BuyDecoration(ClinicRoom.Reception, now), Is.True, store.Error);
+            Assert.That(store.ReadySkippedLessons(), Is.EqualTo(1));
+            Assert.That(store.GoalsReady(), Is.EqualTo(goals + 1));
+            Assert.That(store.RewardsReady(now), Is.EqualTo(all + 1));
+            Assert.That(store.ClaimGuideStep("guide.decor", now), Is.True, store.Error);
+            Assert.That(store.ReadySkippedLessons(), Is.Zero);
+            Assert.That(store.GoalsReady(), Is.EqualTo(goals));
+            Assert.That(store.ClaimGuideStep("guide.decor", now), Is.False, "Collected exactly once.");
+        }
+
         [Test] public void DecorSpendingNoLongerCompletesTheFinishLessonButAFreeFinishDoes()
         {
             var store = AtDecorLesson();

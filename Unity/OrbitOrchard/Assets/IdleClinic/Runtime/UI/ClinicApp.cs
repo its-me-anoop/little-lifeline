@@ -146,6 +146,7 @@ namespace IdleClinic.App
             dock.RegisterCallback<GeometryChangedEvent>(_=>ApplySafeArea());
             BuildGuide();
             BuildWelcome();
+            BuildGemConfirm();
             toast=Text(root,"","toast");toast.style.display=DisplayStyle.None;toast.pickingMode=PickingMode.Ignore;
             root.RegisterCallback<GeometryChangedEvent>(OnViewportGeometryChanged);
             ApplySafeArea();RebuildDock();UpdateReadouts();
@@ -166,7 +167,7 @@ namespace IdleClinic.App
             saveClock+=delta;readoutClock+=delta;
             if(saveClock>=5){saveClock=0;if(saves.HasPendingOfflineProgress)ResumeClinic();else{SaveNow();ProcessGemTransactions();}}
             if(readoutClock>=.15){readoutClock=0;UpdateReadouts();}
-            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateAccessibilityFrames();
+            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateGemConfirm();UpdateAccessibilityFrames();
             if(toast.style.display==DisplayStyle.Flex && Time.unscaledTimeAsDouble>toastUntil)toast.style.display=DisplayStyle.None;
         }
 

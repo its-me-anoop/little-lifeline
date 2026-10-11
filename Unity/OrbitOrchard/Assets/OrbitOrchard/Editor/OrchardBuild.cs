@@ -41,9 +41,13 @@ namespace OrbitOrchard.Editor
             }
             PlayerSettings.companyName = "Flutterly";
             PlayerSettings.productName = "Little Lifeline";
-            PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.2";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
-            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "20";
+            // 4.3 (22) went to internal TestFlight on 4 October 2026 and 4.3 has not shipped, so development continues as 4.3 (23).
+            PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.3";
+            // ORCHARD_BUNDLE_ID gives a local QA preview its own app identity and save container on a simulator.
+            // Release and TestFlight exports leave it unset and always use the App Store identifier.
+            var qaBundle = Environment.GetEnvironmentVariable("ORCHARD_BUNDLE_ID");
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, string.IsNullOrEmpty(qaBundle) ? "com.flutterly.gravitile" : qaBundle);
+            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "23";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;
@@ -133,6 +137,8 @@ namespace OrbitOrchard.Editor
             {
                 PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
                 PlayerSettings.iOS.simulatorSdkArchitecture = previousArchitecture;
+                // A QA preview's separate identity never stays in the project settings.
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
                 AssetDatabase.SaveAssets();
             }
             // Record the restored source tree, not the temporary SimulatorSDK setting.

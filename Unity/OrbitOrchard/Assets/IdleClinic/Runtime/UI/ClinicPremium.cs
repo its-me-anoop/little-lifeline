@@ -33,14 +33,16 @@ namespace IdleClinic.App
         {
             if (gemLabel == null) return;
             saves.EnsureDay(DateTimeOffset.UtcNow);
-            if (pendingConfirm != null && Time.unscaledTimeAsDouble >= pendingConfirmUntil) { pendingConfirm = null; dockKey = ""; }
-            claimableGoals = saves.ClaimableMilestones().Count() + saves.DailyReady(DateTimeOffset.UtcNow);
+            // Achievements, completed skipped lessons, today's goals and the login reward: everything waiting behind the gem button.
+            claimableGoals = saves.RewardsReady(DateTimeOffset.UtcNow);
             gemLabel.text = Money(profile.premium.gems);
             gemBadge.text = claimableGoals.ToString();
             gemBadge.style.display = claimableGoals > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        private string GemDockKey() => gemTab + ":" + shopExtrasOpen + ":" + pendingConfirm + ":" + profile.daily?.claimed.Count + ":" + profile.daily?.loginDay + ":" + saves.BoostActive(DateTimeOffset.UtcNow) + ":" + saves.OfflineLimitHours + ":"
+        // Today's goal definition (day, ids, targets, claims) is part of the key, so an open Today panel rebuilds at midnight even
+        // when every count and balance is unchanged.
+        private string GemDockKey() => gemTab + ":" + shopExtrasOpen + ":" + saves.DailyDefinitionKey(DateTimeOffset.UtcNow) + ":" + profile.daily?.loginDay + ":" + saves.BoostActive(DateTimeOffset.UtcNow) + ":" + saves.OfflineLimitHours + ":"
             + profile.premium.gems + ":" + claimableGoals + ":" + profile.premium.milestonesClaimed.Count
             + ":" + saves.HasUnlock(ClinicUnlocks.ExtraBuilder) + ":" + (profile.guide?.skipped.Count ?? 0) + ":" + (profile.guide?.workFinishedEarly ?? 0)
             + ":" + string.Join(";", apple?.Products.Select(p => p.id + "=" + p.price) ?? Enumerable.Empty<string>())
@@ -56,8 +58,6 @@ namespace IdleClinic.App
 
         private enum GemTab { Today, Goals, Shop }
         private GemTab gemTab = GemTab.Today;
-        private string pendingConfirm;
-        private double pendingConfirmUntil;
 
         private void BuildGemsDock()
         {
@@ -65,11 +65,11 @@ namespace IdleClinic.App
             foreach (GemTab tab in Enum.GetValues(typeof(GemTab)))
             {
                 var chosen = tab;
-                Action pick = () => { gemTab = chosen; pendingConfirm = null; dockKey = ""; UpdateReadouts(); };
+                Action pick = () => { gemTab = chosen; dockKey = ""; UpdateReadouts(); };
                 var button = new Button(pick) { name = "gem-tab-" + tab.ToString().ToLowerInvariant() };
                 button.AddToClassList("segment"); button.AddToClassList("gem-tab"); button.EnableInClassList("segment-selected", tab == gemTab);
                 Text(button, tab.ToString(), "segment-label", true);
-                var ready = saves == null ? 0 : tab == GemTab.Today ? saves.DailyReady(DateTimeOffset.UtcNow) : tab == GemTab.Goals ? saves.ClaimableMilestones().Count() : 0;
+                var ready = saves == null ? 0 : tab == GemTab.Today ? saves.DailyReady(DateTimeOffset.UtcNow) : tab == GemTab.Goals ? saves.GoalsReady() : 0;
                 if (ready > 0) Text(button, ready.ToString(), "tab-badge", true);
                 tabs.Add(button);
                 RegisterAccessibleButton(button, tab + (ready > 0 ? ", " + ready + " ready" : ""), pick);
@@ -114,6 +114,7 @@ namespace IdleClinic.App
             }
 
             var goals = saves.DailyGoals(now);
+            var goalDay = profile.daily.day;
             var finished = goals.Count(g => saves.IsDailyDone(g));
             Section(content, "Today's goals", finished + " of " + goals.Count + " done");
             foreach (var goal in goals)
@@ -129,7 +130,7 @@ namespace IdleClinic.App
                 Box(bar, "meter-fill").style.width = Length.Percent(100f * progress / Math.Max(1, goal.Target));
                 if (done && !claimed)
                 {
-                    var collect = IconButton(row2, ClinicGlyph.Gem, "Collect " + ClinicDaily.Describe(goal) + ": " + goal.GemReward + " gems and " + Money(goal.CoinReward) + " coins", () => ClaimDaily(id), "collect-small");
+                    var collect = IconButton(row2, ClinicGlyph.Gem, "Collect " + ClinicDaily.Describe(goal) + ": " + goal.GemReward + " gems and " + Money(goal.CoinReward) + " coins", () => ClaimDaily(id, goalDay), "collect-small");
                     collect.Q<ClinicIcon>().RemoveFromHierarchy();
                     Text(collect, "Collect", "collect-label", true);
                 }
@@ -137,8 +138,8 @@ namespace IdleClinic.App
                 else RewardPair(row2, goal.GemReward, goal.CoinReward, false);
             }
             var bonus = Box(content, "bonus-row"); bonus.pickingMode = PickingMode.Ignore;
-            Text(bonus, saves.DailyBonusPaid ? "All three collected · " + ClinicDaily.AllGoalsGemBonus + " bonus gems paid. New goals tomorrow."
-                : "Finish all three for " + ClinicDaily.AllGoalsGemBonus + " bonus gems. Goals stay fixed until midnight (UTC).", "bonus-text");
+            Text(bonus, saves.DailyBonusPaid ? "Today's bonus of " + ClinicDaily.AllGoalsGemBonus + " gems is collected. New goals tomorrow."
+                : "Finish all " + goals.Count + " for " + ClinicDaily.AllGoalsGemBonus + " bonus gems. Goals stay fixed until midnight (UTC).", "bonus-text");
             var dots = Box(bonus, "bonus-dots"); dots.pickingMode = PickingMode.Ignore;
             for (var i = 0; i < goals.Count; i++) Box(dots, "bonus-dot" + (i < finished ? " bonus-dot-done" : ""));
         }
@@ -249,7 +250,7 @@ namespace IdleClinic.App
             dock.AddToClassList("shop-dock");
             if (shopExtrasOpen)
             {
-                var back = IconButton(content, ClinicGlyph.Chevron, "Back to gem packs", () => { shopExtrasOpen = false; pendingConfirm = null; dockKey = ""; UpdateReadouts(); }, "shop-back");
+                var back = IconButton(content, ClinicGlyph.Chevron, "Back to gem packs", () => { shopExtrasOpen = false; dockKey = ""; UpdateReadouts(); }, "shop-back");
                 back.name = "shop-back";
                 Text(back, "Back to gem packs", "shop-back-label", true);
                 BuildShopExtras(content);
@@ -257,7 +258,8 @@ namespace IdleClinic.App
             else
             {
                 BuildBuilderSection(content);
-                Section(content, "Gems");
+                BuildFreeGemsRow(content);
+                Section(content, "Gems", "Gems never expire");
                 var packs = apple == null ? new List<AppleProduct>() : apple.Products.Where(p => ClinicGemPacks.IsGemPack(p.id)).OrderBy(p => ClinicGemPacks.GemsFor(p.id)).ToList();
                 if (packs.Count == 0)
                 {
@@ -271,7 +273,7 @@ namespace IdleClinic.App
                     {
                         var product = pack.id;
                         var gems = ClinicGemPacks.GemsFor(product);
-                        var button = IconButton(list, ClinicGlyph.Gem, "Buy " + gems + " gems for " + pack.price, () => BuyGems(product), "shop-pack-row");
+                        var button = IconButton(list, ClinicGlyph.Gem, "Buy " + gems + " gems for " + pack.price + ". Opens Apple's purchase confirmation.", () => BuyGems(product), "shop-pack-row");
                         button.name = "shop-pack-" + gems;
                         button.Q<ClinicIcon>().RemoveFromHierarchy();
                         var asset = product == ClinicGemPacks.Small ? "GemsSmall" : product == ClinicGemPacks.Medium ? "GemsMedium" : product == ClinicGemPacks.Large ? "GemsLarge" : "GemsExtraLarge";
@@ -283,7 +285,7 @@ namespace IdleClinic.App
                         if (pack == packs[packs.Count - 1]) button.AddToClassList("shop-pack-row-last");
                     }
                 }
-                var extras = IconButton(content, ClinicGlyph.Coin, "Browse coins and boosts", () => { shopExtrasOpen = true; pendingConfirm = null; dockKey = ""; UpdateReadouts(); }, "shop-extras-link");
+                var extras = IconButton(content, ClinicGlyph.Coin, "Browse coins and boosts", () => { shopExtrasOpen = true; dockKey = ""; UpdateReadouts(); }, "shop-extras-link");
                 extras.name = "shop-coins-boosts";
                 extras.Q<ClinicIcon>().RemoveFromHierarchy();
                 ShopArt(extras, "CoinsBoosts", "shop-extras-art");
@@ -293,7 +295,7 @@ namespace IdleClinic.App
                 extras.Add(new ClinicIcon(ClinicGlyph.Chevron, 20, LeafInk));
             }
             var footer = Box(content, "shop-footer");
-            Text(footer, "Gems stay with this clinic on this device.", "gem-note");
+            Text(footer, "Prices come from the App Store in your currency. Buying opens Apple's confirmation; nothing is charged unless you confirm there. Gems stay with this clinic on this device.", "gem-note");
             if (apple != null)
             {
                 var restore = IconButton(footer, ClinicGlyph.Restore, "Restore existing purchases", RequestRestore, "text-link");
@@ -307,64 +309,69 @@ namespace IdleClinic.App
         private void BuildShopExtras(VisualElement content)
         {
             var now = DateTimeOffset.UtcNow;
-            Section(content, "Coins", "Spend gems · receive coins instantly");
+            Section(content, "Coins", "Instant · added to this clinic's wallet");
             var coins = Box(content, "shop-grid shop-grid-1");
             foreach (var pack in ClinicShopOffers.CoinPacks)
             {
                 var offer = pack; var amount = saves.CoinPackAmount(pack);
-                GemOffer(coins, offer.Id, ClinicGlyph.Coin, Money(amount) + " coins", "Instantly added to your balance", offer.Gems, () => saves.BuyCoinPack(offer.Id, DateTimeOffset.UtcNow),
-                    "+" + Money(amount) + " coins", "shop-extra-offer");
+                GemOffer(coins, ClinicGemSpendKind.CoinPack, offer.Id, ClinicGlyph.Coin, Money(amount) + " coins", "Instant · " + offer.Visits + " visits at today's fee", offer.Gems, "shop-extra-offer");
             }
-            Section(content, "Boosts", saves.BoostActive(now) ? "2× active · " + TimeLabel(saves.BoostRemaining(now).TotalSeconds) + " left" : null);
+            Section(content, "Boosts", saves.BoostActive(now) ? "2× active · " + TimeLabel(saves.BoostRemaining(now).TotalSeconds) + " left" : "Real time, even while closed");
             var boosts = Box(content, "shop-grid shop-grid-1");
             foreach (var boost in ClinicShopOffers.Boosts)
             {
                 var offer = boost;
-                GemOffer(boosts, offer.Id, ClinicGlyph.Bolt, "2× collections", offer.Hours + (offer.Hours == 1 ? " hour" : " hours"), offer.Gems,
-                    () => saves.BuyBoost(offer.Id, DateTimeOffset.UtcNow), "Double collections for " + offer.Hours + (offer.Hours == 1 ? " hour" : " hours"), "shop-extra-offer");
+                GemOffer(boosts, ClinicGemSpendKind.Boost, offer.Id, ClinicGlyph.Bolt, "2× collections", offer.Hours + (offer.Hours == 1 ? " hour" : " hours") + " · every collection doubled", offer.Gems, "shop-extra-offer");
             }
             foreach (var tier in ClinicShopOffers.OfflineTiers)
             {
                 if (saves.OfflineLimitHours >= tier.Hours) continue;
                 var offer = tier;
                 var shelf = Box(content, "shop-grid shop-grid-1");
-                GemOffer(shelf, offer.Id, ClinicGlyph.Clock, offer.Name, "Now " + saves.OfflineLimitHours + " hours · tills hold " + Money(saves.OfflineCoinCap), offer.Gems,
-                    () => saves.BuyOfflineUpgrade(offer.Id, DateTimeOffset.UtcNow), offer.Name + " unlocked", "shop-extra-offer");
+                GemOffer(shelf, ClinicGemSpendKind.OfflineUpgrade, offer.Id, ClinicGlyph.Clock, offer.Name, "Permanent · now " + saves.OfflineLimitHours + " hours, tills hold " + Money(saves.OfflineCoinCap), offer.Gems, "shop-extra-offer");
                 break;
             }
         }
 
-        /// <summary>A gem purchase button. Spends of 50 gems or more ask for a second tap before anything is spent.</summary>
-        private Button GemOffer(VisualElement shelf, string id, ClinicGlyph glyph, string title, string detail, long gems, Func<bool> buy, string done, string style)
+        /// <summary>A gem offer. Tapping it only opens the confirmation sheet, which states the benefit, duration and price;
+        /// nothing is spent until the player confirms there.</summary>
+        private Button GemOffer(VisualElement shelf, ClinicGemSpendKind kind, string id, ClinicGlyph glyph, string title, string detail, long gems, string style)
         {
-            var confirming = pendingConfirm == id && Time.unscaledTimeAsDouble < pendingConfirmUntil;
-            var button = IconButton(shelf, glyph, title + (detail == null ? "" : ", " + detail) + " for " + gems + " gems", () =>
-            {
-                if (gems >= ClinicShopOffers.ConfirmAtGems && !(pendingConfirm == id && Time.unscaledTimeAsDouble < pendingConfirmUntil))
-                { pendingConfirm = id; pendingConfirmUntil = Time.unscaledTimeAsDouble + 4; dockKey = ""; UpdateReadouts(); return; }
-                pendingConfirm = null;
-                if (!buy()) { Notify(saves.Error ?? "That could not be bought.", 6); dockKey = ""; UpdateReadouts(); return; }
-                RebindAfterCommit(); clinicAudio.PlayReward(); Feedback(1); Notify(done, 4);
-            }, "offer-card " + style + (confirming ? " offer-confirm" : ""));
+            var button = IconButton(shelf, glyph, title + (detail == null ? "" : ", " + detail) + ". " + gems + " gems. Opens a confirmation.", () => RequestGemSpend(kind, id),
+                "offer-card " + style);
             var priceOnly = style.Contains("offer-price-only");
             var icon = button.Q<ClinicIcon>();
-            icon.Tint = confirming ? GemOnInk : glyph == ClinicGlyph.Coin ? CoinInk : glyph == ClinicGlyph.Bolt ? GemInk : LeafInk;
+            icon.Tint = glyph == ClinicGlyph.Coin ? CoinInk : glyph == ClinicGlyph.Bolt ? GemInk : LeafInk;
             if (glyph == ClinicGlyph.Coin || priceOnly) icon.RemoveFromHierarchy();
-            if (!priceOnly || confirming)
+            if (!priceOnly)
             {
                 var words = Box(button, "offer-words"); words.pickingMode = PickingMode.Ignore;
-                var titleLabel = Text(words, confirming ? (priceOnly ? "Confirm" : "Tap again to confirm") : title, "offer-title", true);
-                if (glyph == ClinicGlyph.Coin && !confirming) Display(titleLabel);
-                if (detail != null && !confirming) Text(words, detail, "offer-detail");
+                var titleLabel = Text(words, title, "offer-title", true);
+                if (glyph == ClinicGlyph.Coin) Display(titleLabel);
+                if (detail != null) Text(words, detail, "offer-detail");
             }
             var price = Box(button, "price-chip"); price.pickingMode = PickingMode.Ignore;
             price.Add(new ClinicIcon(ClinicGlyph.Gem, 14, GemInk));
             Display(Text(price, gems.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), "price-chip-value", true));
             button.name = "shop-offer-" + id;
+            // Short of gems still opens the sheet, which shows the shortfall and the free way to earn more.
             var shortfall = Math.Max(0, gems - profile.premium.gems);
             if (shortfall > 0 && !priceOnly) Text(button.Q(className: "offer-words"), "Need " + Money(shortfall) + " more gems", "shop-shortfall");
-            button.SetEnabled(shortfall == 0);
             return button;
+        }
+
+        /// <summary>Free gems stay visible in the shop: what is ready now and what today's goals still offer.</summary>
+        private void BuildFreeGemsRow(VisualElement content)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var ready = saves.FreeGemsReady(now); var left = saves.FreeGemsLeftToday(now);
+            var row = IconButton(content, ClinicGlyph.Goal, "Free gems: " + ready + " ready now, " + left + " more from today's goals", () => OpenGemTab(ready > 0 && saves.GoalsReady() > 0 && saves.DailyReady(now) == 0 ? GemTab.Goals : GemTab.Today), "shop-free-row");
+            row.name = "shop-free-gems";
+            row.Q<ClinicIcon>().Tint = LeafInk;
+            var words = Box(row, "offer-words"); words.pickingMode = PickingMode.Ignore;
+            Text(words, "Free gems", "shop-link-title", true);
+            Text(words, (ready > 0 ? Money(ready) + " ready to collect · " : "") + Money(left) + " more from today's goals", "offer-detail");
+            row.Add(new ClinicIcon(ClinicGlyph.Chevron, 20, LeafInk));
         }
 
         private void ClaimLogin()
@@ -376,9 +383,10 @@ namespace IdleClinic.App
             Notify("Day " + streak + " reward collected", 4);
         }
 
-        private void ClaimDaily(string id)
+        private void ClaimDaily(string id, int day)
         {
-            if (!saves.ClaimDailyGoal(id, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "The reward could not be collected.", 6); return; }
+            // The button belongs to the list drawn for its day; after midnight it rebuilds instead of collecting.
+            if (!saves.ClaimDailyGoal(id, day, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "The reward could not be collected.", 6); dockKey = ""; UpdateReadouts(); return; }
             RebindAfterCommit(); clinicAudio.PlayReward(); Feedback(1);
             LaunchGemsFrom(overlay.WorldToLocal(dock.worldBound.center), 5);
             LaunchCoinsFrom(world.GetRoomPoint(ClinicRoom.Reception));
@@ -404,18 +412,17 @@ namespace IdleClinic.App
             }
             var choices = Box(hero, "shop-builder-choices");
             var product = apple?.Products.FirstOrDefault(p => p.id == ClinicUnlocks.ExtraBuilderProduct);
-            var cash = IconButton(choices, ClinicGlyph.Upgrade, product == null ? "Second builder price is loading" : "Buy a second builder for " + product.price + ", keep forever", () => { if (product != null) BuyGems(product.id); }, "shop-builder-cash");
+            var cash = IconButton(choices, ClinicGlyph.Upgrade, product == null ? "Second builder price is loading" : "Buy a second builder for " + product.price + ", keep forever. Opens Apple's purchase confirmation.", () => { if (product != null) BuyGems(product.id); }, "shop-builder-cash");
             cash.name = "shop-builder-store";
             cash.Q<ClinicIcon>().RemoveFromHierarchy();
             Text(cash, product?.price ?? "Loading…", "shop-cash-label", true);
             cash.SetEnabled(product != null && !apple.IsPurchasing);
-            var gem = GemOffer(choices, ClinicUnlocks.ExtraBuilder, ClinicGlyph.Gem, "Second builder", null, ClinicUnlocks.ExtraBuilderGems,
-                () => saves.UnlockExtraBuilderWithGems(DateTimeOffset.UtcNow), "Your second builder is ready. Two rooms can now build at once.", "offer-price-only shop-builder-gems");
+            var gem = GemOffer(choices, ClinicGemSpendKind.ExtraBuilder, ClinicUnlocks.ExtraBuilder, ClinicGlyph.Gem, "Second builder", null, ClinicUnlocks.ExtraBuilderGems, "offer-price-only shop-builder-gems");
             gem.name = "shop-builder-gems";
             Text(gem.Q(className: "price-chip"), "gems", "price-chip-value", true);
             var shortage = Math.Max(0, ClinicUnlocks.ExtraBuilderGems - profile.premium.gems);
             if (shortage > 0) Text(hero, "Need " + Money(shortage) + " more gems", "shop-builder-shortfall");
-            Text(hero, "Choose one payment option", "shop-payment-note");
+            Text(hero, "Choose one: gems, or the App Store price (Apple confirms)", "shop-payment-note");
         }
 
         /// <summary>An App Store unlock the player owns is copied into the save so it also works offline.</summary>
@@ -435,25 +442,13 @@ namespace IdleClinic.App
             GemActionButton(parent, "Finish now with gems", "Finish now", () => SkipConstruction(id), () => SkipCost(id), "gem-action gem-action-wide", readouts);
         }
 
+        /// <summary>Finish construction early. Opens the confirmation sheet unless it is free (the last minute).</summary>
         private void SkipConstruction(int jobId)
         {
-            if (saves.HasPendingOfflineProgress) { Notify("Saving your return first…"); return; }
             var job = State.Construction.Find(c => c.Id == jobId);
             if (job == null) return;
-            var cost = ClinicPremiumRules.SkipCost(State, job);
-            if (profile.premium.gems < cost)
-            {
-                Notify("You need " + cost + " gems. Goals and the gem shop are here.", 5);
-                ToggleGems();
-                return;
-            }
-            var room = job.Room;
-            if (!saves.SkipConstruction(jobId, DateTimeOffset.UtcNow)) { Notify(saves.Error ?? "That work could not be finished.", 6); return; }
-            RebindAfterCommit();
-            clinicAudio.PlayEvent(ClinicEventKind.ConstructionCompleted);
-            Feedback(1);
-            Celebrate(world.GetRoomPoint(room), 2.6f, "Room ready!");
-            ShowRoomReady(room);
+            lastFinishRequestRoom = job.Room;
+            RequestGemSpend(ClinicGemSpendKind.FinishWork, jobId.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
         private void ClaimGoal(string id)
@@ -469,7 +464,7 @@ namespace IdleClinic.App
         private void BuyGems(string productId)
         {
             if (apple == null || apple.IsPurchasing) return;
-            Notify("Opening the App Store…");
+            Notify("Opening Apple's purchase confirmation…");
             apple.Purchase(productId);
         }
 

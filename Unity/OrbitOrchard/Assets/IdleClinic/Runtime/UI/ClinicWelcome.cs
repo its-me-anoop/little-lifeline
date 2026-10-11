@@ -150,7 +150,7 @@ namespace IdleClinic.App
 
         private void OpenShop()
         {
-            gemTab = GemTab.Shop; shopExtrasOpen = false; pendingConfirm = null;
+            gemTab = GemTab.Shop; shopExtrasOpen = false;
             if (!gemsOpen) ToggleGems(); else { dockKey = ""; UpdateReadouts(); }
         }
 

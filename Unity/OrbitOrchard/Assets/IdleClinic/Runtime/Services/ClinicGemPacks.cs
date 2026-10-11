@@ -34,8 +34,8 @@ namespace IdleClinic.Services
             new OfflineTier { Id = "offline.12h", Name = "12-hour offline earnings", Gems = 150, Hours = 12, CoinMultiplier = 1.5 },
             new OfflineTier { Id = "offline.24h", Name = "24-hour offline earnings", Gems = 400, Hours = 24, CoinMultiplier = 3 },
         };
-        /// <summary>Spends at or above this ask for a second tap.</summary>
-        public const long ConfirmAtGems = 50;
+        // Until 4.3 (22) only spends of 50 gems or more asked for a second tap. Every gem spend now opens a confirmation sheet
+        // (see ClinicGemSpendFlow), so there is no threshold.
     }
 
     /// <summary>App Store gem packs. Product ids are permanent; change only the amounts of packs not yet sold.</summary>

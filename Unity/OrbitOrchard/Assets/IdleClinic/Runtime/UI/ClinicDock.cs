@@ -273,11 +273,7 @@ namespace IdleClinic.App
         private void BuyDecor(ClinicRoom kind)
         {
             if(saves==null)return;
-            var cost=ClinicRules.DecorationGemCost(State,kind);
-            if(profile.premium.gems<cost){Notify("You need "+cost+" gems. Goals and the gem shop are here.",5);OpenShop();return;}
-            if(!saves.BuyDecoration(kind,DateTimeOffset.UtcNow)){Notify(saves.Error??"That decor could not be added.",6);return;}
-            RebindAfterCommit();clinicAudio.PlayReward();Feedback(1);
-            Celebrate(world.GetRoomPoint(kind),1.8f,"Decorated!");
+            RequestGemSpend(ClinicGemSpendKind.Decoration,kind.ToString());
         }
 
         private string TrackHeadline(ClinicRoom room,UpgradeTrack track)

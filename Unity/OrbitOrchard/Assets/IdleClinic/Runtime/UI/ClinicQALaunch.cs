@@ -73,6 +73,25 @@ namespace IdleClinic.App
                     { ClinicSimulation.TryGrantReward(State, 10000000); simulation.UpgradeAmenity(kind); }
                 }
             if (double.TryParse(Value("CLINIC_QA_ADVANCE", "-qaAdvance"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)) simulation.Advance(seconds, false);
+            // 4.3 (23) captures. Opening: play the boss opening up to a step ("FirstCheckIn", "HireNurse", "Complete") as taps would.
+            var opening = Value("CLINIC_QA_OPENING", "-qaOpening");
+            if (opening != null && Enum.TryParse<ClinicOpeningStep>(opening, true, out var openingTarget)) PlayOpeningTo(openingTarget);
+            // A progressed clinic earned through play: this many hours of collecting and buying the cheapest improvement.
+            if (double.TryParse(Value("CLINIC_QA_PLAY", "-qaPlay"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var playHours) && playHours > 0)
+                PlayFor(playHours);
+            // Gems for an isolated QA save, so a confirmation can be shown with enough or too few gems.
+            if (long.TryParse(Value("CLINIC_QA_GEMS", "-qaGems"), out var qaGems) && qaGems > 0 && saves.QaGrantGems(qaGems, DateTimeOffset.UtcNow)) RebindAfterCommit();
+            // Time away: apply this many seconds of offline progress and show the welcome-back report.
+            if (double.TryParse(Value("CLINIC_QA_AWAY", "-qaAway"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var away) && away > 0)
+            {
+                SaveNow();
+                var report = saves.ApplyOffline(DateTimeOffset.UtcNow.AddSeconds(away));
+                profile = saves.Profile; BindSimulations();
+                if (report.applied) ShowWelcome(report);
+            }
+            // A confirmation sheet, for example "Boost:boost.1h", "CoinPack:coins.bag", "Decoration:Reception" or "FinishWork:first".
+            var confirm = Value("CLINIC_QA_CONFIRM", "-qaConfirm");
+            if (confirm != null) StartCoroutine(OpenConfirmationAfterFirstFrames(confirm));
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
             {
@@ -109,6 +128,60 @@ namespace IdleClinic.App
             else if (Enum.TryParse<ClinicRoom>(open, out var selected)) StartCoroutine(SelectAfterFirstFrames(selected));
         }
 
+        /// <summary>Play the opening as a player would: start each task, let it finish, collect the first payment and hire the
+        /// included staff, stopping at <paramref name="target"/>.</summary>
+        private void PlayOpeningTo(ClinicOpeningStep target)
+        {
+            if (!State.OpeningEnabled) return;
+            for (var guard = 0; guard < 400 && State.OpeningStep < target && State.OpeningStep != ClinicOpeningStep.Complete; guard++)
+            {
+                var step = State.OpeningStep;
+                if (State.OpeningTaskEndsTick < 0 && step != ClinicOpeningStep.FirstCheckIn && step != ClinicOpeningStep.QueueArrivals)
+                    simulation.ContinueOpening(step);
+                simulation.Advance(1, false);
+                foreach (var desk in State.ReceptionDesks) if (desk.Till > 0) simulation.Collect(desk.Id);
+            }
+            simulation.DrainEvents();
+            SaveNow();
+            dockKey = ""; UpdateReadouts();
+        }
+
+        private void PlayFor(double hours)
+        {
+            if (State.Tutorial != ClinicTutorialStep.Complete) PlayOpeningTo(ClinicOpeningStep.Complete);
+            var end = State.Tick + (long)(Math.Min(hours, 200) * 3600 * ClinicRules.TicksPerSecond);
+            for (var guard = 0; guard < 200000 && State.Tick < end; guard++)
+            {
+                simulation.Advance(30, false);
+                foreach (var desk in State.ReceptionDesks) if (desk.Till > 0) simulation.Collect(desk.Id);
+                simulation.CollectVendingTips(); simulation.CollectParkingFees();
+                for (var buys = 0; buys < 20; buys++)
+                {
+                    ClinicPurchaseOption cheapest = null;
+                    foreach (var option in ClinicPurchases.Options(simulation)) if (cheapest == null || option.Cost < cheapest.Cost) cheapest = option;
+                    if (cheapest == null || cheapest.Cost > State.Wallet || !ClinicPurchases.Buy(simulation, cheapest).Success) break;
+                }
+            }
+            simulation.DrainEvents();
+            SaveNow();
+            dockKey = ""; UpdateReadouts();
+        }
+
+        private System.Collections.IEnumerator OpenConfirmationAfterFirstFrames(string confirm)
+        {
+            yield return new WaitForSeconds(1.5f);
+            var parts = confirm.Split(new[] { ':' }, 2);
+            if (parts.Length != 2 || !Enum.TryParse<IdleClinic.Services.ClinicGemSpendKind>(parts[0], true, out var kind)) yield break;
+            var key = parts[1];
+            if (kind == IdleClinic.Services.ClinicGemSpendKind.FinishWork && key == "first")
+            {
+                if (State.Construction.Count == 0) yield break;
+                lastFinishRequestRoom = State.Construction[0].Room;
+                key = State.Construction[0].Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            RequestGemSpend(kind, key);
+        }
+
         private System.Collections.IEnumerator SelectSupportRoomAfterFirstFrames(bool office)
         {
             yield return new WaitForSeconds(1.5f);
@@ -119,7 +192,7 @@ namespace IdleClinic.App
         {
             while (true)
             {
-                foreach (var element in new[] { header, hint, cameraTools, hudChips, overlay, dock, scrim, guideCard, guideSkip, welcomeCard, banner })
+                foreach (var element in new[] { header, hint, cameraTools, hudChips, overlay, dock, scrim, guideCard, guideSkip, gemConfirm, welcomeCard, banner })
                     if (element != null) element.style.display = UnityEngine.UIElements.DisplayStyle.None;
                 yield return null;
             }

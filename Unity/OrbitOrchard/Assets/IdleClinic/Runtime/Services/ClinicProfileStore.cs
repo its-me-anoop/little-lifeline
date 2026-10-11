@@ -15,7 +15,7 @@ namespace IdleClinic.Services
     public enum ClinicPurchaseGrant { Granted, AlreadyGranted, Rejected, NotSaved, Refunded }
 
     /// <summary>Progress and accounted time commit together before offline results are exposed.</summary>
-    public sealed class ClinicProfileStore
+    public sealed partial class ClinicProfileStore
     {
         public const double MaximumOfflineSeconds = ClinicRules.MaximumOfflineSeconds;
         public const string FileName = "idle-clinic-profile-v1.json";
@@ -35,11 +35,18 @@ namespace IdleClinic.Services
         public string Error { get; private set; }
         public bool HasPendingOfflineProgress { get; private set; }
 
-        public ClinicProfileStore(string directory)
+        /// <summary>Coins of improvements still open in the starter and doctors clinics; decides whether a spending goal is achievable.</summary>
+        private readonly Func<ClinicState, ClinicState, long> spendableCoins;
+
+        public ClinicProfileStore(string directory) : this(directory, null) { }
+
+        /// <param name="spendableCoins">Replaces the standard assessment of open improvements (tests use this to simulate a failure).</param>
+        public ClinicProfileStore(string directory, Func<ClinicState, ClinicState, long> spendableCoins)
         {
             if (string.IsNullOrEmpty(directory)) throw new ArgumentException("A save directory is required.", nameof(directory));
             this.directory = directory;
             path = Path.Combine(directory, FileName);
+            this.spendableCoins = spendableCoins ?? OpenImprovementCoins;
         }
 
         public ClinicProfile Load(DateTimeOffset now) => LoadClinic(now);
@@ -154,6 +161,17 @@ namespace IdleClinic.Services
         }
 #endif
 
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>Development-build QA only: add earned gems to an isolated QA save, for confirmation-sheet captures.</summary>
+        public bool QaGrantGems(long gems, DateTimeOffset now)
+        {
+            if (!CanCommit()) return false;
+            var candidate = Copy(Profile);
+            if (!candidate.premium.Earn(gems)) return false;
+            return CommitCandidate(candidate, now);
+        }
+#endif
+
         public bool OpenDoctorsClinic(DateTimeOffset now)
         {
             if (!CanCommit()) return false;
@@ -229,6 +247,38 @@ namespace IdleClinic.Services
                 : ClinicGuide.Steps.Where(s => Profile.guide.skipped.Contains(s.Id) && !Profile.premium.milestonesClaimed.Contains(s.Id)).ToList();
 
         public bool IsGuideStepSkipped(string id) => Profile?.guide?.skipped?.Contains(id) == true;
+
+        /// <summary>Skipped optional lessons the player has since done, with a reward waiting under Goals.</summary>
+        public int ReadySkippedLessons() => SkippedGuideSteps().Count(IsGuideStepDone);
+        /// <summary>Rewards waiting on the Goals tab: achievements plus completed skipped lessons.</summary>
+        public int GoalsReady() => ClaimableMilestones().Count() + ReadySkippedLessons();
+        /// <summary>Every reward waiting behind the gem button: goals, today's goals and the login reward.</summary>
+        public int RewardsReady(DateTimeOffset now) => GoalsReady() + DailyReady(now);
+
+        /// <summary>Free gems the player can collect right now, without spending anything.</summary>
+        public long FreeGemsReady(DateTimeOffset now)
+        {
+            if (Profile == null) return 0;
+            var goals = DailyGoals(now);
+            var ready = goals.Where(g => IsDailyDone(g) && !IsDailyClaimed(g.Id)).ToList();
+            long gems = ready.Sum(g => g.GemReward);
+            if (ready.Count > 0 && !DailyBonusPaid && goals.All(g => IsDailyClaimed(g.Id) || ready.Contains(g))) gems += ClinicDaily.AllGoalsGemBonus;
+            if (LoginRewardReady(now)) gems += ClinicDaily.StreakReward(NextStreakDay(now));
+            gems += ClaimableMilestones().Sum(m => m.GemReward);
+            gems += SkippedGuideSteps().Where(IsGuideStepDone).Sum(s => s.GemReward);
+            var step = CurrentGuideStep();
+            if (step != null && IsGuideStepDone(step)) gems += step.GemReward;
+            return gems;
+        }
+
+        /// <summary>Free gems still on offer today from goals not yet finished, including the all-goals bonus.</summary>
+        public long FreeGemsLeftToday(DateTimeOffset now)
+        {
+            if (Profile == null) return 0;
+            var goals = DailyGoals(now);
+            long gems = goals.Where(g => !IsDailyDone(g) && !IsDailyClaimed(g.Id)).Sum(g => g.GemReward);
+            return gems + (DailyBonusPaid || goals.All(IsDailyDone) ? 0 : ClinicDaily.AllGoalsGemBonus);
+        }
 
         /// <summary>Skip an optional lesson without spending or earning anything. The guide moves on to the next lesson.</summary>
         public bool SkipGuideStep(string id, DateTimeOffset now)
@@ -358,7 +408,23 @@ namespace IdleClinic.Services
                 daily.goals = PlanDailyGoals(today, totals, totals);
             }
             // A save from before fixed goals: set today's once, keeping collected goals and the stored start-of-day totals.
-            else if (daily.goals.Count == 0) daily.goals = PlanDailyGoals(today, daily.Baseline, DailyTotals);
+            // Those builds paid the all-goals bonus with the third collection, so three or more collected means it was paid.
+            else if (daily.goals.Count == 0)
+            {
+                daily.goals = PlanDailyGoals(today, daily.Baseline, DailyTotals);
+                daily.bonusPaid = daily.bonusPaid || daily.claimed.Count >= ClinicDaily.GoalsPerDay;
+            }
+        }
+
+        /// <summary>Changes whenever today's goal list or its collected state changes, including at midnight when every count may
+        /// be unchanged. The goals panel rebuilds on it.</summary>
+        public string DailyDefinitionKey(DateTimeOffset now)
+        {
+            if (Profile == null) return "";
+            EnsureDay(now);
+            var daily = Profile.daily;
+            return daily.day + "|" + daily.bonusPaid + "|" + string.Join(",", daily.claimed) + "|"
+                + string.Join(",", daily.goals.Select(g => g.id + ":" + g.measure + ":" + g.target + ":" + g.coins + ":" + g.gems + ":" + g.start));
         }
 
         private List<ClinicDailyGoalRecord> PlanDailyGoals(int day, ClinicDailyTotals dayStart, ClinicDailyTotals current)
@@ -376,22 +442,29 @@ namespace IdleClinic.Services
             return ClinicDaily.Plan(day, context).Select(ClinicDailyGoalRecord.From).ToList();
         }
 
-        /// <summary>Coins of improvements still open in both clinics, measured on copies so the live clinics are untouched.</summary>
+        /// <summary>Coins a spending goal may ask for. If open improvements cannot be assessed, no spending goal is set: the day gets
+        /// goals that ordinary play always meets instead.</summary>
         private long SpendableCoins()
         {
+            try { return Math.Max(0, spendableCoins(Profile.state, Profile.doctorsState)); }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("Daily goals: open improvements could not be assessed, so today has no spending goal. " + exception.Message);
+                return 0;
+            }
+        }
+
+        /// <summary>The standard assessment, measured on copies so the live clinics are untouched.</summary>
+        private static long OpenImprovementCoins(ClinicState starter, ClinicState doctors)
+        {
             long total = 0;
-            foreach (var state in new[] { Profile.state, Profile.doctorsState })
+            foreach (var state in new[] { starter, doctors })
             {
                 if (state == null) continue;
-                try
-                {
-                    var copy = JsonUtility.FromJson<ClinicState>(JsonUtility.ToJson(state));
-                    var game = new ClinicSimulation(copy);
-                    game.EnsureOfficeAnchor();
-                    var open = ClinicPurchases.NextCostsTotal(game);
-                    total = total > ClinicRules.MaximumCurrency - open ? ClinicRules.MaximumCurrency : total + open;
-                }
-                catch (Exception) { return long.MaxValue; }
+                var game = new ClinicSimulation(JsonUtility.FromJson<ClinicState>(JsonUtility.ToJson(state)));
+                game.EnsureOfficeAnchor();
+                var open = ClinicPurchases.NextCostsTotal(game);
+                total = total > ClinicRules.MaximumCurrency - open ? ClinicRules.MaximumCurrency : total + open;
             }
             return total;
         }
@@ -407,6 +480,14 @@ namespace IdleClinic.Services
         public bool IsDailyDone(ClinicDailyGoal goal) => goal.IsDone(DailyTotals);
         public bool DailyBonusPaid => Profile?.daily?.bonusPaid == true;
         public int DailyReady(DateTimeOffset now) => DailyGoals(now).Count(g => IsDailyDone(g) && !IsDailyClaimed(g.Id)) + (LoginRewardReady(now) ? 1 : 0);
+
+        /// <summary>Collect a goal from the list drawn for <paramref name="day"/>. Refused once that day has ended, so a button left open
+        /// over midnight can never collect a different day's goal.</summary>
+        public bool ClaimDailyGoal(string id, int day, DateTimeOffset now)
+        {
+            if (Today(now) != day) { EnsureDay(now); Error = "A new day has started. Today's goals are ready."; return false; }
+            return ClaimDailyGoal(id, now);
+        }
 
         public bool ClaimDailyGoal(string id, DateTimeOffset now)
         {

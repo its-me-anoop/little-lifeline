@@ -467,3 +467,34 @@ Button:active { scale: .96 .96; }
 .guide-skip { position: absolute; flex-direction: row; align-items: center; min-height: 44px; padding: 0 14px 0 12px; border-radius: 22px; background-color: rgb(251,250,240); border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
 .guide-skip-label { font-size: 14px; margin-left: 6px; color: rgb(48,74,61); }
 .lesson-row .offer-detail { white-space: normal; }
+
+/* 4.3 (23): every gem spend is confirmed in this sheet */
+.gem-confirm { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(30,38,32,0.45); justify-content: flex-end; align-items: center; padding: 16px 16px 28px 16px; }
+.gem-confirm-card { width: 100%; max-width: 480px; padding: 18px; border-radius: 26px; background-color: rgb(251,250,240); border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
+.gem-confirm-heading { flex-direction: row; align-items: center; }
+.gem-confirm-tile { width: 48px; height: 48px; border-radius: 16px; background-color: rgb(250,233,238); justify-content: center; align-items: center; flex-shrink: 0; }
+.gem-confirm-titles { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 12px; margin-right: 8px; }
+.gem-confirm-title { font-size: 22px; white-space: normal; color: rgb(31,52,42); }
+.gem-confirm-banner { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background-color: rgb(253,241,226); color: rgb(122,72,18); font-size: 14px; white-space: normal; }
+.gem-confirm-facts { margin-top: 14px; }
+.gem-confirm-fact { flex-direction: row; align-items: flex-start; margin-bottom: 10px; }
+.gem-confirm-fact-words { margin-left: 10px; flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.gem-confirm-fact-label { font-size: 13px; color: rgb(78,97,82); }
+.gem-confirm-fact-value { font-size: 16px; color: rgb(31,52,42); white-space: normal; }
+.gem-confirm-detail { font-size: 13px; color: rgb(78,97,82); white-space: normal; margin-bottom: 6px; }
+.gem-confirm-cost { flex-direction: row; align-items: center; justify-content: space-between; margin-top: 8px; padding: 12px; border-radius: 16px; background-color: rgb(250,233,238); }
+.gem-confirm-price { flex-direction: row; align-items: center; flex-shrink: 0; }
+.gem-confirm-amount { font-size: 26px; margin-left: 6px; color: rgb(116,38,66); }
+.gem-confirm-balance { font-size: 14px; color: rgb(107,74,88); white-space: normal; flex-shrink: 1; margin-left: 12px; -unity-text-align: middle-right; }
+.gem-confirm-actions { flex-direction: row; margin-top: 14px; }
+.gem-confirm-cancel { flex-grow: 1; flex-basis: 0; min-height: 52px; margin-right: 8px; border-radius: 16px; justify-content: center; align-items: center; background-color: rgb(238,241,224); border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.gem-confirm-cancel-label { font-size: 17px; color: rgb(48,74,61); }
+.gem-confirm-spend { flex-grow: 1.4; flex-basis: 0; min-height: 52px; flex-direction: row; border-radius: 16px; justify-content: center; align-items: center; background-color: rgb(158,52,90); border-bottom-width: 3px; border-bottom-color: rgb(110,33,64); }
+.gem-confirm-spend-label { font-size: 17px; color: rgb(255,245,248); margin-left: 6px; }
+.gem-confirm-earn { flex-grow: 1.4; flex-basis: 0; min-height: 52px; flex-direction: row; border-radius: 16px; justify-content: center; align-items: center; background-color: rgb(225,236,214); border-bottom-width: 3px; border-bottom-color: rgb(170,196,160); }
+.gem-confirm-earn-label { font-size: 17px; color: rgb(31,74,52); margin-left: 6px; }
+.gem-confirm-shop { align-self: center; margin-top: 10px; }
+.narrow .gem-confirm-title { font-size: 20px; }
+.compact .gem-confirm-card { padding: 14px; }
+.shop-free-row { flex-direction: row; align-items: center; min-height: 56px; padding: 10px 12px; margin-bottom: 12px; border-radius: 16px; background-color: rgb(238,241,224); }
+.shop-free-row .offer-detail { white-space: normal; }
