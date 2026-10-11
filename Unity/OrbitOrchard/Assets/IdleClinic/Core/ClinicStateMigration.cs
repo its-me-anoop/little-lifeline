@@ -48,7 +48,7 @@ namespace IdleClinic.Core
                 patient.ToiletCubicleId = (patient.Phase == ClinicPatientPhase.WalkingToAmenity || patient.Phase == ClinicPatientPhase.UsingAmenity || patient.Phase == ClinicPatientPhase.ReturningFromAmenity)
                     && patient.VisitingAmenity == ClinicAmenity.Toilet ? 0 : -1;
             }
-            return ClinicSimulation.IsValidState(state);
+            return ClinicSimulation.TryMigrateStarterQueue(state);
         }
 
         /// <summary>Move a valid clinic to the current price rules once nothing is under construction, so every

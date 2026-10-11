@@ -1,0 +1,2695 @@
+{
+  "recorded_utc": "2026-10-11T21:20:01.067455+00:00",
+  "repository": "/Users/anoopjose/Projects/little-lifeline",
+  "head": "e6044304daa057f1243142f35dc92382b820f755",
+  "files": [
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicRules.cs",
+      "size": 15547,
+      "sha256": "54b01ae3e89cf16e4a84b7ed483eb69ea728170b14b031370994c261493c63a0"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicSimulation.cs",
+      "size": 64846,
+      "sha256": "d7c25c21e61e5ad96c6de6696df235115a88d2daf000dddc6d6618a1bf8488f1"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicStateMigration.cs",
+      "size": 3611,
+      "sha256": "081cca46034307db17fe741947f42e22b681071b3abdc1a176898c1ab11ef239"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicTypes.cs",
+      "size": 10779,
+      "sha256": "d7de90126606b58e89990ae96b831edb888c0832fe484f0d1728a8656f99b42b"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/ClinicStyle.uss",
+      "size": 41646,
+      "sha256": "b826ed2beebaedbc56527ec1da143690cdeb2c3d52e72563302c6526c05aa46c"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicActors.cs",
+      "size": 33886,
+      "sha256": "9b36b5cb0ece189010381332a71513f68d45d3a94eb3f51d01bdfeefc1bb6360"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicAmenities.cs",
+      "size": 10510,
+      "sha256": "87f6c6cd62e2340d572057773468c36155d1d896e2cfb13c77100836c5922f69"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicArchitecture.cs",
+      "size": 4371,
+      "sha256": "7a0beac1e67783d2364e6452f6017306ff3384b6047d916a3f529fada0512faf"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicArt.cs",
+      "size": 9145,
+      "sha256": "8477968d40f88ff984a853a10f5951a95813534bef3e0618429eefd93db8dec8"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicFurnishings.cs",
+      "size": 6531,
+      "sha256": "63426118069282e51b34143c5b3b8fce52d47899ef75bbeb8352d57714d054c0"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicRoomGear.cs",
+      "size": 8913,
+      "sha256": "405587b850ef81efda258d51a3a2b7f2dafb6d9aacec844af3c92c2d5e36f62a"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicSurroundings.cs",
+      "size": 15550,
+      "sha256": "3f410f67ecf424e8f6044c819a98ea4e6b78154571773deedf66b3594b34d33b"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicUpgrades.cs",
+      "size": 9273,
+      "sha256": "66a8abb45a41b3e2958c9507960936d4d232627815555fd101925fdafe36c543"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicWorld.cs",
+      "size": 41875,
+      "sha256": "ab701cec94b67f83d5a69063806639cad9e6aa21f5056fcc359cc69b81fd2da5"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Services/ClinicProfileStore.cs",
+      "size": 39337,
+      "sha256": "bbd6132bc8b3ef84a48a51ddd88f0a820ba5e03e74010ca87f3f1ca10b5e82db"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicApp.cs",
+      "size": 30160,
+      "sha256": "aa5d9f643698dee66cf3ceb2510bd795cfc6ecdcbc4d5fb770888b89fb41015a"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicDock.cs",
+      "size": 34065,
+      "sha256": "c4cae848acffe2c223fe37ab9fff4f33fdf1600a42abe27633de43a9ce30bdf6"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicGearDock.cs",
+      "size": 6752,
+      "sha256": "f3e7befa3b129170f1cec3e4a2dbf74c01b53dab9c5c13484994bb7a8f0aac21"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicGuidance.cs",
+      "size": 7290,
+      "sha256": "61f50f120c83478fd3f3c7c3ca9067e3cba31e0d2083bbb4e72ee8b4940414d5"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicInteraction.cs",
+      "size": 24863,
+      "sha256": "63538f2c8d5fabfb3657b772184da16d64b197e06a9e1b5449bb49c86cb60b1b"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicJuice.cs",
+      "size": 7106,
+      "sha256": "c1ed11f9cac3e5efc5d90cff09a41b44ac59d219113ed6de97fd234e5f242b90"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicLocations.cs",
+      "size": 12026,
+      "sha256": "267ac2e189abb6f36f49f8fda7907bf39a6f013bce14e9d35c2b099b6ff709a3"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicManagement.cs",
+      "size": 25627,
+      "sha256": "a063b10c970cdd8f28ec78eea7a619020994a9d096152d5602599ed95ad70f7e"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicPremium.cs",
+      "size": 28173,
+      "sha256": "606eac3f7d958abe6dd01d02696680dd7a358de960664f4022ae906273a3c6e3"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicQALaunch.cs",
+      "size": 8738,
+      "sha256": "1d99bc11237c1c533bd3b5a65a34fb826811c708e086b63569724caef150e8f8"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicWelcome.cs",
+      "size": 9968,
+      "sha256": "30a448a37b4d146d073b3320320dc8617a356ec53ee3602384ae30b706855115"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicParkingFlowTests.cs",
+      "size": 15939,
+      "sha256": "d347463ef2586ad4d99b94813092b491f78db215fd54679127c995c05f8045fa"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicSimulationTests.cs",
+      "size": 29412,
+      "sha256": "d8f4bc6a308d14ba1996435a8b2fa97ee9fefb31d5f6edb07478445146e4714b"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicArchitectureTests.cs",
+      "size": 5007,
+      "sha256": "43cab3225dd9eb0c9fc178b27e5bba5b4d5c870f44e1eb8081ebd33dbdb79845"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicPassingTests.cs",
+      "size": 6807,
+      "sha256": "416c5e35d6ed020a74776e796647e0f500b60a2b64ab69e9fd87dab2db325bd9"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicWalkingTests.cs",
+      "size": 15433,
+      "sha256": "5f27bd4aa2ed982dabdd6dafbb15acd0a6aae936a663ec8788e91f30ec243d9b"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicWorldTests.cs",
+      "size": 55337,
+      "sha256": "03693ec01ca386b1afa74543e7df9918e9cf9e082ab52b8e0f20dd5242a2773f"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/DoctorsHUDTests.cs",
+      "size": 27064,
+      "sha256": "ea94528cd9cacf94c43f2fe0595273da8e8eed1d174ab3baca22e1261f5db8ca"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Profile/ClinicMigrationTests.cs",
+      "size": 11165,
+      "sha256": "03f3e1d637f794c2aa4fb37a73b8f74bc04231eb91143c39058b9579acc4f6c3"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Profile/ClinicProfileTests.cs",
+      "size": 21617,
+      "sha256": "c2673877219d00bd56bff02851499cc9963acee13b027064653850a62457f097"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Profile/DoctorsProfileTests.cs",
+      "size": 20784,
+      "sha256": "5d7de5db026368abb5a68eef16427a9980c5bd55108b02ac92e768bcd8c2c36c"
+    },
+    {
+      "status": " M",
+      "path": "Unity/OrbitOrchard/Assets/OrbitOrchard/Editor/OrchardBuild.cs",
+      "size": 11335,
+      "sha256": "40d1217d795614085cf87e58ab2b24723ca34f8917471fa979a7b408a9a943f1"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_boss.py",
+      "size": 2500,
+      "sha256": "13c42c799b3e9fe0d61ec22495d897582408811be263f3a7b2f89e5fc65af6ce"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_boss_office.py",
+      "size": 8135,
+      "sha256": "e49242bf0055eb81bc571b3fe56b34caadb0bd6c37319e2ddeadec5c70d64f7e"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_clinic_themes.py",
+      "size": 8344,
+      "sha256": "4178cc2241d35f3d2db663e85c0c55abef96a89f39fabe8422312121a88afc61"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_game_library.py",
+      "size": 11783,
+      "sha256": "181161f12632ce4d68b217ac79c91befbb080e2e0c516c31af53b29206f19feb"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_medical_staff.py",
+      "size": 5093,
+      "sha256": "28de17ab0deb3f7701163f92bfb4c4fde9194ecd50dc797c3a88da18db915932"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_nursing_stations.py",
+      "size": 8893,
+      "sha256": "3a07edaad46f0e05e463937c58fbfad6e02ab70e1970c14a6a8175f556b89d7d"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_patients.py",
+      "size": 14444,
+      "sha256": "4ca3b2a6849605db97396dcdf9a0242e44cad2c173a9ab87944f1a8d9d629a35"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_reference_clinic.py",
+      "size": 17723,
+      "sha256": "32f32590212561f9e7825d83875d45f495e9c8ed85aa2a9eeed1b2ecb656cfde"
+    },
+    {
+      "status": "??",
+      "path": "Tools/create_waiting_area.py",
+      "size": 4152,
+      "sha256": "1427c961e13aa41af4ab68b62b2c72864bb2f11c613f79a59b0b19efdf55be84"
+    },
+    {
+      "status": "??",
+      "path": "Tools/finish_library_labels.py",
+      "size": 2350,
+      "sha256": "f58b80eab973c3d20aa7bfd1499ef6843fd04c34a359863b3e834b40b36e9d15"
+    },
+    {
+      "status": "??",
+      "path": "Tools/polish_library_previews.py",
+      "size": 2708,
+      "sha256": "e596d54706c48c08b4c6fb530f2d331553fd9b7799e1e820bc997a2c78bb70cd"
+    },
+    {
+      "status": "??",
+      "path": "Tools/prepare_game_asset_catalog.py",
+      "size": 2441,
+      "sha256": "6d8f96053e6da8e04731a4ae2f2a1d978fb67af5e4aac709dccaa8f0e981da64"
+    },
+    {
+      "status": "??",
+      "path": "Tools/validate_game_library.py",
+      "size": 982,
+      "sha256": "5f693fc2ef9c1724b7a98797ce9a6489dfd4c5e40f4db58df60652adf4d0000f"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicSimulation.Office.cs",
+      "size": 4376,
+      "sha256": "066f214c268240a76ab1f1cdb1d9939d8b5bd5376be3d62484bbe55a1e532681"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicSimulation.Office.cs.meta",
+      "size": 59,
+      "sha256": "5f5854750e131e32ca007d21b783a54c1e49b8f470e34f6ca491f5b706b7c75a"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicSimulation.Opening.cs",
+      "size": 8714,
+      "sha256": "7e06ee0924c95e8a88dc0f1dba7d3849df084891fe2008ad12207d06a7ab1970"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Core/ClinicSimulation.Opening.cs.meta",
+      "size": 60,
+      "sha256": "af7bda8ce8f23f657aa669b6dea35ff77a60ae9639719299b865e0d629601f12"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/ClinicFacadeGlass.shader",
+      "size": 801,
+      "sha256": "c5cb4e4056d38b43b1a642f08f13f486da013d8cce0ab1f0cb3ffa4fd0c991a5"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/ClinicFacadeGlass.shader.meta",
+      "size": 201,
+      "sha256": "7f4cdb9ecc6e8701f4fe3efba6b2a0946b075fc066038d94a35fe83bed499e53"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop.meta",
+      "size": 172,
+      "sha256": "90199826ea2a8d9ced056653d383418d62b8f7f4d0bd9371fcb29b95bf3303e1"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/BuilderHero.png",
+      "size": 1206387,
+      "sha256": "e142f41da56b52a3b64865631c9e0d7b02030658c3f474df5cc853b69a07b518"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/BuilderHero.png.meta",
+      "size": 3001,
+      "sha256": "883de3155c8e8900e8be20e9737de12a3ee0926e80bf9ff45578c9fec1f73a24"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/CoinsBoosts.png",
+      "size": 987173,
+      "sha256": "49fb8187ac36ad544953f5ea31792b81654ac946e59d978b4a4912d5e6735152"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/CoinsBoosts.png.meta",
+      "size": 3001,
+      "sha256": "26e6624db1301210ccdcdb251165d1f8f02ef7c0252a5c71d869e104e6b2f939"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsExtraLarge.png",
+      "size": 1114611,
+      "sha256": "45b75d35c9d1c6595ad62f00206454eed496721b66891cf851d9846c0a4e908d"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsExtraLarge.png.meta",
+      "size": 3001,
+      "sha256": "ba16c70160a6bcb658e40cf6c31777d2416d16ba9d7736d5e4014947facbc151"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsLarge.png",
+      "size": 1083076,
+      "sha256": "aa72072a2717ad9c02c277c4f0de191f26369cd8b7044c2301d0dd499c7d3349"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsLarge.png.meta",
+      "size": 3001,
+      "sha256": "0fb81814d2f511245bc6f7c9b85a9a5d1564f2400145aed4be914ad4d4d63c51"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsMedium.png",
+      "size": 1066378,
+      "sha256": "abcf12b35069492150c1cf852d6f317d907960e7c5488892a0d9abf192a3e6b0"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsMedium.png.meta",
+      "size": 3001,
+      "sha256": "4bc22dc58101754d2458b0ce8ed90a3dfe6b6c30af5dde821a8f3f1fca84e74c"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsSmall.png",
+      "size": 632941,
+      "sha256": "9532809fa106a7027e32fa010e9f768c49ba71b6f034712f5281556a2cac5313"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Resources/Shop/GemsSmall.png.meta",
+      "size": 3001,
+      "sha256": "bc1353ba4088875672db6ac1d232f11e3d193352173f7c653cb9bee1a3ba93fb"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicOpeningPresentation.cs",
+      "size": 5388,
+      "sha256": "e4fc4b6ac06f72efd9b7250b7af7791b24b9b1421ce76aad1e6470ebe576367e"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicOpeningPresentation.cs.meta",
+      "size": 60,
+      "sha256": "7f33e00d80b377bd43d16054a5d93fdd3113a1d43adfe63d347bceb01d1eccd4"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicPatientEmoji.cs",
+      "size": 6709,
+      "sha256": "00ea68cdd46007accf50f4f4fb45147a6818359824456fea0426538c1c0ab80c"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicPatientEmoji.cs.meta",
+      "size": 60,
+      "sha256": "b9b5d51ef1ee37d47c590b651591164632ec09b4a14c8b67a9baf479ac3a183b"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicSupportRooms.cs",
+      "size": 13580,
+      "sha256": "200f2f84d7ec3f6a1396e2431705eb507c666641482346951cdbd212aa104622"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/Presentation/ClinicSupportRooms.cs.meta",
+      "size": 60,
+      "sha256": "19e3555da9547de7ff56f89586d2a0dc68b1774adbcce2037e72b16a533084aa"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicOpening.cs",
+      "size": 4075,
+      "sha256": "059e01b993dfbcb8962ace6af47ac24a8733f0fb860e909d2b8d594ff86e0a4c"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Runtime/UI/ClinicOpening.cs.meta",
+      "size": 60,
+      "sha256": "2d9aa8489fe51e7392f928ede9d6823ef8ee783cff0b087fdcde244be4f7b789"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicOfficeTests.cs",
+      "size": 4381,
+      "sha256": "babffe6db6708b6f9c8486e917bfc7ead04d2d0e350ea27b94eca661f223a4e2"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicOfficeTests.cs.meta",
+      "size": 59,
+      "sha256": "9193efa23c0dd98f448d208150845991143e099851a4ca606fe63da2cd045780"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicOpeningTests.cs",
+      "size": 5328,
+      "sha256": "7b340bca084ad343fa3d3701773da3bcf002172910a15c23d9c5bcad77b310ea"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Core/ClinicOpeningTests.cs.meta",
+      "size": 60,
+      "sha256": "e211f53427cf678791d3f281060982f8c58e3b65f6aa7bbc9622a46944f706d7"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicEmojiTests.cs",
+      "size": 3628,
+      "sha256": "5790d4e83f557838b7f0f416b6b44ed7a048b757a995dd9a92de8cffcd9307f5"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicEmojiTests.cs.meta",
+      "size": 60,
+      "sha256": "8eb69b3176b283661c11e7f6d8abfac23738d121372024c874846b4b1d06cb8a"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicOpeningWorldTests.cs",
+      "size": 3392,
+      "sha256": "109dda661808a8064b4503d2f32004d7e6d54cf5be9e2351bdaaab3326e86a74"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Editor/ClinicOpeningWorldTests.cs.meta",
+      "size": 60,
+      "sha256": "67a386ffbeed1def3ec9fe9938946154b4248ada561d29931e688464011627aa"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Profile/ClinicOpeningProfileTests.cs",
+      "size": 3581,
+      "sha256": "a2f68ad2c63d5e31f3f2ed959706868191750ef3f5908dbd4ace2936ddddf241"
+    },
+    {
+      "status": "??",
+      "path": "Unity/OrbitOrchard/Assets/IdleClinic/Tests/Profile/ClinicOpeningProfileTests.cs.meta",
+      "size": 60,
+      "sha256": "f330f8da0f60e2667bb8b33fc7baf49930c91f5a77a7a0340a27736a9076914e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_01_Man_Coral.fbx",
+      "size": 1108620,
+      "sha256": "3988e16d1f6454a9a3a52f996f28648bca8341b817c96d5022575c1115754418"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_02_Woman_Lavender.fbx",
+      "size": 1129132,
+      "sha256": "2f6b99736760a3d47ac93d41330a1f46a1d2182b51a00d5ef838c7c610e2a783"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_03_Man_Mint.fbx",
+      "size": 1111868,
+      "sha256": "55f1e25bf46729d33c7a2b0815030ddbf6d5b307458272a6e9752ed890fe6933"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_04_Woman_Sunflower.fbx",
+      "size": 1135228,
+      "sha256": "0b2b9c81978b0c478232005da77d0a1ba5a6fb6c8da567942dd614bf291dacf1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_05_OlderMan_Blue.fbx",
+      "size": 1133148,
+      "sha256": "f35aa60eeb64168735c4d2dbe202b8f86144ec04f3aec97859b1d5d9088dc148"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/Patient_06_OlderWoman_Rose.fbx",
+      "size": 1153308,
+      "sha256": "0a69ad91ad73cb98665604a61555f36f7bfbf83e4704fd908369b337337f2d57"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/boss/Boss_ClinicDirector.fbx",
+      "size": 1164668,
+      "sha256": "e572cbe8d90ab544ae9192bc9ded64ed0d8f4aa7bc24c5a3f4a48b306a04e5a9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/boss/little-lifeline-boss.blend",
+      "size": 2981324,
+      "sha256": "079fc070dfb72dc2bb3d9ef2b3aac4206a3ce49fe46f38b56eed46d352d60236"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/boss/little-lifeline-boss.blend1",
+      "size": 2981324,
+      "sha256": "0a303480a0b45e309e575692a44eb1bae08b84dbca1ee657634f3d0897bf9abb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/boss/little-lifeline-boss.png",
+      "size": 1404864,
+      "sha256": "b2c40978c249b11bd32f61792a1a0cfbbf2846ac16ab56b9c3da31230d1802b0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/little-lifeline-patient-cast.blend",
+      "size": 21191232,
+      "sha256": "f4caf026ddeb9fc6c5821b0328bfe1a597ae302228307fa3869947cf8cc5e037"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/little-lifeline-patient-cast.blend1",
+      "size": 16846820,
+      "sha256": "19eb4bdae5c659be197a44cd839dd1aa8cceae75a05b19634f29e39dbd51e838"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/little-lifeline-patient-cast.png",
+      "size": 1652430,
+      "sha256": "53e08c1992b54dcbaf1358dad6340464ce08883a5aea953c84945371cd427c6a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/Doctor_01_Man_WhiteCoat.fbx",
+      "size": 1157084,
+      "sha256": "34290202b50084fe90dbe7258c3a69ab8e50a48f0ba0803692dbe2051d7ff6d5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/Doctor_02_Woman_WhiteCoat.fbx",
+      "size": 1182188,
+      "sha256": "fc119b96cda9ce196527ad0faf189261ba31b4674ec3fdf555c67657b2d52d04"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/Nurse_01_Man_TealScrubs.fbx",
+      "size": 1134316,
+      "sha256": "56ddb8fcb813d3364b34faab78ebd8b5c2cd3247b8d2e04f2b05838ecdc656aa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/Nurse_02_Woman_BlueScrubs.fbx",
+      "size": 1154812,
+      "sha256": "dbb14127f04d32de8f6ff772c7709ec406a5b5cb18d18297a05ce126bef1d48a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/little-lifeline-medical-staff.blend",
+      "size": 10597167,
+      "sha256": "0c8e8490ac49dd786f842570318052ed9eac2b1b23f59aeb4d752d9a383cc57f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/medical-staff/little-lifeline-medical-staff.png",
+      "size": 1653262,
+      "sha256": "925d16d9d862b653feae392229b7e8ffc90eab46cf64d56aae80f820f6b3394d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/receptionists/Receptionist_01_Man_NavySuit.fbx",
+      "size": 1148428,
+      "sha256": "b0e1f0f01fd18cd1c29b4f655fbbd3e3473c2f1a86d59872e55c6fdb9d5d23de"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/receptionists/Receptionist_02_Woman_CharcoalSuit.fbx",
+      "size": 1167260,
+      "sha256": "1d44144b56f2dd0fdbcdbcfe20cec00ef71725a61284c092dad52fcbcf9fd6e3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/receptionists/little-lifeline-receptionists.blend",
+      "size": 5496865,
+      "sha256": "cfe16684702fd4cf3a653aa5ed9e30f446ac312558db3458a87264ba4fe8a23a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/characters/receptionists/little-lifeline-receptionists.png",
+      "size": 1652388,
+      "sha256": "d18d06f3655e024806e1f44e84098980c9ee1159b8b72f362e0b95843626180f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/BossOffice_Furniture.fbx",
+      "size": 929756,
+      "sha256": "ef3755e1bd4b5531eb8cde13de46d2276dda892900b761d4a0c746dc9da60abb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/NursingStation_1.fbx",
+      "size": 502332,
+      "sha256": "ef64cfc9b1770b5e99090199b829f3de4d581b0cb808308460f306c316f7e84d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/NursingStation_2.fbx",
+      "size": 501324,
+      "sha256": "3cc20cd8df7c383f798a37369a281f7c532392678b46ba4df9bd9c1b75fd68c9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/ReceptionDesk_TwoWorkstations.fbx",
+      "size": 618348,
+      "sha256": "62bccbb8ac8a6ccc29598a0735efbe9806af0882da457c6bf63a6971add0bbaa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/WaitingChair.fbx",
+      "size": 144188,
+      "sha256": "2c17eb16e401190b3ad3ddbd2dea697c573cc64e6dd0ffbb902f27bdaf3e87c9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-boss-office.blend",
+      "size": 3773781,
+      "sha256": "21284e02c790e9ca9606e08b5584574f22e14807c1e4793990d740626113b51a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-boss-office.png",
+      "size": 2211206,
+      "sha256": "dc3105a84b73d0285f250e054625733ee11f4c9cd6ee80a5e6e34867ee67aa19"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-nursing-stations.blend",
+      "size": 6317490,
+      "sha256": "893453f4310f7c5b05d0769531fe1e2a5004978024c464d549e98843997d8b94"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-nursing-stations.png",
+      "size": 1987150,
+      "sha256": "ae66786ae1f2c4276fa46dc54c01ef8b53ef79213c5ca5c0e293f843f65d357a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-reception-desk.blend",
+      "size": 1693358,
+      "sha256": "ca4dbb6e54268a5e46b83a24c8fe0ad257be8bf5fc5fb6af82fa8e070453e7b7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-reception-desk.png",
+      "size": 2149369,
+      "sha256": "5d565e083f3179e146352b5a03c5ccb93f83852cb2daedde266ba68b08c85345"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-waiting-area.blend",
+      "size": 902910,
+      "sha256": "078a43ff00a8d8c7d3b7e66afb67056fdb8ae0a63a37880da8512ff962285295"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/furniture/little-lifeline-waiting-area.png",
+      "size": 2363279,
+      "sha256": "cef2c28fa19cf263d31e54e4bbfc372acbbbaf234e7dee840445deef2380dc59"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/README.md",
+      "size": 3168,
+      "sha256": "8f4cfbad0c7bfa3679e61624d210b573a2d03e14698e7a2b9e4522cfda6b1356"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/AccessibleToilet.blend",
+      "size": 447691,
+      "sha256": "d387c9a63f653f4a050a125c5b9a1d16013359315ec99f1533fbb0e1d614821e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/AccessibleToilet.fbx",
+      "size": 98588,
+      "sha256": "9432eb52f61ea4dab162ff5e05031dadc21ae932e5009a370509c85376078a7f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/BabyChangingStation.blend",
+      "size": 282298,
+      "sha256": "5124dbe457c5c0746faa6451eba9cc0c3e25a612cb4b42587040be216e2c6aea"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/BabyChangingStation.fbx",
+      "size": 48860,
+      "sha256": "ff5b27c722e7af35559b11327cd0d08cd0011e5656599c87b56044b7ded9a77f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/EmergencyPullCord.blend",
+      "size": 261612,
+      "sha256": "6bb0a22b18cd6c8d3f6e9a07dfa5aff458a03825d007aa791367287f512d93ed"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/EmergencyPullCord.fbx",
+      "size": 49132,
+      "sha256": "dfba4b729463446aa2ef9db67d4550624b9109263f5d4208d263936bbd0e931e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/GardenBench.blend",
+      "size": 328511,
+      "sha256": "099fcc81aaae5288d3b17c1421452fbd909c5e8526842fc294e0c293a635b3c1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/GardenBench.fbx",
+      "size": 64956,
+      "sha256": "8681a96eef1193ada0e0e7c65319962d7c8d2a584c1ed8eaa4a82b89bc7c871e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/ParkingBarrier.blend",
+      "size": 506131,
+      "sha256": "84c5d6303578eef362f9f975fcf4608520989daa6f7a49a7b9001457fc2d301e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/ParkingBarrier.fbx",
+      "size": 103164,
+      "sha256": "90f8cd1deb637ef2eb2d01107adb9476fe99e8bf7527b8713d7b4561b83641bd"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/RecyclingStation.blend",
+      "size": 424102,
+      "sha256": "7ff7b37a4cbd90cf0a955208b68cbadb0067b6e87084f2be596b5e696f3c0f6f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/RecyclingStation.fbx",
+      "size": 79788,
+      "sha256": "407abb35deae3df9f4b95444d27ec943bb64b4c83991c3920fd6e9f896de2bb9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/VendingMachine.blend",
+      "size": 534841,
+      "sha256": "03ec171ca0bfa4d74d51f9b6f5367fb38db9522e5145d837610596dc9624f6b1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/VendingMachine.fbx",
+      "size": 111084,
+      "sha256": "12212c73290d894ad1799f90d6aaf5d6b37f37e3ab3207ab148120c638a4571a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/Washstand.blend",
+      "size": 541109,
+      "sha256": "5f0e5b9f5c8b63f49cbf3639195e97d2a71bc3e74c3e825ce05ddf180920895c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/amenities/Washstand.fbx",
+      "size": 109196,
+      "sha256": "c942faa87abebb564d27cc4197c04fc0acb0696f4ad88306b99bc5489b5ba73b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/catalog.json",
+      "size": 219397,
+      "sha256": "e1a4e70a13bb298fbd2501086fef76c389382e139182d29db753ae796b690986"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/AcousticPanel.blend",
+      "size": 898896,
+      "sha256": "c9b8c037c2483a45402fa1d8b23ce3fe5fe6251a5202a0cd44f8fef0de8f71c0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/AcousticPanel.fbx",
+      "size": 215180,
+      "sha256": "c8bfaf998a097abdc039642fda203eaaecec881f5f9db0e37af936b07b965034"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BookStack.blend",
+      "size": 609383,
+      "sha256": "33fb9fa8a0a56da72831f3706246d004565260ea216690dd7829d144ac845666"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BookStack.fbx",
+      "size": 149852,
+      "sha256": "c8566e9e253031500aca1a109f3b9ab9456836d414770c4e7d771e8f0cf1d838"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BorderRug.blend",
+      "size": 1004638,
+      "sha256": "b2eb92cfe2cba229e9b617d20bbe5a7e2d01ae8d8019a61529c6e5d54cb93cec"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BorderRug.fbx",
+      "size": 258572,
+      "sha256": "117c15e7bd7351b529c6d4b3477d679c3fa89288aa418b0326200f6dd165d255"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BotanicalPrint.blend",
+      "size": 1486558,
+      "sha256": "f6b57bc6b1ad7faf9bd5158ba728990716ab2682c4681ffff3e25a1909d0fc1d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/BotanicalPrint.fbx",
+      "size": 417580,
+      "sha256": "1ed6ff7b95dba5b2d59cf14e11c67bd9893fb48f437a4ef89a7c72c2e656f772"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/CareAward.blend",
+      "size": 633708,
+      "sha256": "e9a16955696d19bd13c808d1da6990492919e24d5d5909adc45a379efca4b9fb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/CareAward.fbx",
+      "size": 185980,
+      "sha256": "ffc40ce01a783b21c16edec365f2fecd2703d424354234638bb5fbc297d5991b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/Curtains.blend",
+      "size": 818074,
+      "sha256": "8e8b0f64727d66be80a4dec0822b4fce1a2466e3d0d56a80e8c50221f81176f9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/Curtains.fbx",
+      "size": 194972,
+      "sha256": "9323b260487051855cdffea0b9c86fac606a9c115b58e2ca357bf7a7342af9da"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DirectionSign.blend",
+      "size": 873088,
+      "sha256": "5596bd2d550cc96452d9e81e5826a76f9478510e3af2d427a5d28e950e425139"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DirectionSign.fbx",
+      "size": 224972,
+      "sha256": "8f44cc1d637fe0695a1c0318f489fba02ca06e6ff33f938291460f2628486aa6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DisplayShelf.blend",
+      "size": 968736,
+      "sha256": "0b9447e9ac336c11957d6ee963ee9be270c96e40bb7260345f065b1cc05d5455"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DisplayShelf.fbx",
+      "size": 282188,
+      "sha256": "0f8cac4ca0377f9492bfe4ed19fb128b8340883dac3c67eafdb31cc6eda46b43"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DonationBox.blend",
+      "size": 747508,
+      "sha256": "79ee3f117239bf0057c238cfdf177339d88ecff58c8ff83992c2b66cafab1b81"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/DonationBox.fbx",
+      "size": 212828,
+      "sha256": "6b811193f634b88da4a749242d7e9f44c9ef9255b7dc4085b0ce73aef84cfd79"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/FloorPlanter.blend",
+      "size": 1015256,
+      "sha256": "8e0b7f517003298bef6fb6b96ac8264279e6a37657325b92713e61f633d7a932"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/FloorPlanter.fbx",
+      "size": 297308,
+      "sha256": "31a6a080571fdc5aaec933ebf651872c406c52aa0d1cc66748c830a7563fcfad"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/FlowerVase.blend",
+      "size": 1154742,
+      "sha256": "4199df8848f35014107bed00f41bd242c4b07d25b05c56027379a2988d4c4193"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/FlowerVase.fbx",
+      "size": 322684,
+      "sha256": "7a68544c789527f52a24a6d99801f2c6c25ce4589f2784eac919e4ad5c926d2c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/HealthPoster.blend",
+      "size": 860198,
+      "sha256": "ae33520abf89b4b24f503e683d5fb2226f1664dab372fc22bcd1d1f3b4abafa8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/HealthPoster.fbx",
+      "size": 246028,
+      "sha256": "c82ddbc88d8a7806ca10b33298cbde00703ba8dc55682043377ea4dcffb972f2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/PendantLight.blend",
+      "size": 666522,
+      "sha256": "f6c765c28f7b38bef8ce2d4ecff10406a3e489b4ec02ba407d861955dec3fad0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/PendantLight.fbx",
+      "size": 150268,
+      "sha256": "5ed5d6519dd091a044cb1a7cdf0e2b36eb90ce3e0d59464859d5fb1c99dfeac5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/QueueFloorMarker.blend",
+      "size": 663736,
+      "sha256": "9a90a6561c70d1437181a90c2f8f347e559b904a8f341a1138de3491d4595fd7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/QueueFloorMarker.fbx",
+      "size": 151660,
+      "sha256": "56a108f6de3792da19517f87c4fff74ee8b68c62e4112398c2bd6924b685331b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/RoundMirror.blend",
+      "size": 527496,
+      "sha256": "2dc5977e92eb2382b3b6e69792f38e334bd16a5a7ff0a5283dea26019fc1f102"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/RoundMirror.fbx",
+      "size": 122236,
+      "sha256": "b7b16c7dc0fb01bdd8c5e39e665f4c2fcbfc72b95bb944d5bd8a8f778ad3a7e7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/SanitizerDispenser.blend",
+      "size": 670842,
+      "sha256": "df11131a3aa59bfb4b0a5bd40218f19023c59662d329116c92db4d9b1adf0638"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/SanitizerDispenser.fbx",
+      "size": 156172,
+      "sha256": "17ef4c05016d5f3f1be3e66adcec7fb33d6da5c8cd289f3731d637c25df1e7b0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/TableLamp.blend",
+      "size": 528040,
+      "sha256": "2ae78173718343c4002b767fee83a4287162155dbe5f3638ee57e1442856f8a2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/TableLamp.fbx",
+      "size": 122220,
+      "sha256": "86d8c91514701f116e21af8d91f6b91f7644c8b4269bb168af42bd40dcb17a8e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/Terrarium.blend",
+      "size": 592986,
+      "sha256": "f44a68266f4a36b17772f772c151054a1569cb391770305309f18f155d6b63d6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/Terrarium.fbx",
+      "size": 171804,
+      "sha256": "55921f23830cfd7a9847de4751616f6ef8eb6f090a93eb17ef75e121cd481b2c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/TissueBox.blend",
+      "size": 577850,
+      "sha256": "fb4f2c435af56e8c343ef627e19b8a971eed7aca9aceb09cd08ac9ff509a9de3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/TissueBox.fbx",
+      "size": 150668,
+      "sha256": "3b7b11843121a2357fac3ac279a706a0242daa988f04349801e146b3a6aabafc"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/WallClock.blend",
+      "size": 1763998,
+      "sha256": "d4e14a9f889ba604392cfea7d3b1eff0d91d0840b1e7e3650d6c482ef4c876a8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/WallClock.fbx",
+      "size": 508556,
+      "sha256": "3b0951dedbee71cec01114a1f21dcea2a2a686e814931884f603e9c7469cb1f3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/WallSconce.blend",
+      "size": 551720,
+      "sha256": "e08cca9cb035ba9010625a954c75d07eb6570566df2837c31feaa9778d04b543"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/decorations/WallSconce.fbx",
+      "size": 133948,
+      "sha256": "bbcf99a6dce217274c79083036fb4ab1231e679a09fcf214e30c8b04d5e77950"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear01.fbx",
+      "size": 336108,
+      "sha256": "404e886f22c1a63b225ce0821f36b84e10a8835f05ca40ba5028ba0fc595332d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear02.fbx",
+      "size": 411964,
+      "sha256": "644f555e86cdd0a9a03ee53c123fc184109cf50293d7cdd64a8899a635f342f2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear03.fbx",
+      "size": 462476,
+      "sha256": "75bfe1f5f23d130b67ec2a6e8e3adc0cea76cd8ba6ba2f5a993c2d85aa6b8c8b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear04.fbx",
+      "size": 316988,
+      "sha256": "89aab20f9ad5bdb83cee67726fda2cb555d71a137f833d07ba536051e5aa69e9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear05.fbx",
+      "size": 389916,
+      "sha256": "558d628e5050e8d800475fc409b15fc10dd2f6895803a71823ced83910d151b1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear06.fbx",
+      "size": 373452,
+      "sha256": "6ecf0a025acf0118db1c5e6d4521095606e683478316bd2c77a2a85657c965f9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear07.fbx",
+      "size": 446540,
+      "sha256": "b9f9459fc10b8b5899f8eddc86c7c713475f68a0c6673cd5507d7d2127d1b843"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear08.fbx",
+      "size": 371916,
+      "sha256": "e3104e0b27c5a491963a41d15d5076777a0a9d5e93989f19e705632f081dbf46"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear09.fbx",
+      "size": 360780,
+      "sha256": "d45daafc4a435452fa4d65b93ed062dd5d8a508e3403e993725cc03a2046d7a4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear10.fbx",
+      "size": 326140,
+      "sha256": "5a4309582cd3b048aa9bb7b2e07eb386dc38e302c5c9cff63c793d300b4bec45"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear11.fbx",
+      "size": 308828,
+      "sha256": "dab8076ef7d4a5b6cd99ca87ca3236026042468a6b4f7db49b534293af9f3559"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear12.fbx",
+      "size": 412700,
+      "sha256": "7b21942d7af2bd663ddf123b26170a95c426c0c2285b78255a382319ad2ee3f1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear13.fbx",
+      "size": 345804,
+      "sha256": "ec128bec6a68bf32a85d6ccc556b7d77f8931f840e8c619f7e27046bb316d86f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear14.fbx",
+      "size": 375740,
+      "sha256": "3182c46f1f1c5f569423264c8be42aff4a2b6f9aa8aa74b2b212cd0c0812db9d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear15.fbx",
+      "size": 454364,
+      "sha256": "24f341c104927fe0a33cae453607f41deea7a94c5b86d80e35103a4f5ff8f33e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear16.fbx",
+      "size": 228252,
+      "sha256": "2eb5c1d8ad6bf2cdb6073f1bda98177754f528aa4e7be74e0d62f550fd8d51b5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear17.fbx",
+      "size": 513996,
+      "sha256": "faa2d2ea0543076b08a245b54af04fc69b4333830eed48f0c5d70afc815f790b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear18.fbx",
+      "size": 581740,
+      "sha256": "6272efc4ed3f80792822884f4d0e38e09fdf423b46fd9ceae0cb073adf50304e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear19.fbx",
+      "size": 380428,
+      "sha256": "6bfbabc5de5440df0dc04ded16ef5c7d63b68c37c72aef13a48240b8a09f707b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Consultation/Gear20.fbx",
+      "size": 435164,
+      "sha256": "09708fdad893b303392d793dc4cc3ee4afcd66f533adbba81b933a45f09f2013"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear01.fbx",
+      "size": 338844,
+      "sha256": "f8e6952fcbeb593c69dfed2b6364d51b58e54361031d60caf74f11849e7d7cca"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear02.fbx",
+      "size": 367948,
+      "sha256": "0af8aae87c4b470b28a2da1af4e083487413b3fcc680429ff4b8435c9afcd8b0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear03.fbx",
+      "size": 255052,
+      "sha256": "4f8a09bbbf4b998fb0e47053f8c5bd2bbd9cf564237d3f11c69ca803492892cf"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear04.fbx",
+      "size": 326668,
+      "sha256": "60c22d55414dd1387c6e6520cdafa84a995b1ecfdc9794aff8ed85cdfc764f6c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear05.fbx",
+      "size": 337500,
+      "sha256": "37b78e83caeda8929564f98347d069554d40279595afb61509d12e4120a18bc3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear06.fbx",
+      "size": 318892,
+      "sha256": "22d8090c1c4882470ccde412dee3aa600777a55603b1b8319f1a66ffe72235c1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear07.fbx",
+      "size": 441580,
+      "sha256": "f41ad9c1af1819c26c6cddc3f7d92567a9ab921cd51e099b2e2fe002ae44fab5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear08.fbx",
+      "size": 343708,
+      "sha256": "b6033d4aaff60ce37e0a63e4923ebe01006e7e0ea7eb0148c97133b57bb9ef06"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear09.fbx",
+      "size": 388076,
+      "sha256": "38e7391159e58a26a9c7eb0b26b50f6191801bc728030da223240a0057bc67d3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear10.fbx",
+      "size": 406972,
+      "sha256": "b61cf4629e267a83640708f539b14ced1ee2a7542f8a6c05dc97836d7c7774e5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear11.fbx",
+      "size": 331852,
+      "sha256": "a80072a56b5d915ac19057bb4e9073bced93b84f784fe994757d284b28f3be93"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear12.fbx",
+      "size": 794476,
+      "sha256": "2112bf698fbf102f62c7cbb4ec9675ea0234afab7647650452aee42c9ee1a293"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear13.fbx",
+      "size": 448716,
+      "sha256": "5680a0f9c3822b4b7ed93e0f38cdae0fb9ef5de2426215b23734a22f2d878aef"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear14.fbx",
+      "size": 323372,
+      "sha256": "f83c9499102aa77b39a74cbbb53dcea07572a279970ac42658959d60c0cc9685"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear15.fbx",
+      "size": 377868,
+      "sha256": "a1b5112acbf93e3ad450506c6129b26c9daa8e160bc6350539e6df77b127f64e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear16.fbx",
+      "size": 442044,
+      "sha256": "2ab27104743aed0cbd9ddaf9166c67f4da6c12133bf3e37e1f769e949949adc3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear17.fbx",
+      "size": 436060,
+      "sha256": "65e0e949f9dd726798587dd2cbc27e7c7a73bafcfbb865a053fa3f2c34d03bd7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear18.fbx",
+      "size": 386668,
+      "sha256": "d578fe766fa17d9a04dea9e4a6aec28b32749b0ec46bab1e68ad194b0c18f764"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear19.fbx",
+      "size": 661228,
+      "sha256": "51f87d8e14c2dcc5ea53b9dbec3ad99f0dc321480b1b6683177b839954490645"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/FirstAid/Gear20.fbx",
+      "size": 474204,
+      "sha256": "a7603979ed4bb7ad8f5b9dac351bd5de74878f00430fd35347e0c4f9c61d3a6d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear01.fbx",
+      "size": 236156,
+      "sha256": "fe3c5707979702dd59a71c85d34260582a67cfac0d4e81bad0df50d515b6ab3c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear02.fbx",
+      "size": 161724,
+      "sha256": "e47799ed7d427c567a3e572f3dc31409dc1a42698a4663e4b0556c0a8856c198"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear03.fbx",
+      "size": 268348,
+      "sha256": "fcca1bf53cba372055d431dac75e7ac5c5383684a16657a3b9364ef8755a14c6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear04.fbx",
+      "size": 585164,
+      "sha256": "24d3b415bacaf7e2a4fb1b56ba5aef2f3922fd4d8fc448593344591a9de3a89b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear05.fbx",
+      "size": 252988,
+      "sha256": "6d7f9a128bb2fe0db4eda4a8de2bd2cbbde94c8f40d9df25d9e2cc45dccd1ba5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear06.fbx",
+      "size": 144892,
+      "sha256": "b5d9da664d812ddef621476324a267e71bdb4e6d077e3a41b8635c8b45bf4dcc"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear07.fbx",
+      "size": 161468,
+      "sha256": "2dca383f1d582f333aa9aaba18249594966719d1809358dd8cbb6e8a553fabd7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear08.fbx",
+      "size": 392492,
+      "sha256": "6debd7f8e3fd4fee9f4849d8b12a0188e53b9c9f67089deb508bddf5e2117fd7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear09.fbx",
+      "size": 905084,
+      "sha256": "d03158cffe0028733d7cb667fde76a10a84852a9175004ff51c4d872f0e9b216"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear10.fbx",
+      "size": 440588,
+      "sha256": "fd6e7ccfa2cb6827f730391376f4ee3836be7212f54c10268ba321f2c668e057"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear11.fbx",
+      "size": 281324,
+      "sha256": "dcdae204d166829a34f640279d73e208235cb57dacbee068b3d39e08bf8cb76b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear12.fbx",
+      "size": 274252,
+      "sha256": "2abed052477f750c91294857502de7eeb254406e16672c367122d12596de9abf"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear13.fbx",
+      "size": 647916,
+      "sha256": "8504b266b5ea973f99fbda16906fd654bc5562ce2dda1b853a6148c637f35cba"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear14.fbx",
+      "size": 163276,
+      "sha256": "c2e1c274b27c3f3dc176b325e014424ad5171be2927c20773fb10eed1f73dcd1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear15.fbx",
+      "size": 367676,
+      "sha256": "2a947b1ad13b911400ff11bef8fd0ca72f614d8a3318744a6bc2c7110643a87f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear16.fbx",
+      "size": 172188,
+      "sha256": "34e2642c4bd66fc4ba25a122a90ed1b20af7fa669d4a2a4c7ca202e393e987f5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear17.fbx",
+      "size": 212220,
+      "sha256": "39921144ce3512d1ec54db97959c66cabcd3ec1315c5313317eb23c54afc55b3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear18.fbx",
+      "size": 473852,
+      "sha256": "de5b59b3f107f4e34f268629607c9aea0bb86cc4bc560896c5a794ce74273928"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear19.fbx",
+      "size": 172780,
+      "sha256": "3e285ade5c2d6be7fa5240f596c600e90b3c44311fceb1f56d95f885417a440a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Office/Gear20.fbx",
+      "size": 170716,
+      "sha256": "70217e4b1a01d1d6a5ac12e91031d19b527d392ec1d89e3a4aafdbf8707dc3f4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear01.fbx",
+      "size": 391276,
+      "sha256": "c71ac02c77224afef7c7e34527ec352315be24222b70a7edb17bc537c7087af8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear02.fbx",
+      "size": 520108,
+      "sha256": "a3a05b1faa82a7137e650a3331f0abb10ac35868c00f5a1c22b5053766120712"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear03.fbx",
+      "size": 679404,
+      "sha256": "35027dbc1a8567eb175a300bb95f460410e0e18e7ea2c6106b6379f6040d507b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear04.fbx",
+      "size": 433356,
+      "sha256": "dd3f1fc0395fbbe3d9b02174c4e91bc50a7d8861af6bf54f8920fe4cf6c5f072"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear05.fbx",
+      "size": 374140,
+      "sha256": "1add4a047a05117bab5a2b563ab8ad1eddbf418e78054e65b6400ca98756427c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear06.fbx",
+      "size": 418284,
+      "sha256": "fdc46a26919d270a592f0ab241fdcad0e9f3f8439ab339d4a8c5e5f6a3a40fc2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear07.fbx",
+      "size": 350252,
+      "sha256": "cc8f71f388fe2e397930ca7d7f2c9adcb847826b1eaf726a649700e40a9a767c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear08.fbx",
+      "size": 256940,
+      "sha256": "a6eb382c293a09365dfa15d34a75caf3dbfc4b14c68a32c7e0bf138580faf521"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear09.fbx",
+      "size": 329932,
+      "sha256": "0c32b10c836b2c6d509f23bcafb1ae6f0f524fd1554c16a99c25c31e273cbee0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear10.fbx",
+      "size": 570508,
+      "sha256": "e4c535b3f4940738d1c979b6527c2d9161540883178f537b8678e118e73da169"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear11.fbx",
+      "size": 524220,
+      "sha256": "994222e19bc539a673aa08a6e977f4a0346ed2fdc55fb75fe46f513956bde8af"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear12.fbx",
+      "size": 463596,
+      "sha256": "f05622c38aff2d98543c908af26108787fe6e7b03055abda0d3a986df5b91333"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear13.fbx",
+      "size": 534284,
+      "sha256": "bd1c37fdee86dc0c6d0a94f97305866e291268161c532128b88375051ddf5401"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear14.fbx",
+      "size": 325036,
+      "sha256": "bbf38cca3309880543bfbdd8199672d09b80e9b0ac55206c44d6a340ab583bb0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear15.fbx",
+      "size": 394444,
+      "sha256": "5ad40c5e89d57d5e7e1a28ed6c630eaf65a2d2198dc844a58d3bf1277dacedb4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear16.fbx",
+      "size": 447980,
+      "sha256": "6f177f54fe4b897b60f8050224f7eae95f881f68796c307bbbab17edac9d063e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear17.fbx",
+      "size": 411468,
+      "sha256": "3f4ba6148b182e766fb23f07080fa206b32038d38f1b92494e67f12fbb0ddec9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear18.fbx",
+      "size": 682700,
+      "sha256": "2672e2adf48585438c43f957dda5cf4dddf839b2c1d7743231d60700ef593ceb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear19.fbx",
+      "size": 454428,
+      "sha256": "5fbb01402939d9aab77919f4a7cd728625ceaca91ca80d3552fd61fcbdec5c4c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Pharmacy/Gear20.fbx",
+      "size": 599756,
+      "sha256": "ae72f55d4ad56562424e6be18ce098cdc03c09604a45a1ce5bac565fce55a5ef"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear01.fbx",
+      "size": 294300,
+      "sha256": "388e94f0ed77f99b4d245eda861f8a1540c26440c2ba37a4e59c0434722325b3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear02.fbx",
+      "size": 274316,
+      "sha256": "16f303e6e1e7f7227ca658f80a95a28ea8ad2539e4c9fa496d72a93e46364605"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear03.fbx",
+      "size": 281452,
+      "sha256": "f1b66d55414e55ebd91b7c4927ca6e5d01a3f9a3be1394815ea472a8149389c1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear04.fbx",
+      "size": 584972,
+      "sha256": "9c025e1e43f20b97dcb7d52e54e89958f9a839759883f819bf5d9c6255b7d3db"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear05.fbx",
+      "size": 266764,
+      "sha256": "418549d29bda80fba4a977d9e7b1f5068a2de1954d58da1b31fd52252919be54"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear06.fbx",
+      "size": 307244,
+      "sha256": "569ee058ae4ee6f074190ebf53f0638297440118174c416add09c07c25a80026"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear07.fbx",
+      "size": 557964,
+      "sha256": "679e5b794459ab7e9f128a55c40c8d5d318c79af298aaf1a39fc7b088c3d886c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear08.fbx",
+      "size": 199004,
+      "sha256": "332d26a6c3a1a0b1a166b9f43410d1faae9b75c36d2ba0acdffab9f251c8a2ad"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear09.fbx",
+      "size": 519052,
+      "sha256": "13e53011e7319e11aa449e1682ab226a5eff6cc5cdad5536a86b84b912dc9520"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear10.fbx",
+      "size": 305244,
+      "sha256": "7a21012246e44f85d6f21c33411874a2bf1b6df0e7ed3895f0a849ca43bdae02"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear11.fbx",
+      "size": 422876,
+      "sha256": "a0db8df7ec32964e105e4ddabadb8b30bc837a0c7f0334a390b553721fe5a3c0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear12.fbx",
+      "size": 164956,
+      "sha256": "5dc9815bbf193a0698ee599cb6ac9f51dcb364697a6f4a06f5dba37204626811"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear13.fbx",
+      "size": 238700,
+      "sha256": "f61ea699ef7234816ca4aab4db604361644bd6b062f64618a5e029299b81d382"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear14.fbx",
+      "size": 278332,
+      "sha256": "a816f9e3bd339bee5345b006902f470608fbae6feb31d4976c7beae9e6d95d11"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear15.fbx",
+      "size": 648012,
+      "sha256": "e19b18f653684979337bf00c1444b99c1f10c0cf2938fa3586c7ceeec8b4c515"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear16.fbx",
+      "size": 139020,
+      "sha256": "9eadefaeb8e696a67eea889b1244a07a583f153d42ad92f7554567f2bf5f8c63"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear17.fbx",
+      "size": 440668,
+      "sha256": "d121917e985c5c24cc7c2dae994a614f987faf33fb5be22ce947c9f93e7fe2c2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear18.fbx",
+      "size": 277308,
+      "sha256": "c169cdd77f0954672ea6703ce14bf13e1e20120c1e7db4959e5af74d8df7a2ed"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear19.fbx",
+      "size": 394684,
+      "sha256": "38ea835eff3901293db2f50d6e4083637844286857675c9d7d65d4c6f98301c0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Reception/Gear20.fbx",
+      "size": 207964,
+      "sha256": "9e388a65868cbf747104f9dab63e6a47c93dca1d276856c7da626012d9c63734"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear01.fbx",
+      "size": 252524,
+      "sha256": "1678f932288bace3a168e8ce826ad2e8e75fbac0039025c0aa9c1f81c9707508"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear02.fbx",
+      "size": 148684,
+      "sha256": "cf6cd465227b753d99e6b99e3c9defac279e9ea6c3858775f664a22ebd5b58e0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear03.fbx",
+      "size": 195452,
+      "sha256": "7f0793111d297c199a3ef61fd71a2a4ac3ddb4a068a84e6c970e453680ada35c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear04.fbx",
+      "size": 139532,
+      "sha256": "ca911ddbb4758a37d5bb7fe4ed445aa2399a139597fec62dbe3e93a1db91efa3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear05.fbx",
+      "size": 221580,
+      "sha256": "92fd23fa472406fe7f3d24d0719f1a5224a978e50935e8fbf5c80df89b93f05d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear06.fbx",
+      "size": 164460,
+      "sha256": "160e7e843438cdb0eb3846cfe5594003bfb3d7f98cbc46372579bf9b5fec68e0"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear07.fbx",
+      "size": 220828,
+      "sha256": "5450f65e0ff70af87321437b8e6421ad38a216490dae595070cb125dbd4b3721"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear08.fbx",
+      "size": 338332,
+      "sha256": "b12429d3897be32c365d038d113eaa753f3962cbe82df07c9ba78c4854a74804"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear09.fbx",
+      "size": 175356,
+      "sha256": "021c487642446ec9d8b31fcce21196c72e9ca834465c321ca44be44b2bdc186b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear10.fbx",
+      "size": 231724,
+      "sha256": "c3dc0b42679ece819d215c74a543332602019f5bff7f3887ee74f7f42f462efe"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear11.fbx",
+      "size": 219100,
+      "sha256": "14be511f7b5ee61a7dda365f0e898bc8cd02258907be722b1b601b80a99c1870"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear12.fbx",
+      "size": 183292,
+      "sha256": "e1f3adb0d91642d2c996da67e9eed5081d239bbdb6b7b3b2b45f085249ccfb8e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear13.fbx",
+      "size": 274156,
+      "sha256": "5f005e67b34dafefa435817e665091a036f7b9cec8dc9dc81d386f99d547547a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear14.fbx",
+      "size": 647996,
+      "sha256": "74ad381d0f095eee7df5dd03399883592248ea007555fca62e4e005c42029720"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear15.fbx",
+      "size": 172188,
+      "sha256": "220c42edab15e5463aa1abe7a1d0464b4d4c455ccd8f1efb53a79d8fc14f1fac"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear16.fbx",
+      "size": 384444,
+      "sha256": "b60a797ae3aae23d17a70a62b0fa15dcd67e6650245b967e2b9a10a2bfb789b6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear17.fbx",
+      "size": 269068,
+      "sha256": "71f8a7fac127f1aa42e41878742d71ce9358f1b7e85aeb537eae01b98877de44"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear18.fbx",
+      "size": 163292,
+      "sha256": "1217dac7ca204e379399ea05c3f9f9ece818a4f034dc86365f8b2db1d1b62330"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear19.fbx",
+      "size": 214460,
+      "sha256": "ffede2ca7d52e2445a9af3c084da3c2e98e27f53031fd1a69f81731cb69b7676"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/StaffRoom/Gear20.fbx",
+      "size": 224876,
+      "sha256": "8f1e1bd95338b22abac29d936f3f83de25b58d3acc2c515bceef5209f1e58480"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear01.fbx",
+      "size": 192092,
+      "sha256": "871369bb4a83b6f85d5d4b6bd102006a943b2f9ce175e573d43eab41abe1dfe6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear02.fbx",
+      "size": 242188,
+      "sha256": "ed3316cb126a1d5f8a75d8a93ecd472bee9cdcbf9c617902d22588870a737ed5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear03.fbx",
+      "size": 203068,
+      "sha256": "a0b348096e03e3a509f666a736b596ed8678f1617acb343ad62ab80ac42b9c24"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear04.fbx",
+      "size": 257500,
+      "sha256": "b77b7ece820c4d1aa7479547ceda6c35d5917b9cec4c50709667d0267462925a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear05.fbx",
+      "size": 290876,
+      "sha256": "b7b24bffa3c52628293b20d685e106155df8d5da9e32e0163cafa6a41fd35663"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear06.fbx",
+      "size": 383372,
+      "sha256": "5d271336a4ed739746df5bf78b1be11cfbc803c4135afbca172bb9e7d2979da4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear07.fbx",
+      "size": 243676,
+      "sha256": "6e0929a8f856fff4e313726a741f489a1b5a2f434260ff7df1d9d0bc45f81b92"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear08.fbx",
+      "size": 173932,
+      "sha256": "82f0ac2a6ecc4ab30543611d243070a1671c330489d34e0fb130ef171591c9fd"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear09.fbx",
+      "size": 391388,
+      "sha256": "fdcc191834bc1b45baf2a8a64c39ced09f476b4741d7e4a45e5332b3ba1b0c63"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear10.fbx",
+      "size": 279068,
+      "sha256": "90f5b0dd305012ca4c7bdf4be919d6e040b35d93cdf49a4cfb9aa62e11c1cff9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear11.fbx",
+      "size": 639228,
+      "sha256": "81fe3dccc9444d4b2f067caddc4263b3244674021d707964cafe088299e072bc"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear12.fbx",
+      "size": 219676,
+      "sha256": "811e4d98956ffa86dac7f97526e252c207f4736bf77facae502506d238347735"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear13.fbx",
+      "size": 266044,
+      "sha256": "2f897eacb5c4b2212e0170071f4e35691ffbd02a32394464d544e3d64894304c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear14.fbx",
+      "size": 491100,
+      "sha256": "d2d237a91933e4df27e6648b6e12272cbe00c37c9b7de682e5ed3efe6cee9839"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear15.fbx",
+      "size": 196460,
+      "sha256": "c0cb8228b45be31e75a848a699568da4f6a951a2203db1b9420be1d31e6ae0de"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear16.fbx",
+      "size": 163964,
+      "sha256": "6eedc06af6110c65eecd6d807bcbc8bd8aa386ca7043f46ae1175ea89f2af3fd"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear17.fbx",
+      "size": 617452,
+      "sha256": "66c59b4dd177e0795820b88c10001de6c1c71c2905ba373f29fbe4849b0c6e73"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear18.fbx",
+      "size": 247436,
+      "sha256": "f117e1c1f630677946a7653d7997a2be4f00a3079af91fe910f7396ab7f62e84"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear19.fbx",
+      "size": 250028,
+      "sha256": "4aea0b9fd3f840d56d2dda65f8b49b53b65b764a7e6030dd9e47cc701e3fe2c3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Store/Gear20.fbx",
+      "size": 292908,
+      "sha256": "849a0029061cf3a751529c0da091691a71542ebe50bcd877738161c11c487daa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear01.fbx",
+      "size": 506604,
+      "sha256": "359f89fcebe29b1295aae31f9343797487ff83bfb43ae040f2eecd771c6cc192"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear02.fbx",
+      "size": 398092,
+      "sha256": "677c15268c17019533dadcba67e70e928ec330f10e16bcde1873de052c09a218"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear03.fbx",
+      "size": 227420,
+      "sha256": "339cdf6914653c852f9a714a4c9467ce10122f5df60f99c2b97f6e89bddf17d4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear04.fbx",
+      "size": 448860,
+      "sha256": "04ae919a067553344ab91c49baac1b1679253363e6dc180cac4108dfc96f5208"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear05.fbx",
+      "size": 201996,
+      "sha256": "a0d8a358cb849d3778c02aed309e36c4649c1e4cb4450a1e2105129fbbccc681"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear06.fbx",
+      "size": 319708,
+      "sha256": "a96fbb5eae0cddc756b36c255d39ff9ecf9239ce265d90e64a96a918f9a0611b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear07.fbx",
+      "size": 385564,
+      "sha256": "af54c6fa9409ac4846910beee7c8d043d5e926cac3f1ef8232047c6b7c9ca9fb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear08.fbx",
+      "size": 352492,
+      "sha256": "26fcfc54eed5318762b3c5770d7867dbfb59b2ff88fe34077aa3ef53ab7ab69c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear09.fbx",
+      "size": 345324,
+      "sha256": "be25bf8c0664508819c66a31c0d35ede0b263d8a89f1cea6ac92a155b8de8bf8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear10.fbx",
+      "size": 419420,
+      "sha256": "04c50b0a786777e28b891f546a5c66deeb091b3a39b077c4a48e82017f887614"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear11.fbx",
+      "size": 604844,
+      "sha256": "7f2326c9a1254e2404ca139e218eaba541951363bcadfbd92a57b2a8ac4b21a4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear12.fbx",
+      "size": 445932,
+      "sha256": "8a2d7857db20491f45ff742ead6f3588c76881670a6d32f063543a602c9f9b72"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear13.fbx",
+      "size": 399836,
+      "sha256": "df592e1e63624fefaf372535c54079c030b7c66ddab68599baed7cba91a62b63"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear14.fbx",
+      "size": 345548,
+      "sha256": "41fbf3cd74d8f08afeb692b2f794a461827b724c1c1a524be8a20f3316d0e3a3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear15.fbx",
+      "size": 444604,
+      "sha256": "29aad064f5c4e13b96b5d996f5d115fcb6e8227bd3f30fb8700978a6f2a67aa6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear16.fbx",
+      "size": 333468,
+      "sha256": "8284cc103f30e10e7a3dd0775467ddb285b22e7765f4725f672cf1867ac1c182"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear17.fbx",
+      "size": 871132,
+      "sha256": "5acc7188836fefb9bf7a911353b5f2c0373e7a304f855f8fb277532d01953e73"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear18.fbx",
+      "size": 260924,
+      "sha256": "b927f7b238bac06be93832ad53b6e56b98e30f06df32cad5e144f1f630e7324c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear19.fbx",
+      "size": 314956,
+      "sha256": "ab1087463e4fba73bdfe5d35812e84c1b3029e64e07d7132288c76d44c72ec31"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/equipment/Waiting/Gear20.fbx",
+      "size": 444732,
+      "sha256": "9ba6525bf99a84bdaded2ca9107c5b8f055f0d0e2d86cdc62e514b78714fb669"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Amenities.blend",
+      "size": 1294559,
+      "sha256": "dfe99967c1fcb550aaa56ebe08fdc95189f11de79f0c6a81fb2700e66f7cfef6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Amenities.blend1",
+      "size": 1294127,
+      "sha256": "3ca754ee26fc0d9423ac5b35810f6b1f6e5ade76bc8e95d55cb460a182723c94"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Amenities.png",
+      "size": 3268020,
+      "sha256": "46a84d765b899b1318e479c2ebb841dfcf036aede6bc229bb0f1370604d07581"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Consultation-equipment.blend",
+      "size": 4332191,
+      "sha256": "6d98f31ae079b5c806afcb6d645385257c4b7c5a786307c958b583120b8d5020"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Consultation-equipment.blend1",
+      "size": 4331759,
+      "sha256": "7c92830e8ccec68f32ecc90a7e87de802536b6acbe348eac1bc3cec91848aab3"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Consultation-equipment.png",
+      "size": 3483739,
+      "sha256": "1b4e6a5500c83301e491e230cc508fe0cc90b6ca1b6e8968be4dfa4bfbdcbec4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Decorations.blend",
+      "size": 1898656,
+      "sha256": "f11ffcb973454c99e10a183e13a11f0ca94e1c3673ed28a896faf17ab0274515"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Decorations.blend1",
+      "size": 1898224,
+      "sha256": "9c236b68913b2c5b3b92cfaaff8194c5bf4c004b23ff5f7711b6351b72df713a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Decorations.png",
+      "size": 4058404,
+      "sha256": "aefa77868d5b9d7e5f29ee4645a27494eca945f0fd2010f136fe1631a1aaff26"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Finishes.png",
+      "size": 2435934,
+      "sha256": "8f102f6500f3dd7ea911f67aeb6c0ccb992fa4e4e55e4436f66ed058cb48130f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/FirstAid-equipment.blend",
+      "size": 4619644,
+      "sha256": "077d4881af8db5a116e6d99ffec348974b14c50f236a7949d1f329fe10f198d8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/FirstAid-equipment.blend1",
+      "size": 4619212,
+      "sha256": "5b169bfabd8b08f5da5c29d144e03d81e5de6b71bbc949b1e5cc623be18b08f9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/FirstAid-equipment.png",
+      "size": 3484524,
+      "sha256": "833c4c1f4cc478d932e701d086bd93e519145d9369c810a3aa5d165a3470a46a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Office-equipment.blend",
+      "size": 4062439,
+      "sha256": "3a611a5fe932425a05bd48af9bbcef54c09853436df1c7c7e3caa67c0d6d26d7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Office-equipment.blend1",
+      "size": 4085255,
+      "sha256": "05686a250f3ad4eac4caae10495f1d201d1adefcdea18c60c78462bc05bc10d6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Office-equipment.png",
+      "size": 3453324,
+      "sha256": "2c2f35a7e0ecdd3101855f4ec620cd2d23fe05230df04eb7bcfd434ca16c6db1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Pharmacy-equipment.blend",
+      "size": 5098630,
+      "sha256": "5b56a54b2259adf698d1f928122b8b79fc758f715f2b6b47412ef90a65561760"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Pharmacy-equipment.blend1",
+      "size": 5098198,
+      "sha256": "e42f63ec7efd32150d588f6a31ad13cf46c1d6ecc42ffee79bfe718980cf55ba"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Pharmacy-equipment.png",
+      "size": 3505624,
+      "sha256": "2f31a8a1454f4aa881c61a92f8e5c20d0b485c7b02e258fa12c1f8a247b89bf5"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Reception-equipment.blend",
+      "size": 4448402,
+      "sha256": "55defd214d2c72fb4967a8dcb95ab2f334b5059988e7bca7f93f3188ef9abc82"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Reception-equipment.blend1",
+      "size": 4447970,
+      "sha256": "5fb2918743a848b2871058368931b123feb573ba88b60e92c0a91ac78d1c55aa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Reception-equipment.png",
+      "size": 3468952,
+      "sha256": "378e0646191ac09e1c7109ed7e22e87bb15d4237c10273a65fc8b2a6b4250ca8"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/StaffRoom-equipment.blend",
+      "size": 3211056,
+      "sha256": "3da8969eac0ded551a3c96d15a7b7f74e55db28d2e91ed901b1830956b680d04"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/StaffRoom-equipment.blend1",
+      "size": 3233872,
+      "sha256": "f5c16742be1416c40f90e49b23ac78dec69f7a59f293bc6ca6de2702aaf84b4b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/StaffRoom-equipment.png",
+      "size": 3465648,
+      "sha256": "4fe8f586f49ec54aeed42003d0d9f1d5fda418d6280d75d6e4890b564d4df94f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Store-equipment.blend",
+      "size": 3780360,
+      "sha256": "1a1d3f85921b95804c9647fc24fc853739a91fbe083449cb7419c11be49f5ff9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Store-equipment.blend1",
+      "size": 3803176,
+      "sha256": "17c34ceaf09674d26c0b833f1c2b2ea80738951fb939e570654b8c6cc781c4fe"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Store-equipment.png",
+      "size": 3471462,
+      "sha256": "adc8ca693c715e38594c47862088fcc13c04c9f46215e92e2e3f9d12d754528b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Themes.blend",
+      "size": 11808918,
+      "sha256": "e3e7cad034664d3771ea8645b4a9f17dad2e43d637df7f329e1a4ef0c331bb60"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Themes.blend1",
+      "size": 11808486,
+      "sha256": "654531a9229105722b6f1d04192389a6c06d0364d450550a92fe7c03be022f15"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Themes.png",
+      "size": 4441022,
+      "sha256": "b3fd8486933b818de4ea63d90538175b6ce050acfc707a5b2907b7e4bbd4be14"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Waiting-equipment.blend",
+      "size": 4528099,
+      "sha256": "7a3d4420bcaefa663453bae147c218af9f4ec96784d1871b999409744e32c621"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Waiting-equipment.blend1",
+      "size": 4527667,
+      "sha256": "2e036fdd4f16ec21ba98827f926d0aea33c164be3f6c8ca3355f42ca305f3a40"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/previews/Waiting-equipment.png",
+      "size": 3490437,
+      "sha256": "eae8b3a9bff0bc96cd2bc54a5c8b68ce019dd2950e529ad32909e07becc31dee"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern00.blend",
+      "size": 222531,
+      "sha256": "7a0b603af8954eabf841a605e399467fedc015fc53617d3d8df65f4ac5d9db7b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern00.fbx",
+      "size": 44204,
+      "sha256": "5fb709b3638aa6846e2d75a47f25d024f10b3286cc4abde34316d3ea4f73302b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern01.blend",
+      "size": 234077,
+      "sha256": "ab5f967b80652f269d850940a9b0999bf672168c96ee4cb8203f0ae481d7433d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern01.fbx",
+      "size": 52540,
+      "sha256": "b8e58a1a2b644850f4c34f5436f4ee64c38e5a6a6769878ac7de7529e34cf902"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern02.blend",
+      "size": 326445,
+      "sha256": "f74adc24380a3716ba4bd9a37be6a45a6f233c0e2e74f0063179be48ff793bea"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern02.fbx",
+      "size": 121964,
+      "sha256": "8f42e3b604e3c1b4c7b6c2f3b98a9b382306a9e1b570e72355dc0fbc4be7c90b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern03.blend",
+      "size": 268715,
+      "sha256": "cf19f96d89572ee69efe5916b15dce957104cd90947e3fdf471b61ae0406715d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern03.fbx",
+      "size": 80636,
+      "sha256": "8cf487729d6e1cfe049fa1db0eadedd402016e3e866f48d092a24c3929a2efe7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern04.blend",
+      "size": 240182,
+      "sha256": "ce20332991b54f4b4d70b3c8798a3a3921b635eb6d04ed2ef49d577c6809137e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern04.fbx",
+      "size": 41644,
+      "sha256": "80de5d2300d81f436fd16377d3ebf9a441b3fd02479b20efeaa7338cd76b6448"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern05.blend",
+      "size": 499967,
+      "sha256": "dd3446f73fd5c2ff8bec60ccdac69bfff8647974cc214e314813904d2f4af7ff"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern05.fbx",
+      "size": 234108,
+      "sha256": "e4bad72ef0ce37392c73de14bf9623664ffa498c7f691978df7ef66a36d8fdbc"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern06.blend",
+      "size": 205212,
+      "sha256": "308dd7b1616d163aa0cd112669cae1882dcc8b679a01842e4ad5e79965392ecd"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/FloorPattern06.fbx",
+      "size": 31436,
+      "sha256": "451cb8bb27268ff8d948f7922c7f165c21b39d4b43ee85f17ea237126b156d1d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme01.blend",
+      "size": 473771,
+      "sha256": "af4c4134e603fa93714332e890bb7658a9eae79fe4159396840a6525a7d0bc11"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme01.fbx",
+      "size": 114844,
+      "sha256": "06d453b04b56ad64c612b547a24bfed0ddf5adfe91fe59ddcc9839a2c327077f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme02.blend",
+      "size": 520287,
+      "sha256": "dc13df0861d454a1c3f936c4973d67f3d87381bd60924f13d25cd77429691703"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme02.fbx",
+      "size": 132844,
+      "sha256": "8dcafc626c182aed4fa8d62f8bba4a7990c32ebae4ed2b7b51c4c0bd3d58a0ed"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme03.blend",
+      "size": 647291,
+      "sha256": "706d60ba4badbfe0f3215b337d67bba5b329139f1d59395712e3d5a8cade2840"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme03.fbx",
+      "size": 227580,
+      "sha256": "f03e701b36d13de9debc10ad19a6fe87d024260fcf973f2143ac28b911264dc2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme04.blend",
+      "size": 624197,
+      "sha256": "0e27e7b1469e57a43588d219548080459cb00bfbb60000cb0cf15a7bd55206b4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme04.fbx",
+      "size": 211068,
+      "sha256": "883e63270546d388394e158a8be9e4e3eeea02a97943facc35b3a8c248215c71"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme05.blend",
+      "size": 578014,
+      "sha256": "a88fde91facac00132709430e3eb1dc11bb2be4a94ecb9872c7cf4e368e68625"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme05.fbx",
+      "size": 176924,
+      "sha256": "c3c27aca2887a19d9bfb71c06ab433351817b4b9697e2edd9ca96b8125295603"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme06.blend",
+      "size": 727777,
+      "sha256": "8272730829f14a42b7bbbf55da9f7738f5bec595e098d85fe6d16234665b2c21"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme06.fbx",
+      "size": 303628,
+      "sha256": "487e2f431a21ae2e62fa7c058b432ecd6f7648e74c696d377a1c56eecd539fe6"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme07.blend",
+      "size": 491415,
+      "sha256": "45b6f5bc39231307c0399be6b8044cfcd54a9623356f4dc7cd3b73f2bfbc1957"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme07.fbx",
+      "size": 111692,
+      "sha256": "62c643882cb4e2deaae5ed26ebd5ed74bbb0db4f682e84c15a2b9808f4a21cee"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme08.blend",
+      "size": 543372,
+      "sha256": "0f1ce8cec207612f5c88b67ccedf06b4c645cbe5b87e16ea2786906ec0b4f39c"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme08.fbx",
+      "size": 149836,
+      "sha256": "668671825dd2192b702c21aba662a947a3bef7001c3ed17c8322d00daf939423"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme09.blend",
+      "size": 589560,
+      "sha256": "8618696bc2dcc7192b2ccb0746466c1a25fd45bf398a9669054342250782a980"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme09.fbx",
+      "size": 182988,
+      "sha256": "e77f550615cc7326dd3355d23e9a00ec3f3a6600d759fc317a2b1786fc57955f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme10.blend",
+      "size": 687701,
+      "sha256": "849df69410bd41354aac84336f6c0a70b247e573fe2d8eed89b673530a0fbf9f"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme10.fbx",
+      "size": 258284,
+      "sha256": "e90bbba7ec97b69e46d1a6e4c85c97ccf0643318d78e7d6f6073694f5333f930"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme11.blend",
+      "size": 519956,
+      "sha256": "e0b9578d736cdda5befa3dcd5d997e8abe69fbfeeb6bd8b8b28b7d6b20917d13"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme11.fbx",
+      "size": 151356,
+      "sha256": "2e3a9c10e42c67c17aa3457dc6650aa35f80bf392148e031e42e33eb893a7ebf"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme12.blend",
+      "size": 502971,
+      "sha256": "a337a8e6261d3556ce7aa7842811386c27cdd37c3458d182c6191ef64bbec271"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme12.fbx",
+      "size": 120940,
+      "sha256": "48909f1513a8181af56fe7efae0f0c1295c4652df604ad4137db119e97396947"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme13.blend",
+      "size": 797384,
+      "sha256": "ccec091f33ec8e3bf3095920817b093953c6e76de1d605092b29a12673a286a7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme13.fbx",
+      "size": 338636,
+      "sha256": "4e09db8b8bb1fb8c04f94a6a8cb6c5bc6684f47f8c2a2ee02ba06bc1c1629426"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme14.blend",
+      "size": 560694,
+      "sha256": "9a2e4012ded0a5b51fcdf16f34aba4fd33e1678193b5aed0d31398420da95f8e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme14.fbx",
+      "size": 161820,
+      "sha256": "742a436d8b5c3978f9027ddf4e12e2f2bb974b3d76b654bf07febff577548451"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme15.blend",
+      "size": 583792,
+      "sha256": "007685e83e1fd063ef1f30e3290fc1f86dcdac2508a48f315c08cf63c3305fe9"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme15.fbx",
+      "size": 180572,
+      "sha256": "42ac251fb684d06c5090519519a3bd0a570966da3685dd679f1854679966d0aa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme16.blend",
+      "size": 485320,
+      "sha256": "c566436e3496059a983988d7799ab66013a394dc0210a82666717305bb26da4a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme16.fbx",
+      "size": 123244,
+      "sha256": "0bc0ee651bf5222d227df91f89443c913714d4c26cae1c18bbd3863ee1ca13af"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme17.blend",
+      "size": 612647,
+      "sha256": "637493a7e8ea35ec13878485818574c15297be3085c5fa9705b81f63fcdb6fec"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme17.fbx",
+      "size": 202204,
+      "sha256": "e11a02f0feed878855007376411c5335059eb03bbbced2259e3636156fa5a43b"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme18.blend",
+      "size": 589557,
+      "sha256": "b7535082cc6f168dea8e3d33c88b31f9ebc4d48646636b1b1e4f6e0d3e744d9d"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme18.fbx",
+      "size": 186268,
+      "sha256": "613526d3576810715ab290d722a7aa9046ff68da3d3107af7ab1a12a30b58450"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme19.blend",
+      "size": 572246,
+      "sha256": "cda719dc2308bc03f415f9c4b05dab250288c16600567c36d09ab89041643878"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/Theme19.fbx",
+      "size": 171020,
+      "sha256": "81edb391553817ea50ebbd9eb061c51c05c11c7dc2f329dfbe378584ec4cbba7"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish00.blend",
+      "size": 199439,
+      "sha256": "06e0fbf98ba1239feed1f0e22dfb46ce0d284f3dcf1964e6acbb97f7887c1768"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish00.fbx",
+      "size": 27468,
+      "sha256": "61878f5f53a023680340d6dd2aab4aba1c00388975713d9a22fa570d6dc2f59a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish01.blend",
+      "size": 234409,
+      "sha256": "9d0e6cda228d877d64ebddd0bb435ba02692c5b09217ba78abdef19bd4098ffa"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish01.fbx",
+      "size": 37100,
+      "sha256": "4cf2e2984304d68d96c75f15fb0e3465df614e893e6c91aae74bd77868ee9fdb"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish02.blend",
+      "size": 269047,
+      "sha256": "804b8cb3d5982049e820df9d9145ccba16f5385b55fb1c35ff7a7c500f5c176a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish02.fbx",
+      "size": 62444,
+      "sha256": "741e1c8e3076deba0cba6a771eeb019882098b892dc922aa73652ef1822295b2"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish03.blend",
+      "size": 327109,
+      "sha256": "f832711724e9d138d87822e47be5b5f122e7d94874b60c31044dca916b55a81a"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish03.fbx",
+      "size": 88300,
+      "sha256": "a7067c06ae9ffdfac665d4e6f06eb900f86725328f0971eefb9dfc0900684b1e"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish04.blend",
+      "size": 309458,
+      "sha256": "5e91ea84185d178fcd15bbd2e839a0f97b7cd44f854b16b8a545f6ce574887f1"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/WallFinish04.fbx",
+      "size": 93132,
+      "sha256": "2f45900703090583c12ec2d923c8b5a46d3664ecad10c02064582ecd34c249ec"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/game-library/themes/palettes.json",
+      "size": 8615,
+      "sha256": "b3cb6f4382fd0924bdf4536bccb5125364a3406de17bda2727ab99298f4ca002"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/little-lifeline-clinic-building.blend",
+      "size": 1269511,
+      "sha256": "cdb5f2f785799e5eb6558e1fb5367c0d1f9b85637baa07f7df8919fe781d86dd"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/little-lifeline-clinic-building.png",
+      "size": 1974353,
+      "sha256": "29138c9e3efbe3fa05de0797c0a0fb1fad06756e3ebf4a692a54ab0bccaa3887"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/little-lifeline-clinic-exterior.blend",
+      "size": 38355277,
+      "sha256": "287c2120ff2c8ee69f89c271b32ea07018cfe017b031bc40ec5564ca158caa60"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/little-lifeline-clinic-exterior.blend1",
+      "size": 34786132,
+      "sha256": "ec9e20f9a9021a8b26d38821c004b6017d8451710b6e138c2628331b762205f4"
+    },
+    {
+      "status": "??",
+      "path": "assets/clinic-reference/little-lifeline-clinic-exterior.png",
+      "size": 2334023,
+      "sha256": "b1feedf727c797e0a84c485eedff5fe91fa8d214373c6b2677cd2678730761d1"
+    },
+    {
+      "status": "??",
+      "path": "design-qa.md",
+      "size": 5563,
+      "sha256": "cf49dbaa69dbc437e6b24a19d57a5bd7c21ce2a1e73fab785401de0edc1c4858"
+    },
+    {
+      "status": "??",
+      "path": "docs/shop-redesign-research.md",
+      "size": 4123,
+      "sha256": "e734207e30d25dbb28b9988e4d6aca88d69c517d1cb60bccfc7940cc3e16f433"
+    },
+    {
+      "status": "??",
+      "path": "docs/testflight-clinic43-what-to-test.txt",
+      "size": 1164,
+      "sha256": "fd4f398ada88be51965f87e1b7a42e69e360b04d4cfef124bd74db1b07782b8d"
+    }
+  ]
+}

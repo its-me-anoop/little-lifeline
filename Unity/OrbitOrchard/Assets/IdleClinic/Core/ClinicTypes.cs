@@ -8,7 +8,7 @@ namespace IdleClinic.Core
     public enum UpgradeTrack { Equipment, Facilities, Decoration }
     public enum ClinicStaffRole { Receptionist, Nurse, Doctor, Pharmacist }
     public enum ClinicAmenity { Parking, Toilet, Vending, Taxi }
-    public enum ClinicTutorialStep { FirstArrival, CollectFirstPayment, HireFirstNurse, FirstTreatment, Complete }
+    public enum ClinicTutorialStep { FirstArrival, CollectFirstPayment, HireFirstNurse, FirstTreatment, Complete, BossOpening }
     public enum ClinicPatientPhase
     {
         Arriving, ReceptionQueue, WalkingToReception, CheckingIn, WaitingForTreatment,
@@ -29,7 +29,7 @@ namespace IdleClinic.Core
         TutorialAdvanced, StationUpgraded, StaffTrained, AmenityUpgraded, AmenityVisitStarted, TipReceived,
         DoctorHired, PharmacistHired, ConsultationStarted, ConsultationCompleted,
         DispensingStarted, DispensingCompleted, DoctorsClinicUnlocked, TaxiArrived, TaxiDeparted,
-        ParkingFeePaid, PharmacyFeePaid, TaxiFarePaid
+        ParkingFeePaid, PharmacyFeePaid, TaxiFarePaid, PatientTurnedAway
     }
 
     [Serializable]
@@ -65,6 +65,17 @@ namespace IdleClinic.Core
         public long TotalRewards;
         public bool WaitingRoomUnlocked;
         public ClinicTutorialStep Tutorial;
+        // Optional saved opening flow. Absent in existing saves, which keep their clinic.
+        public bool OpeningEnabled;
+        public ClinicOpeningStep OpeningStep;
+        public bool OfficeCleaned;
+        public int OfficeLevel;
+        public long OfficeUpgradeStartedTick;
+        public long OfficeUpgradeEndsTick = -1;
+        public long OpeningTaskStartedTick;
+        public long OpeningTaskEndsTick = -1;
+        public int BossZone = 3;
+        public int BossFromZone = 3;
         public List<ClinicRoomState> Rooms = new List<ClinicRoomState>();
         public List<ReceptionDeskState> ReceptionDesks = new List<ReceptionDeskState>();
         public List<TreatmentStationState> TreatmentStations = new List<TreatmentStationState>();
@@ -86,6 +97,7 @@ namespace IdleClinic.Core
     {
         public ClinicRoom Kind;
         public bool Built;
+        public bool Cleaned;
         public int Tier = 1;
         public int EquipmentLevel = 1;
         public int FacilitiesLevel = 1;

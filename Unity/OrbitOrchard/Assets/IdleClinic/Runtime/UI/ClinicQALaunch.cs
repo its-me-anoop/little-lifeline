@@ -99,11 +99,20 @@ namespace IdleClinic.App
             if (open != null && open.StartsWith("gems"))
             {
                 // gems, gems:goals or gems:shop
-                if (Enum.TryParse<GemTab>(open.Substring(Math.Min(open.Length, 5)), true, out var tab)) gemTab = tab;
+                if (open == "gems:extras") { gemTab = GemTab.Shop; shopExtrasOpen = true; }
+                else if (Enum.TryParse<GemTab>(open.Substring(Math.Min(open.Length, 5)), true, out var tab)) gemTab = tab;
                 ToggleGems();
             }
             else if (open == "settings") ToggleSettings();
+            else if (open == "BossOffice" || open == "CleaningUtilities")
+                StartCoroutine(SelectSupportRoomAfterFirstFrames(open == "BossOffice"));
             else if (Enum.TryParse<ClinicRoom>(open, out var selected)) StartCoroutine(SelectAfterFirstFrames(selected));
+        }
+
+        private System.Collections.IEnumerator SelectSupportRoomAfterFirstFrames(bool office)
+        {
+            yield return new WaitForSeconds(1.5f);
+            SelectObject(new IdleClinic.Presentation.ClinicHit(office?IdleClinic.Presentation.ClinicHitKind.BossOffice:IdleClinic.Presentation.ClinicHitKind.CleaningUtilities));
         }
 
         private System.Collections.IEnumerator HideInterface()

@@ -1,0 +1,11 @@
+Little Lifeline 4.3 — clinic opening and office progression
+
+Start a new clinic and follow the boss through cleaning and setting up the office, reception, waiting area and first nursing station. Hire the first nurse, watch patients queue, then recruit the receptionist.
+
+The office sets the clinic level. Finish every room at the current office level before upgrading the office again. Room renovations cannot exceed the completed office level. Check that construction resumes after closing and reopening the app.
+
+Reception has a vertical queue of up to five patients. Patients display occasional emoji expressions; arrivals who find no space leave with angry expressions.
+
+Check the separate nursing rooms, open reception and waiting area, glass front wall, compact upgrade cards and automatic panel dismissal when an upgrade starts. On iPhone Duo, the camera controls should sit near the right screen edge, and the boss-office checklist should show readable room names and levels.
+
+Existing clinics should keep their progress when adopting office progression. Please report stuck prompts, disappearing upgrades, save resets or overlapping interface controls.

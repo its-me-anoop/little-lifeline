@@ -21,7 +21,7 @@ namespace IdleClinic.Presentation
             var storage=art.Group("Reception record storage",root,new Vector3(-5.23f,.14f,-2.30f));
             Cabinet(art,storage,Vector3.zero,new Vector3(.52f,.90f,.60f),"Sage");
             for(int i=0;i<4;i++)art.Box("Appointment folders",storage,new Vector3(-.18f+i*.11f,1.00f,0),new Vector3(.075f,.21f,.28f),i%2==0?"Apricot":"Blue");
-            var care=art.Group("Care supplies cabinet",root,new Vector3(-5.18f,.14f,2.35f));
+            var care=art.Group("Care supplies cabinet",root,new Vector3(-5.18f,.14f,4.15f));
             Cabinet(art,care,Vector3.zero,new Vector3(.58f,.80f,.80f),"Sage");
             for(int i=0;i<3;i++)art.Box("Folded care towels",care,new Vector3(0,.83f+i*.045f,0),new Vector3(.42f,.04f,.38f),"Linen");
             var sink=art.Group("Treatment handwash sink",root,new Vector3(-5.17f,.14f,1.05f));

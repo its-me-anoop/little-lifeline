@@ -42,9 +42,10 @@ namespace IdleClinic.Presentation
         internal Material Material(string role)
         {
             if(materials.TryGetValue(role,out var material)) return material;
-            material=new Material(Shader.Find(role=="Paper" ? "Unlit/Color" : "Standard")){name="Clinic "+role,enableInstancing=true};
+            var shader=role=="FacadeGlass"?Resources.Load<Shader>("ClinicFacadeGlass"):Shader.Find(role=="Paper" ? "Unlit/Color" : "Standard");
+            material=new Material(shader){name="Clinic "+role,enableInstancing=true};
             material.color=Color(role);
-            if(role!="Paper") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:role=="Platinum"?.5f:role=="Graphite"?.3f:0); }
+            if(role!="Paper"&&role!="FacadeGlass") { material.SetFloat("_Glossiness",Glossiness(role));material.SetFloat("_Metallic",role=="Gold"?.45f:role=="Chrome"?.75f:role=="Platinum"?.5f:role=="Graphite"?.3f:0); }
             materials.Add(role,material);return material;
         }
         /// <summary>A separately coloured copy of a role's material, kept under its own key (for example one room's floor).</summary>
@@ -56,7 +57,7 @@ namespace IdleClinic.Presentation
         }
         private static float Glossiness(string role)
         {
-            if(role=="Glass")return .82f;
+            if(role=="Glass"||role=="FacadeGlass")return .82f;
             if(role=="Chrome")return .72f;
             if(role=="Platinum"||role=="Graphite")return .5f;
             if(role=="Glow"||role=="Aqua")return .6f;
@@ -77,6 +78,7 @@ namespace IdleClinic.Presentation
                 case "CarSage":return new Color(.38f,.49f,.42f);
                 case "CarTaxi":return new Color(.90f,.70f,.20f);
                 case "Glass":return new Color(.20f,.27f,.31f);
+                case "FacadeGlass":return new Color(.66f,.85f,.89f,.20f);
                 case "Chrome":return new Color(.76f,.77f,.75f);
                 // First aid equipment: the metals and glows of its upper versions.
                 case "Platinum":return new Color(.82f,.84f,.86f);

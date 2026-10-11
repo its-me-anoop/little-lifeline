@@ -68,7 +68,7 @@ namespace IdleClinic.Tests
             Assert.That(profile.state.TotalEarned, Is.EqualTo(original.state.TotalEarned));
             Assert.That(profile.state.TotalSpent, Is.EqualTo(original.state.TotalSpent));
             Assert.That(profile.state.ReceptionDesks.Sum(d => d.Till), Is.EqualTo(original.state.ReceptionDesks.Sum(d => d.Till)));
-            Assert.That(profile.state.Patients.Select(p => p.Id), Is.EqualTo(original.state.Patients.Select(p => p.Id)));
+            Assert.That(profile.state.Patients.Select(p => p.Id), Is.EqualTo(original.state.Patients.Where(p=>p.QueueIndex<ClinicRules.StarterQueueCapacity).Select(p => p.Id)));
             Assert.That(profile.activeLocation, Is.EqualTo(ClinicLocation.StarterClinic));
             Assert.That(profile.doctorsState, Is.Null);
             Assert.That(profile.state.DoctorsClinicUnlocked, Is.False);

@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace IdleClinic.Presentation
 {
-    public enum ClinicHitKind { None,Cash,Reception,Treatment,Waiting,Expansion,Desk,Station,Parking,Toilet,Vending,VendingCash,Consultation,Pharmacy,DoctorStation,PharmacyStation,Taxi }
+    public enum ClinicHitKind { None,Cash,Reception,Treatment,Waiting,Expansion,Desk,Station,Parking,Toilet,Vending,VendingCash,Consultation,Pharmacy,DoctorStation,PharmacyStation,Taxi,BossOffice,CleaningUtilities }
     public readonly struct ClinicHit
     {
         public ClinicHitKind Kind { get; }
@@ -31,6 +31,7 @@ namespace IdleClinic.Presentation
         private static readonly string[] CashAnchors={"reception.desk.0.cash","reception.desk.1.cash"};
         private readonly ClinicRoomState[] roomState=new ClinicRoomState[3];
         private ClinicArt art;
+        private ClinicOpeningPresentation opening;
         private DoctorsClinicWorld doctors;
         public ClinicLocation Location { get; private set; }
         public int MovingActorCount=>actors==null?0:actors.MovingCount;
@@ -47,6 +48,7 @@ namespace IdleClinic.Presentation
         private Vector3 center=new Vector3(-2,0,-.65f),homeTarget,velocity;
         private float size=6.9f,homeSize,sizeVelocity;
         private bool initialized,homing,waitingBuilt,userCamera;
+        private int ownedStations=1;
 
         public Camera SceneCamera { get; private set; }
         public RenderTexture Texture { get; private set; }
@@ -82,6 +84,7 @@ namespace IdleClinic.Presentation
             return level;
         }
         public void Initialize(ClinicLocation location) { Initialize();ConfigureLocation(location); }
+        public void ShowTurnedAway(ClinicEvent arrival) { Initialize();actors.TurnAway(arrival); }
         public void ResetActorPlacement() => actors?.ResetPlacement();
         public void ConfigureLocation(ClinicLocation location)
         {
@@ -94,10 +97,10 @@ namespace IdleClinic.Presentation
             {
                 BuildArchitecture();BuildFurniture();BuildAnchors();BuildPrivacy();ClinicSurroundings.Build(art,scene);ClinicFurnishings.Build(art,scene);
                 upgrades=new ClinicUpgrades(art,scene);amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);
-                careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
-                waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
-                refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,-3.40f),yaw:90,openingWidth:1.30f,name:"Waiting lobby doorway");
-                BuildRoomStyles();
+                careDoor=new ClinicDoor(art,scene,position:new Vector3(-4.20f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 1 doorway");entranceDoor=new ClinicDoor(art,scene,true,position:new Vector3(.675f,Floor,-5.43f));
+                waitingDoor=new ClinicDoor(art,scene,position:new Vector3(-1.50f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 2 doorway");
+                refreshmentDoor=null;
+                BuildRoomStyles();opening=new ClinicOpeningPresentation(art,scene);
             }
             actors=new ClinicActors(art,scene,this);Home(true);
         }
@@ -112,10 +115,10 @@ namespace IdleClinic.Presentation
             SceneCamera.allowHDR=false;SceneCamera.allowMSAA=true;
             BuildArchitecture();BuildFurniture();BuildAnchors();BuildLighting();BuildPrivacy();ClinicSurroundings.Build(art,scene);ClinicFurnishings.Build(art,scene);
             actors=new ClinicActors(art,scene,this);upgrades=new ClinicUpgrades(art,scene);effects=new ClinicUpgradeEffects(art,scene);
-            amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene);entranceDoor=new ClinicDoor(art,scene,true);
-            waitingDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,.50f),yaw:90,openingWidth:1.40f,name:"Waiting corridor doorway");
-            refreshmentDoor=new ClinicDoor(art,scene,position:new Vector3(1.67f,Floor,-3.40f),yaw:90,openingWidth:1.30f,name:"Waiting lobby doorway");
-            BuildRoomStyles();
+            amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene,position:new Vector3(-4.20f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 1 doorway");entranceDoor=new ClinicDoor(art,scene,true,position:new Vector3(.675f,Floor,-5.43f));
+            waitingDoor=new ClinicDoor(art,scene,position:new Vector3(-1.50f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 2 doorway");
+            refreshmentDoor=null;
+            BuildRoomStyles();opening=new ClinicOpeningPresentation(art,scene);
             SetRenderSize(393,852);Home(true);
         }
 
@@ -151,12 +154,12 @@ namespace IdleClinic.Presentation
                 for(int j=0;j<6;j++)cash[i,j].SetActive(j<stacks && desk!=null);
             }
             var treatment=roomState[1];int stationCount=treatment==null?1:treatment.StationCount;
-            for(int i=0;i<2;i++)ClinicUpgradeEffects.Show(stations[i],i<stationCount);
-            receptionDivider.SetActive(desks[0].activeSelf&&desks[1].activeSelf);treatmentDivider.SetActive(stationCount>=2);
+            ownedStations=stationCount;for(int i=0;i<2;i++)ClinicUpgradeEffects.Show(stations[i],!state.OpeningEnabled||i<stationCount);
+            receptionDivider.SetActive(desks[0].activeSelf&&desks[1].activeSelf);treatmentDivider.SetActive(true);
             var waiting=roomState[2];waitingBuilt=waiting!=null&&waiting.Built;
-            waitingClosed.SetActive(!waitingBuilt);
+            waitingClosed.SetActive(false);
             int capacity=waitingBuilt?Mathf.Clamp(ClinicRules.WaitingCapacity(state),0,14):0;
-            for(int i=0;i<14;i++)ClinicUpgradeEffects.Show(seats[i],i<capacity);
+            for(int i=0;i<14;i++)ClinicUpgradeEffects.Show(seats[i],i<(state.OpeningEnabled?capacity:Mathf.Max(4,capacity)));
             int maximumTier=ClinicRules.MaximumTier(state);
             for(int i=0;i<3;i++)
             {
@@ -166,7 +169,8 @@ namespace IdleClinic.Presentation
                 bool building=false;for(int j=0;j<state.Construction.Count;j++)if((int)state.Construction[j].Room==i)building=true;
                 renovations[i].SetActive(building);
             }
-            actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor.Render(actors,deltaTime,reducedMotion);
+            actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor?.Render(actors,deltaTime,reducedMotion);
+            opening?.Render(state);
             effects.Armed=true;effects.Update(deltaTime);
             UpdateHome(deltaTime,reducedMotion);
         }
@@ -226,6 +230,7 @@ namespace IdleClinic.Presentation
         public Vector3 GetRoomPoint(ClinicRoom room)=>doctors!=null?doctors.RoomPoint(room):roomRoots[(int)room].position+Vector3.up;
         public Vector3 GetAmenityPoint(ClinicAmenity kind)=>doctors!=null?doctors.AmenityPoint(kind):kind==ClinicAmenity.Parking?ClinicAmenities.ParkingPoint:
             kind==ClinicAmenity.Toilet?ClinicAmenities.ToiletPoint:ClinicAmenities.VendingPoint;
+        public Vector3 GetSupportRoomPoint(bool office)=>ClinicSupportRooms.Point(office);
         public Vector3 GetVendingCashPoint()=>doctors!=null?doctors.VendingCashPoint:ClinicAmenities.VendingCashPoint;
         public Vector3 GetTaxiCashPoint()=>doctors!=null?doctors.AmenityPoint(ClinicAmenity.Taxi)-Vector3.up*.15f:Vector3.zero;
         public Vector3 GetPharmacyCashPoint(int station)=>doctors!=null?doctors.WorkstationPoint(ClinicStaffRole.Pharmacist,station)+Vector3.up*.1f:Vector3.zero;
@@ -254,25 +259,33 @@ namespace IdleClinic.Presentation
             for(int i=0;i<2;i++)
             {
                 if(desks[i].activeSelf&&new Bounds(GetDeskPoint(i),new Vector3(.56f,.50f,.48f)).IntersectRay(ray))return new ClinicHit(ClinicHitKind.Desk,i);
-                if(stations[i].activeSelf&&new Bounds(GetStationPoint(i),new Vector3(.66f,.64f,.67f)).IntersectRay(ray))return new ClinicHit(ClinicHitKind.Station,i);
+                if(i<ownedStations&&stations[i].activeSelf&&new Bounds(GetStationPoint(i),new Vector3(.66f,.64f,.67f)).IntersectRay(ray))return new ClinicHit(ClinicHitKind.Station,i);
             }
             for(int i=0;i<3;i++)if(new Bounds(GetAmenityPoint((ClinicAmenity)i),i==0?new Vector3(1.2f,1.3f,.8f):new Vector3(.85f,.82f,.7f)).IntersectRay(ray))
                 return new ClinicHit(i==0?ClinicHitKind.Parking:i==1?ClinicHitKind.Toilet:ClinicHitKind.Vending,i);
             if(!TryViewportToGround(uv,out var p))return default;
+            if(ClinicSupportRooms.Office.Contains(new Vector2(p.x,p.z)))return new ClinicHit(ClinicHitKind.BossOffice);
+            if(ClinicSupportRooms.Cleaning.Contains(new Vector2(p.x,p.z)))return new ClinicHit(ClinicHitKind.CleaningUtilities);
             if(p.x>=-14.5f&&p.x<=-6.15f&&p.z>=-5.1f&&p.z<=5.1f)return new ClinicHit(ClinicHitKind.Parking,(int)ClinicAmenity.Parking);
             if(p.x>=2.6f&&p.x<=5.8f&&p.z>4.9f&&p.z<=7.2f)return new ClinicHit(ClinicHitKind.Toilet,(int)ClinicAmenity.Toilet);
             if(p.x>=4.5f&&p.x<=5.8f&&p.z>=-3.0f&&p.z<=-2.0f)return new ClinicHit(ClinicHitKind.Vending,(int)ClinicAmenity.Vending);
-            if(p.x>=-5.6f&&p.x<=-.25f&&p.z>=-4.6f&&p.z<=-.05f)return new ClinicHit(ClinicHitKind.Reception,(int)ClinicRoom.Reception);
-            if(p.x>=-5.6f&&p.x<=-.25f&&p.z>-.05f&&p.z<=4.9f)return new ClinicHit(ClinicHitKind.Treatment,(int)ClinicRoom.FirstAid);
+            if(p.x>=-5.6f&&p.x<=-.25f&&p.z>=-5.35f&&p.z<=1.50f)return new ClinicHit(ClinicHitKind.Reception,(int)ClinicRoom.Reception);
+            if(p.x>=-5.6f&&p.x<=-.25f&&p.z>1.50f&&p.z<=4.9f)return new ClinicHit(ClinicHitKind.Treatment,(int)ClinicRoom.FirstAid);
             if(p.x>=1.35f&&p.x<=5.6f&&p.z>=-5.05f&&p.z<=4.9f)return new ClinicHit(waitingBuilt?ClinicHitKind.Waiting:ClinicHitKind.Expansion,(int)ClinicRoom.Waiting);
             return default;
         }
         public void SelectRoom(ClinicRoom room)
-        { if(doctors!=null){doctors.Select(new ClinicHit(room==ClinicRoom.Reception?ClinicHitKind.Reception:room==ClinicRoom.FirstAid?ClinicHitKind.Treatment:room==ClinicRoom.Waiting?ClinicHitKind.Waiting:room==ClinicRoom.Consultation?ClinicHitKind.Consultation:ClinicHitKind.Pharmacy,(int)room));return;}selection.gameObject.SetActive(true);selection.position=roomRoots[(int)room].position+new Vector3(0,.17f,0);selection.localScale=room==ClinicRoom.Waiting?new Vector3(4.4f,1,9.9f):new Vector3(5.35f,1,4.8f); }
+        { if(doctors!=null){doctors.Select(new ClinicHit(room==ClinicRoom.Reception?ClinicHitKind.Reception:room==ClinicRoom.FirstAid?ClinicHitKind.Treatment:room==ClinicRoom.Waiting?ClinicHitKind.Waiting:room==ClinicRoom.Consultation?ClinicHitKind.Consultation:ClinicHitKind.Pharmacy,(int)room));return;}var bounds=room==ClinicRoom.Waiting?new Rect(1.275f,-5.35f,4.35f,10.225f):room==ClinicRoom.FirstAid?new Rect(-5.575f,1.55f,5.35f,3.25f):new Rect(-5.575f,-5.35f,5.35f,6.85f);selection.gameObject.SetActive(true);selection.position=new Vector3(bounds.center.x,.17f,bounds.center.y);selection.localScale=new Vector3(bounds.width,1,bounds.height); }
         public void SelectRoom(ClinicHit hit)
         {
             if(doctors!=null){doctors.Select(hit);return;}
             if(hit.Kind==ClinicHitKind.None||hit.Kind==ClinicHitKind.Cash||hit.Kind==ClinicHitKind.VendingCash){selection.gameObject.SetActive(false);return;}
+            if(hit.Kind==ClinicHitKind.BossOffice||hit.Kind==ClinicHitKind.CleaningUtilities)
+            {
+                var bounds=hit.Kind==ClinicHitKind.BossOffice?ClinicSupportRooms.Office:ClinicSupportRooms.Cleaning;
+                selection.gameObject.SetActive(true);selection.position=new Vector3(bounds.center.x,.185f,bounds.center.y);
+                selection.localScale=new Vector3(bounds.width,1,bounds.height);return;
+            }
             if(hit.Kind==ClinicHitKind.Desk||hit.Kind==ClinicHitKind.Station)
             {
                 selection.gameObject.SetActive(true);selection.position=(hit.Kind==ClinicHitKind.Desk?desks[Mathf.Clamp(hit.Id,0,1)]:stations[Mathf.Clamp(hit.Id,0,1)]).transform.position+Vector3.up*.025f;
@@ -309,16 +322,18 @@ namespace IdleClinic.Presentation
         private void ApplyCamera() { SceneCamera.transform.position=center+CameraOffset;SceneCamera.orthographicSize=size; }
         private void FitHome(out Vector3 target,out float fittedSize)
         {
-            // The starter rooms, circulation strip and full queue forecourt fit below the top HUD.
+            // The starter rooms, staff wing, circulation strip and queue forecourt fit below the top HUD.
             // Projection-space fitting works for every render-target aspect without resetting a user camera.
             var right=SceneCamera.transform.right;var up=SceneCamera.transform.up;
             var minimum=new Vector2(float.MaxValue,float.MaxValue);var maximum=new Vector2(float.MinValue,float.MinValue);
             for(int corner=0;corner<8;corner++)
             {
-                var point=doctors!=null?new Vector3((corner&1)==0?-12.35f:10.35f,(corner&2)==0?0:2.20f,(corner&4)==0?-10.9f:9.2f):new Vector3((corner&1)==0?-5.75f:1.50f,(corner&2)==0?0:2.20f,(corner&4)==0?-6.75f:5.05f);
+                var point=doctors!=null?new Vector3((corner&1)==0?-12.35f:10.35f,(corner&2)==0?0:2.20f,(corner&4)==0?-10.9f:9.2f):new Vector3((corner&1)==0?-5.75f:1.50f,(corner&2)==0?0:2.20f,(corner&4)==0?-6.75f:9.75f);
                 var projected=new Vector2(Vector3.Dot(right,point),Vector3.Dot(up,point));minimum=Vector2.Min(minimum,projected);maximum=Vector2.Max(maximum,projected);
             }
-            const float visibleWidth=.88f,visibleHeight=.64f,verticalCenter=.46f;
+            const float visibleWidth=.88f,verticalCenter=.46f;
+            // Landscape has more vertical room below the HUD; keep space to pan at home.
+            float visibleHeight=doctors==null&&SceneCamera.aspect>1.4f?.90f:.64f;
             fittedSize=Mathf.Max((maximum.x-minimum.x)/(2*SceneCamera.aspect*visibleWidth),(maximum.y-minimum.y)/(2*visibleHeight));
             var middle=(minimum+maximum)*.5f;
             float desiredRight=middle.x,desiredUp=middle.y-(verticalCenter-.5f)*2*fittedSize;
@@ -367,14 +382,15 @@ namespace IdleClinic.Presentation
                     details.gameObject.SetActive(false);
                 }
             }
-            art.Box("Main circulation floor",scene,new Vector3(.58f,.11f,-.1f),new Vector3(1.5f,.05f,9.9f),"Ivory");
+            art.Box("Main circulation floor",scene,new Vector3(.58f,.11f,-.25f),new Vector3(1.5f,.05f,10.2f),"TilePeach");
             art.Box("Reception forecourt paving",scene,new Vector3(-2.98f,.11f,-5.72f),new Vector3(5.4f,.06f,2.0f),"Ivory");
             ClinicArchitecture.Build(art,scene);
-            for(int i=0;i<5;i++)
+            ClinicSupportRooms.Build(art,scene);
+            for(int i=0;i<2;i++)
             {
-                var x=i==4?4.83f:-4.25f+i*2.0f;
-                art.Box("High window frame",scene,new Vector3(x,1.42f,4.86f),new Vector3(1.46f,1.02f,.07f),"Sage");
-                art.Box("Daylight window",scene,new Vector3(x,1.43f,4.81f),new Vector3(1.29f,.86f,.03f),"Blue");
+                var x=i==0?2.25f:4.83f;
+                art.Box("High window frame",scene,new Vector3(x,1.42f,4.86f),new Vector3(i==0?1.14f:1.46f,1.02f,.07f),"Sage");
+                art.Box("Daylight window",scene,new Vector3(x,1.43f,4.81f),new Vector3(i==0?.97f:1.29f,.86f,.03f),"Blue");
                 art.Box("Window mullion",scene,new Vector3(x,1.44f,4.77f),new Vector3(.055f,.87f,.04f),"Ivory");
             }
             art.Box("Entry mat",scene,new Vector3(.68f,.145f,-4.55f),new Vector3(1.29f,.012f,1.0f),"CarGraphite");
@@ -416,25 +432,28 @@ namespace IdleClinic.Presentation
         private void BuildRoomStyles()
         {
             const float top=.135f;
-            styles[0]=new ClinicRoomStyle(art,scene,"Reception",new Rect(-5.575f,-4.70f,5.35f,4.70f),top,new[]{
-                new RoomWall(-5.57f,-4.70f,-5.57f,-.225f,2.05f),new RoomWall(-5.57f,-.225f,-.235f,-.225f,.84f)},0,"TilePeach",10,
+            styles[0]=new ClinicRoomStyle(art,scene,"Reception",new Rect(-5.575f,-5.35f,5.35f,6.85f),top,new[]{
+                new RoomWall(-5.57f,-5.35f,-5.57f,1.50f,ClinicArchitecture.WallHeight)},0,"TilePeach",10,
                 new[]{new Vector3(-5.53f,.7f,-1.45f)});
-            styles[1]=new ClinicRoomStyle(art,scene,"First aid",new Rect(-5.575f,.10f,5.35f,4.70f),top,new[]{
-                new RoomWall(-5.57f,-.075f,-5.57f,4.89f,2.05f),new RoomWall(-5.57f,4.89f,-.225f,4.89f,2.05f),new RoomWall(-5.57f,-.075f,-.235f,-.075f,.84f)},1,"TileBlue",10,
+            styles[1]=new ClinicRoomStyle(art,scene,"First aid",new Rect(-5.575f,1.55f,5.35f,3.25f),top,new[]{
+                new RoomWall(-5.57f,1.50f,-5.57f,4.89f,ClinicArchitecture.WallHeight),new RoomWall(-5.57f,4.89f,-.225f,4.89f,ClinicArchitecture.WallHeight)},1,"TileBlue",10,
                 new[]{new Vector3(-5.5f,.9f,2.45f),new Vector3(-4.2f,.6f,4.9f),new Vector3(-3.3f,.6f,4.9f)});
-            styles[2]=new ClinicRoomStyle(art,scene,"Waiting room",new Rect(1.275f,-5.05f,4.35f,9.925f),top,new[]{
-                new RoomWall(1.74f,1.235f,1.74f,4.89f,.84f),new RoomWall(1.74f,-2.75f,1.74f,-.235f,.84f),new RoomWall(1.74f,-5.05f,1.74f,-4.05f,.84f),
-                new RoomWall(1.74f,4.89f,2.905f,4.89f,2.05f),new RoomWall(3.97f,4.89f,5.615f,4.89f,2.05f),
-                new RoomWall(5.615f,-5.05f,5.615f,4.89f,.68f),new RoomWall(1.74f,-5.05f,5.615f,-5.05f,.60f)},2,"TileSage",10,
+            styles[2]=new ClinicRoomStyle(art,scene,"Waiting room",new Rect(1.275f,-5.35f,4.35f,10.225f),top,new[]{
+                new RoomWall(1.74f,4.89f,2.905f,4.89f,ClinicArchitecture.WallHeight),new RoomWall(3.97f,4.89f,5.615f,4.89f,ClinicArchitecture.WallHeight),
+                new RoomWall(5.615f,-5.35f,5.615f,4.89f,ClinicArchitecture.WallHeight),new RoomWall(1.74f,-5.35f,5.615f,-5.35f,ClinicArchitecture.WallHeight)},2,"TilePeach",10,
                 // Decor keeps clear of the toilet door, both west doorways and the vending patient's spot.
                 new[]{new Vector3(3.43f,.9f,4.75f),new Vector3(1.74f,.9f,-3.4f),new Vector3(1.74f,.9f,.5f),new Vector3(5.05f,.8f,-3.4f)});
             foreach(var style in styles)style.Adopt(scene);
         }
         private void BuildPrivacy()
         {
-            receptionDivider=PrivacyScreen("Reception privacy divider",new Vector3(-2.79f,Floor,-2.50f),1.10f,1.46f,"Sage");
-            // Offset toward station two: the first nurse's authored work socket remains 0.55m away.
-            treatmentDivider=PrivacyScreen("Treatment privacy partition",new Vector3(-2.50f,Floor,2.20f),.98f,1.46f,"Linen");
+            receptionDivider=PrivacyScreen("Reception privacy divider",new Vector3(-2.79f,Floor,-1.00f),1.10f,ClinicArchitecture.WallHeight,"Sage");
+            // Full-depth room wall keeps both authored staff sockets clear.
+            var nursingWall=art.Group("Treatment privacy partition",scene,new Vector3(-2.84f,Floor,3.235f));
+            art.Box("Nursing dividing wall",nursingWall,new Vector3(0,ClinicArchitecture.WallHeight*.5f,0),new Vector3(.16f,ClinicArchitecture.WallHeight,3.47f),"Ivory");
+            art.Box("Nursing dividing wall cap",nursingWall,new Vector3(0,ClinicArchitecture.WallHeight,0),new Vector3(.16f,.055f,3.47f),"Sage");
+            art.Box("Nursing dividing wall skirting",nursingWall,new Vector3(0,.05f,0),new Vector3(.16f,.10f,3.47f),"SageDark");
+            treatmentDivider=nursingWall.gameObject;
         }
         private GameObject PrivacyScreen(string name,Vector3 position,float depth,float height,string role)
         {
@@ -449,20 +468,20 @@ namespace IdleClinic.Presentation
         {
             for(int i=0;i<2;i++)
             {
-                desks[i]=art.Model("ReceptionDesk",scene,new Vector3(-3.85f+i*2.12f,Floor,-2.52f));
+                desks[i]=art.Model("ReceptionDesk",scene,new Vector3(-3.85f+i*2.12f,Floor,-1.00f));
                 RegisterSockets(desks[i].transform,"reception.desk."+i+".",Vector3.forward,Vector3.back);
                 var point=GetCashPoint(i);
                 for(int j=0;j<6;j++)cash[i,j]=art.Box("Collectable cash",scene,point+new Vector3((j%2)*.13f-.06f,(j/2)*.055f,0),new Vector3(.20f,.043f,.16f),j%2==0?"Gold":"Apricot");
                 desks[i].SetActive(i==0);for(int j=0;j<6;j++)cash[i,j].SetActive(false);
-                stations[i]=art.Model("TreatmentBay",scene,new Vector3(-3.88f+i*2.15f,Floor,2.31f));
+                stations[i]=art.Model("TreatmentBay",scene,new Vector3(-4.20f+i*2.70f,Floor,2.71f));
                 RegisterSockets(stations[i].transform,"firstaid.station."+i+".",Vector3.back,Vector3.left);stations[i].SetActive(i==0);
             }
             for(int i=0;i<14;i++)
             {
-                bool left=i%2==0;var rotation=Quaternion.Euler(0,left?-90:90,0);
+                bool left=i%2==0;var rotation=Quaternion.Euler(0,90,0);
                 seats[i]=art.Model("Seat",scene,new Vector3(left?2.12f:4.73f,Floor,-.72f+(i/2)*.81f),rotation);
                 foreach(var node in seats[i].GetComponentsInChildren<Transform>(true))if(node.name.Contains("__patient"))
-                { anchors["waiting.seat."+i]=node;node.rotation=Quaternion.LookRotation(left?Vector3.right:Vector3.left);break; }
+                { anchors["waiting.seat."+i]=node;node.rotation=Quaternion.LookRotation(Vector3.left);break; }
                 seats[i].SetActive(false);
             }
             waitingClosed=art.Group("Future waiting lounge",scene,new Vector3(3.40f,0,1.36f)).gameObject;
@@ -488,9 +507,15 @@ namespace IdleClinic.Presentation
             Anchor("waiting.vending.patient",new Vector3(5.05f,Floor,-3.42f),Vector3.forward);
             Anchor("waiting.vending.cash",ClinicAmenities.VendingCashPoint);
             Anchor("entrance",new Vector3(.67f,Floor,-5.80f));Anchor("exit",new Vector3(1.12f,Floor,-6.15f),Vector3.back);
-            // The queue stands inside the reception, between the desk aisle and the front wall: two rows of up to eight, first place nearest the entrance.
-            for(int i=0;i<11;i++)Anchor("reception.queue."+i,new Vector3(-.85f-(i%8)*.58f,Floor,-4.36f-(i/8)*.40f));
-            for(int i=0;i<2;i++)Anchor("firstaid.standing."+i,new Vector3(-.62f,Floor,.70f+i*.65f),Vector3.left);
+            // Five visitors stand in one north-south line facing the reception counter.
+            for(int i=0;i<ClinicRules.StarterQueueCapacity;i++)
+            {
+                var point=new Vector3(-3.85f,Floor,-2.50f-i*.60f);Anchor("reception.queue."+i,point);
+                art.Box("Check-in queue floor marker",scene,point+Vector3.up*.012f,new Vector3(.36f,.008f,.06f),"Gold");
+            }
+            // An older in-flight check-in may still refer to its former slot after import.
+            for(int i=ClinicRules.StarterQueueCapacity;i<11;i++)Anchor("reception.queue."+i,new Vector3(-3.85f,Floor,-4.90f));
+            for(int i=0;i<2;i++)Anchor("firstaid.standing."+i,new Vector3(.68f,Floor,1.10f+i*.65f),Vector3.left);
             Anchor("reception.progress",new Vector3(-2.8f,1.65f,-1.40f));Anchor("firstaid.progress",new Vector3(-2.8f,1.90f,3.35f));Anchor("waiting.progress",new Vector3(3.4f,1.5f,1.1f));
         }
         private void BuildLighting()

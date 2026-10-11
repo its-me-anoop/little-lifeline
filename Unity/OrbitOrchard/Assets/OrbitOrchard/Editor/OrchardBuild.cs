@@ -41,9 +41,9 @@ namespace OrbitOrchard.Editor
             }
             PlayerSettings.companyName = "Flutterly";
             PlayerSettings.productName = "Little Lifeline";
-            PlayerSettings.bundleVersion = "4.2";
+            PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.2";
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
-            PlayerSettings.iOS.buildNumber = "20";
+            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "20";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;

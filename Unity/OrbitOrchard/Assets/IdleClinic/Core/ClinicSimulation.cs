@@ -15,7 +15,7 @@ namespace IdleClinic.Core
         public ClinicState State { get; }
         public double ElapsedSeconds => (State.Tick + State.SubTick) / ClinicRules.TicksPerSecond;
         public int NurseCount => State.Staff.Count(s => s.Role == ClinicStaffRole.Nurse);
-        public int ReceptionistCount => State.ReceptionDesks.Count;
+        public int ReceptionistCount => State.Staff.Count(s => s.Role == ClinicStaffRole.Receptionist);
         public long TillCash => State.ReceptionDesks.Sum(d => d.Till) + State.Amenity(ClinicAmenity.Vending).Till + (State.Amenity(ClinicAmenity.Parking)?.Till ?? 0)
             + (State.Amenity(ClinicAmenity.Taxi)?.Till ?? 0) + State.PharmacyStations.Sum(s => s.Till);
         public int PaidWaitingCount => State.Patients.Count(IsPaidWaiting);
@@ -31,6 +31,24 @@ namespace IdleClinic.Core
                 if (patient.QueueMovePath == null) patient.QueueMovePath = new List<ClinicMovementPoint>();
             if (ClinicRules.IsDoctors(State))
             { RestoreLegacyTaxiWaitingReservations(); ReindexQueue(); }
+        }
+
+        /// <summary>Import the old starter queue without changing paid visits, owned upgrades or money.
+        /// Excess visitors have not checked in or paid; releasing them also releases their parking bays.</summary>
+        public static bool TryMigrateStarterQueue(ClinicState state)
+        {
+            if (IsValidState(state)) return true;
+            if (!IsValidState(state, false, false, true)) return false;
+            var queue = state.Patients.Where(IsUnpaidQueue).OrderBy(p => p.Id).ToArray();
+            foreach (var patient in queue.Skip(ClinicRules.StarterQueueCapacity)) state.Patients.Remove(patient);
+            int index = 0;
+            foreach (var patient in queue.Take(ClinicRules.StarterQueueCapacity))
+            {
+                patient.QueueIndex = index++;
+                patient.ToAnchor = ClinicRules.QueueAnchor(patient.QueueIndex);
+                if (patient.Phase == ClinicPatientPhase.ReceptionQueue) patient.FromAnchor = patient.ToAnchor;
+            }
+            return IsValidState(state);
         }
 
         public static ClinicSimulation CreateNew(ulong seed = 42)
@@ -134,6 +152,8 @@ namespace IdleClinic.Core
                 State.PausedTrafficTicks += skippedTicks;
                 var previousCapture = captureEvents;
                 captureEvents = false;
+                FinishOfficeUpgrade();
+                FinishOpeningTask();
                 FinishConstruction();
                 captureEvents = previousCapture;
             }
@@ -167,6 +187,7 @@ namespace IdleClinic.Core
 
         public ClinicCommandResult HireNurse()
         {
+            if (State.OpeningEnabled && State.OpeningStep != ClinicOpeningStep.Complete) return HireOpeningStaff(ClinicStaffRole.Nurse);
             var count = NurseCount;
             if (count >= ClinicRules.MaximumStaff(State, ClinicStaffRole.Nurse)) return No("Both nurses are already hired.");
             if (State.Tutorial != ClinicTutorialStep.Complete && State.Tutorial != ClinicTutorialStep.HireFirstNurse)
@@ -185,6 +206,7 @@ namespace IdleClinic.Core
 
         public ClinicCommandResult HireReceptionist()
         {
+            if (State.OpeningEnabled && State.OpeningStep != ClinicOpeningStep.Complete) return HireOpeningStaff(ClinicStaffRole.Receptionist);
             if (!TutorialComplete()) return No("Finish the first treatment before expanding.");
             if (ReceptionistCount >= ClinicRules.MaximumStaff(State, ClinicStaffRole.Receptionist)) return No("Both reception desks are staffed.");
             var cost = ClinicRules.HireCost(State, ClinicStaffRole.Receptionist);
@@ -274,6 +296,7 @@ namespace IdleClinic.Core
             var room = State.Room(kind);
             if (room == null || !room.Built) return No("Build this room first.");
             if (room.Tier >= ClinicRules.MaximumTier(State)) return No("This room has reached its largest size.");
+            if (OfficeAnchored && room.Tier >= State.OfficeLevel) return No("Upgrade the office to unlock the next clinic level.");
             if (IsUnderConstruction(kind)) return No("This room is already being upgraded.");
             if (BuildersBusy) return No(BuildersBusyMessage);
             if (State.NextConstructionId == int.MaxValue) return No("This clinic cannot start another construction job.");
@@ -289,7 +312,7 @@ namespace IdleClinic.Core
         /// <summary>How many rooms can be built or renovated at once: one builder, plus any the player has
         /// unlocked. Not saved in the clinic; work already running in older saves always finishes.</summary>
         public int ConstructionSlots { get; set; } = 1;
-        public bool BuildersBusy => State.Construction.Count >= Math.Max(1, ConstructionSlots);
+        public bool BuildersBusy => State.Construction.Count + (OfficeUpgrading ? 1 : 0) >= Math.Max(1, ConstructionSlots);
         private string BuildersBusyMessage => ConstructionSlots > 1
             ? "Both builders are busy. Finish a job or wait for one to complete."
             : "Your builder is busy. Finish the current job, or add a second builder.";
@@ -329,6 +352,8 @@ namespace IdleClinic.Core
         private long NextEventTick()
         {
             var next = State.NextArrivalTick < 0 ? long.MaxValue : State.NextArrivalTick;
+            if (OfficeUpgrading) next = Math.Min(next, State.OfficeUpgradeEndsTick);
+            if (State.OpeningTaskEndsTick > State.Tick) next = Math.Min(next, State.OpeningTaskEndsTick);
             foreach (var patient in State.Patients)
             {
                 if (IsTimed(patient.Phase)) next = Math.Min(next, patient.PhaseEndsTick);
@@ -351,6 +376,8 @@ namespace IdleClinic.Core
 
         private void ProcessCurrentTick()
         {
+            FinishOfficeUpgrade();
+            FinishOpeningTask();
             ProcessTaxiRides();
             // Stable ordering makes simultaneous payments, arrivals and treatments independent of frame size.
             foreach (var patient in State.Patients.OrderBy(p => p.Id).ToArray())
@@ -432,6 +459,7 @@ namespace IdleClinic.Core
             DispatchAmenities();
             if (ClinicRules.IsDoctors(State)) ReindexQueue();
             DispatchReception();
+            AdvanceOpeningQueue();
             ReindexQueue();
             DispatchParkingVehicles();
             DispatchTaxis();
@@ -442,7 +470,11 @@ namespace IdleClinic.Core
         {
             State.NextArrivalTick = State.Tick + ClinicRules.ArrivalIntervalTicks;
             if (State.Patients.Count >= ClinicRules.MaximumPatientCount(State) || State.NextPatientId == int.MaxValue
-                || State.Patients.Count(IsUnpaidQueue) >= ClinicRules.UnpaidQueueCapacity(State)) return;
+                || State.Patients.Count(IsUnpaidQueue) >= ClinicRules.UnpaidQueueCapacity(State))
+            {
+                Emit(ClinicEventKind.PatientTurnedAway, ClinicRoom.Reception, source: "entrance");
+                return;
+            }
             var index = State.Patients.Count(IsUnpaidQueue);
             var patient = new ClinicPatientState { Id = State.NextPatientId++, ArrivalTick = State.Tick, QueueIndex = index, NextService = ClinicRules.IsDoctors(State) ? ClinicStaffRole.Doctor : ClinicStaffRole.Nurse };
             patient.AppearanceId = ClinicRules.PatientAppearance(State.Seed, patient.Id);
@@ -470,7 +502,8 @@ namespace IdleClinic.Core
             foreach (var desk in State.ReceptionDesks.OrderBy(d => d.LastStartedTick).ThenBy(d => d.Id))
             {
                 var staff = State.Staff.Find(s => s.Id == desk.Id);
-                if (desk.PatientId >= 0 || staff.MoveEndsTick > State.Tick) continue;
+                bool boss = State.OpeningEnabled && State.OpeningStep == ClinicOpeningStep.FirstCheckIn && desk.Id == 0;
+                if (desk.PatientId >= 0 || (!boss && (staff == null || staff.MoveEndsTick > State.Tick))) continue;
                 if (State.Patients.Count(p => p.HasAdmissionReservation) >= AdmissionCapacity) break;
                 var patient = ClinicRules.IsDoctors(State)
                     ? State.Patients.Where(IsPhysicalReceptionQueue).OrderBy(p => p.QueueIndex).FirstOrDefault()
@@ -487,7 +520,7 @@ namespace IdleClinic.Core
                 patient.QueueIndex = -1;
                 desk.PatientId = patient.Id;
                 desk.LastStartedTick = State.Tick;
-                staff.PatientId = patient.Id;
+                if (staff != null) staff.PatientId = patient.Id;
                 Phase(patient, ClinicPatientPhase.WalkingToReception, patient.ToAnchor, ClinicRules.DeskPatientAnchor(desk.Id), 30);
             }
         }
@@ -500,11 +533,19 @@ namespace IdleClinic.Core
             State.TotalEarned = checked(State.TotalEarned + patient.Payment);
             patient.Paid = true;
             desk.PatientId = -1;
-            State.Staff.Find(s => s.Id == desk.Id).PatientId = -1;
+            var receptionist = State.Staff.Find(s => s.Id == desk.Id);
+            if (receptionist != null) receptionist.PatientId = -1;
             Emit(ClinicEventKind.PaymentReceived, ClinicRoom.Reception, patient.Id, deskId: desk.Id,
                 amount: patient.Payment, source: ClinicRules.DeskCashAnchor(desk.Id));
             patient.NextService = ClinicRules.IsDoctors(State) ? ClinicStaffRole.Doctor : ClinicStaffRole.Nurse;
             Rest(patient, ClinicPatientPhase.WaitingForTreatment);
+            if (patient.Id == 0 && State.OpeningEnabled && State.OpeningStep == ClinicOpeningStep.FirstCheckIn)
+            {
+                var collected = Math.Min(desk.Till,MaximumMoney-State.Wallet);
+                State.Wallet += collected;State.TotalCollected += collected;desk.Till -= collected;
+                State.OpeningStep = ClinicOpeningStep.CleanWaiting;
+                Emit(ClinicEventKind.TutorialAdvanced, ClinicRoom.Waiting);
+            }
             if (patient.Id == 0 && State.Tutorial == ClinicTutorialStep.FirstArrival)
                 Tutorial(ClinicTutorialStep.CollectFirstPayment);
         }
@@ -718,7 +759,7 @@ namespace IdleClinic.Core
         internal static bool IsValidV2State(ClinicState state) => IsValidState(state, false, true);
         internal static bool IsValidLegacyState(ClinicState state) => IsValidState(state, true);
 
-        private static bool IsValidState(ClinicState state, bool legacy, bool v2 = false)
+        private static bool IsValidState(ClinicState state, bool legacy, bool v2 = false, bool oldQueue = false)
         {
             if (state == null || state.SchemaVersion != (legacy ? 1 : v2 ? 2 : 3)
                 || (legacy || v2 ? state.RulesVersion != (legacy ? 1 : 2) : !ClinicRules.KnownRules(state.RulesVersion)) || !Defined(state.Tutorial)
@@ -738,7 +779,7 @@ namespace IdleClinic.Core
                 || !ValidParkingLedger(state, legacy || v2)
                 || state.TotalEarned < 50 * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)
                 || state.TotalEarned > (legacy ? 125 : ClinicRules.MaximumVisitFee(state)) * state.TotalPayments + (legacy ? 0 : state.TotalTips + state.TotalParkingFees)) return false;
-            if (state.Rooms == null || state.Rooms.Count != 3 || state.ReceptionDesks == null || state.ReceptionDesks.Count < 1 || state.ReceptionDesks.Count > 2
+            if (state.Rooms == null || state.Rooms.Count != 3 || state.ReceptionDesks == null || state.ReceptionDesks.Count < (state.OpeningEnabled ? 0 : 1) || state.ReceptionDesks.Count > 2
                 || state.Staff == null || state.Patients == null || state.Patients.Count > ClinicRules.MaximumPatients || state.Construction == null || state.Construction.Count > 3) return false;
             var roomKinds = new HashSet<ClinicRoom>();
             foreach (var room in state.Rooms)
@@ -750,8 +791,8 @@ namespace IdleClinic.Core
             var reception = state.Room(ClinicRoom.Reception);
             var firstAid = state.Room(ClinicRoom.FirstAid);
             var waiting = state.Room(ClinicRoom.Waiting);
-            if (!reception.Built || !firstAid.Built || reception.StationCount != state.ReceptionDesks.Count
-                || firstAid.StationCount < 1 || (firstAid.StationCount == 2 && firstAid.Tier < 2) || waiting.StationCount != 0
+            if ((!state.OpeningEnabled && (!reception.Built || !firstAid.Built)) || reception.StationCount != state.ReceptionDesks.Count
+                || firstAid.StationCount < (state.OpeningEnabled && !firstAid.Built ? 0 : 1) || (firstAid.StationCount == 2 && firstAid.Tier < 2) || waiting.StationCount != 0
                 || (!waiting.Built && (waiting.Tier != 1 || waiting.EquipmentLevel != 1 || waiting.FacilitiesLevel != 1 || waiting.DecorationLevel != 1))
                 || (waiting.Built && !state.WaitingRoomUnlocked)) return false;
             if (!legacy && !IsValidExpansion(state)) return false;
@@ -787,7 +828,7 @@ namespace IdleClinic.Core
                     || staff.ToAnchor != ClinicRules.DeskStaffAnchor(staff.StationId)) return false;
                 if (staff.FromAnchor != "entrance" && staff.FromAnchor != staff.ToAnchor) return false;
             }
-            if (nurseStations.Count > 2 || receptionistStations.Count != deskIds.Count
+            if (nurseStations.Count > 2 || (!state.OpeningEnabled || state.OpeningStep == ClinicOpeningStep.Complete) && receptionistStations.Count != deskIds.Count
                 || (nurseStations.Count >= 1 && !nurseStations.Contains(0))) return false;
             var patientIds = new HashSet<int>();
             var occupiedStations = new HashSet<int>();
@@ -822,14 +863,14 @@ namespace IdleClinic.Core
                 if (patient.Paid && (patient.Payment < 50 || patient.DeskId < 0)) return false;
                 if (IsUnpaidQueue(patient))
                 {
-                    if (patient.QueueIndex < 0 || patient.QueueIndex >= ClinicRules.UnpaidQueueCapacity(state)
+                    if (patient.QueueIndex < 0 || patient.QueueIndex >= (legacy || v2 || oldQueue ? ClinicRules.LegacyStarterQueueCapacity(state) : ClinicRules.UnpaidQueueCapacity(state))
                         || !queueSlots.Add(patient.QueueIndex) || patient.Payment != 0 || patient.DeskId != -1) return false;
                 }
                 else if (patient.QueueIndex != -1) return false;
                 if (atReception)
                 {
                     if (patient.DeskId < 0 || patient.Payment < 50 || state.ReceptionDesks.Find(d => d.Id == patient.DeskId).PatientId != patient.Id
-                        || state.Staff.Find(s => s.Id == patient.DeskId).PatientId != patient.Id) return false;
+                        || (!(state.OpeningEnabled && state.OpeningStep == ClinicOpeningStep.FirstCheckIn) && state.Staff.Find(s => s.Id == patient.DeskId)?.PatientId != patient.Id)) return false;
                 }
                 if (atTreatment)
                 {
@@ -841,7 +882,7 @@ namespace IdleClinic.Core
                 if ((patient.Phase == ClinicPatientPhase.WalkingToWaiting || patient.Phase == ClinicPatientPhase.Seated) && patient.SeatId < 0) return false;
             }
             if (reserved > ClinicRules.WaitingCapacity(state) + Math.Max(1, nurseStations.Count) || currentPaid > state.TotalPayments
-                || state.Patients.Count(IsUnpaidQueue) > ClinicRules.UnpaidQueueCapacity(state)) return false;
+                || state.Patients.Count(IsUnpaidQueue) > (legacy || v2 || oldQueue ? ClinicRules.LegacyStarterQueueCapacity(state) : ClinicRules.UnpaidQueueCapacity(state))) return false;
             foreach (var desk in state.ReceptionDesks)
                 if (desk.PatientId >= 0 && !state.Patients.Any(p => p.Id == desk.PatientId
                     && p.DeskId == desk.Id && (p.Phase == ClinicPatientPhase.WalkingToReception || p.Phase == ClinicPatientPhase.CheckingIn))) return false;
@@ -872,11 +913,14 @@ namespace IdleClinic.Core
                     || job.PaidCost != ClinicRules.RenovationCost(state, room.Kind)
                     || job.EndsTick - job.StartedTick != ClinicRules.RenovationSeconds(state, room.Kind) * 10L) return false;
             }
+            if (!state.OpeningEnabled && state.Tutorial == ClinicTutorialStep.BossOpening) return false;
+            if (state.OpeningEnabled && !ValidOpening(state)) return false;
+            if (!ValidOffice(state)) return false;
             if (state.Tutorial == ClinicTutorialStep.Complete)
             {
-                if (state.TotalTreatments < 1 || nurseStations.Count < 1 || state.NextArrivalTick <= state.Tick) return false;
+                if ((!state.OpeningEnabled && state.TotalTreatments < 1) || nurseStations.Count < 1 || state.NextArrivalTick <= state.Tick) return false;
             }
-            else
+            else if (!state.OpeningEnabled)
             {
                 if (state.NextArrivalTick != -1 || state.NextPatientId != 1 || state.TotalTreatments != 0 || state.Patients.Count != 1
                     || state.Patients[0].Id != 0 || state.TotalPayments > 1 || state.WaitingRoomUnlocked || state.Construction.Count != 0) return false;

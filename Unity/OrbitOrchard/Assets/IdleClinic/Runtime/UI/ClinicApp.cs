@@ -188,7 +188,7 @@ namespace IdleClinic.App
                 : State.Tutorial==ClinicTutorialStep.HireFirstNurse ? "A nurse makes all the difference"
                 : State.Tutorial==ClinicTutorialStep.FirstTreatment ? "A little care. A fresh start." : "";
             hint.style.display=string.IsNullOrEmpty(hintLabel.text)?DisplayStyle.None:DisplayStyle.Flex;
-            var key=simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom+":"+upgradeTrack)+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
+            var key=State.OfficeLevel+":"+State.OfficeUpgradeEndsTick+":"+State.OpeningStep+":"+State.OpeningTaskEndsTick+":"+simulation.ConstructionSlots+":"+simulation.BuildersBusy+":"+(gemsOpen?"gems:"+GemDockKey():locationsOpen?"locations":settingsOpen?"settings":selectedObject.HasValue?selectedObject.Value.Kind+":"+selectedObject.Value.Id:selectedRoom+":"+upgradeTrack)+":"+State.Location+":"+profile.state.DoctorsClinicUnlocked+":"+State.Tutorial+":"+State.Staff.Count+":"+State.WaitingRoomUnlocked+":"+
                 string.Join(";",State.Rooms.Select(r=>$"{r.Built}:{r.Tier}:{r.EquipmentLevel}:{r.FacilitiesLevel}:{r.DecorationLevel}:{r.StationCount}:{(r.GearLevels==null?"":string.Join(",",r.GearLevels))}"))+":"+
                 string.Join(";",State.Construction.Select(c=>c.Id))+":"+
                 string.Join(";",State.ReceptionDesks.Select(d=>$"{d.Id}:{d.EquipmentLevel}"))+":"+
@@ -228,13 +228,14 @@ namespace IdleClinic.App
             selectedRoom=null;selectedObject=null;settingsOpen=false;gemsOpen=false;locationsOpen=false;world.SelectRoom(default(ClinicHit));dockKey="";UpdateReadouts();
         }
 
-        private void Run(Func<ClinicCommandResult> action)
+        private void Run(Func<ClinicCommandResult> action,bool closeAfterSuccess=false)
         {
             if(saves.HasPendingOfflineProgress){Notify("Saving your return first…");return;}
             var result=action();
             if(!result.Success){Notify(result.Message);return;}
             HandleEvents(simulation.DrainEvents());
-            SaveNow();UpdateReadouts();
+            SaveNow();
+            if(closeAfterSuccess)CloseContext();else UpdateReadouts();
         }
 
         private void Collect(int desk)
@@ -246,6 +247,7 @@ namespace IdleClinic.App
         {
             foreach(var e in events)
             {
+                if(e.Kind==ClinicEventKind.PatientTurnedAway&&State.Tick-e.Tick<=30)world.ShowTurnedAway(e);
                 clinicAudio.PlayEvent(e.Kind);
                 AnnounceEvent(e);
                 if(e.Kind==ClinicEventKind.CashCollected&&saves.BoostActive(DateTimeOffset.UtcNow))
@@ -266,7 +268,7 @@ namespace IdleClinic.App
                 else if(e.Kind==ClinicEventKind.TreatmentCompleted)Feedback(-1);
                 else if(e.Kind==ClinicEventKind.NurseHired || e.Kind==ClinicEventKind.ReceptionistHired || e.Kind==ClinicEventKind.DoctorHired || e.Kind==ClinicEventKind.PharmacistHired || e.Kind==ClinicEventKind.EquipmentUpgraded || e.Kind==ClinicEventKind.StationAdded || e.Kind==ClinicEventKind.StaffTrained || e.Kind==ClinicEventKind.StationUpgraded || e.Kind==ClinicEventKind.AmenityUpgraded)
                     Feedback(1);
-                else if(e.Kind==ClinicEventKind.ConstructionCompleted){Feedback(1);ShowRoomReady(e.Room);}
+                else if(e.Kind==ClinicEventKind.ConstructionCompleted){Feedback(1);if(e.SourceAnchor=="office")Notify("Clinic level "+State.OfficeLevel+" unlocked",5);else ShowRoomReady(e.Room);}
                 else if(e.Kind==ClinicEventKind.WaitingRoomUnlocked)Notify("A waiting room is ready to build",5);
             }
         }
@@ -317,13 +319,17 @@ namespace IdleClinic.App
             if(guideCard!=null){guideCard.style.bottom=bottom+16;guideCard.style.left=safe.xMin+(safe.width-guideWidth)/2;guideCard.style.width=guideWidth;}
             // The camera tools hide while a panel is open, so a panel may rise to just below the balances.
             LimitDockContent(sheet?h-(top+76)-bottom-20:h-bottom-12-(top+76));
-            cameraTools.style.right=w-safe.xMax+16;
+            // The lower toolbar sits below camera cutouts; a top cutout must not
+            // push it toward the centre of the Duo display.
+            cameraTools.style.right=16;
             cameraTools.style.display=dockOpen?DisplayStyle.None:DisplayStyle.Flex;
             var guideHeight=guideCard==null||guideCard.style.display==DisplayStyle.None?0:
                 float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
             cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32:20);
             LayoutWelcome(safe,top);
-            toast.style.top=top+132;
+            // Sheet notifications sit at the foot, leaving the heading and navigation readable.
+            toast.style.top=sheet?new StyleLength(StyleKeyword.Auto):new StyleLength(top+132);
+            toast.style.bottom=sheet?new StyleLength(bottom+20):new StyleLength(StyleKeyword.Auto);
             root.EnableInClassList("compact",w<370 || h<700);
             root.EnableInClassList("narrow",w<440);
         }
@@ -351,6 +357,7 @@ namespace IdleClinic.App
         }
         private void BindSimulations()
         {
+            new ClinicSimulation(profile.state).EnsureOfficeAnchor();
             simulation = new ClinicSimulation(profile.ActiveState);
             var other = profile.activeLocation == ClinicLocation.StarterClinic ? profile.doctorsState : profile.state;
             otherSimulation = other == null ? null : new ClinicSimulation(other);

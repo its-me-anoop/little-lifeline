@@ -74,7 +74,8 @@ namespace IdleClinic.App
         private static string ObjectName(ClinicHit hit)=>hit.Kind==ClinicHitKind.Desk?"Reception desk "+(hit.Id+1):
             hit.Kind==ClinicHitKind.Station?"Nursing station "+(hit.Id+1):hit.Kind==ClinicHitKind.DoctorStation?"Consultation "+(hit.Id+1):
             hit.Kind==ClinicHitKind.PharmacyStation?"Pharmacy counter "+(hit.Id+1):hit.Kind==ClinicHitKind.Parking?"Car park":
-            hit.Kind==ClinicHitKind.Toilet?"Waiting room toilet":hit.Kind==ClinicHitKind.Taxi?"Taxi stand":"Vending machine";
+            hit.Kind==ClinicHitKind.Toilet?"Waiting room toilet":hit.Kind==ClinicHitKind.Taxi?"Taxi stand":
+            hit.Kind==ClinicHitKind.BossOffice?"Boss office":hit.Kind==ClinicHitKind.CleaningUtilities?"Cleaning utilities room":"Vending machine";
         private static int[] StationIds(ClinicState state,ClinicStaffRole role)=>role==ClinicStaffRole.Receptionist?state.ReceptionDesks.Select(s=>s.Id).ToArray():
             role==ClinicStaffRole.Doctor?state.ConsultationStations.Select(s=>s.Id).ToArray():role==ClinicStaffRole.Pharmacist?
             state.PharmacyStations.Select(s=>s.Id).ToArray():state.TreatmentStations.Select(s=>s.Id).ToArray();
@@ -115,9 +116,53 @@ namespace IdleClinic.App
         private void BuildManagementDock(ClinicHit hit)
         {
             dock.AddToClassList("upgrade-dock");dock.AddToClassList("management-dock");
-            if(IsWorkstation(hit.Kind))BuildWorkstationDock(hit);
+            if(hit.Kind==ClinicHitKind.BossOffice||hit.Kind==ClinicHitKind.CleaningUtilities)BuildSupportRoomDock(hit.Kind);
+            else if(IsWorkstation(hit.Kind))BuildWorkstationDock(hit);
             else BuildAmenityDock(AmenityKind(hit.Kind));
         }
+        private void BuildSupportRoomDock(ClinicHitKind kind)
+        {
+            dock.RemoveFromClassList("upgrade-dock");
+            var office=kind==ClinicHitKind.BossOffice;
+            if(office && simulation.OfficeAnchored){BuildOfficeProgression();return;}
+            Text(dock,office?"A quiet place to manage your clinic":"Everything needed to keep the clinic tidy","room-detail");
+            var contents=Box(dock,"support-room-contents");
+            Text(contents,office?"Desk & computer · Visitor seating · Filing cabinet":"Mops & broom · Bucket & wringer · Supply trolley","room-detail");
+            Text(contents,office?"Clinic records and a comfortable space for staff meetings.":"Utility sink · Cleaning bottles · Fresh towels · Wet floor sign","room-detail");
+            var footer=Box(dock,"management-footer");
+            var other=new ClinicHit(office?ClinicHitKind.CleaningUtilities:ClinicHitKind.BossOffice);
+            var shortcut=IconButton(footer,office?ClinicGlyph.Equipment:ClinicGlyph.Room,"View "+ObjectName(other),()=>SelectObject(other),"room-shortcut");
+            Text(shortcut,ObjectName(other),"purchase-detail");
+        }
+
+        private void BuildOfficeProgression()
+        {
+            Text(dock,"Clinic level "+State.OfficeLevel,"track-title",true);
+            Text(dock,"The office sets the level for every room.","room-detail");
+            if(simulation.OfficeUpgrading)
+            {
+                var status=Text(dock,"","room-detail");
+                readouts.Add(()=>status.text="Office level "+(State.OfficeLevel+1)+" · "+TimeLabel((State.OfficeUpgradeEndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond)+" remaining");
+                return;
+            }
+            var rooms=Box(dock,"support-room-contents");
+            foreach(var room in State.Rooms)
+            {
+                var captured=room.Kind;
+                var label=(room.Kind==ClinicRoom.FirstAid?"Nursing":room.Kind.ToString())+" · Level "+(room.Built?room.Tier:0)+" / "+State.OfficeLevel;
+                var button=IconButton(rooms,room.Built&&room.Tier>=State.OfficeLevel?ClinicGlyph.Room:ClinicGlyph.Upgrade,label,()=>Select(captured),"track-action");
+                var roomLabel=Text(button,label,"room-detail");roomLabel.style.color=LeafInk;roomLabel.style.marginLeft=6;
+            }
+            if(State.OfficeLevel>=ClinicRules.MaximumTier(State)){Text(dock,"Clinic fully upgraded.","room-detail");return;}
+            if(!simulation.RoomsAtOfficeLevel){Text(dock,"Finish upgrading every room to level "+State.OfficeLevel+" to unlock the next office upgrade.","room-detail");return;}
+            if(simulation.BuildersBusy){BuildBuilderBusy(dock);return;}
+            var action=IconButton(dock,ClinicGlyph.Upgrade,"Upgrade office",()=>Run(()=>simulation.UpgradeOffice(),true),"track-action primary-action");
+            action.name="office-upgrade";
+            Text(action,"Office level "+(State.OfficeLevel+1)+" · "+simulation.OfficeUpgradeCost+" coins","action-label",true);
+            Text(dock,TimeLabel(simulation.OfficeUpgradeSeconds)+" build · Unlocks room level "+(State.OfficeLevel+1),"room-detail");
+            readouts.Add(()=>action.SetEnabled(State.Wallet>=simulation.OfficeUpgradeCost));
+        }
+
         private void BuildWorkstationDock(ClinicHit hit)
         {
             var role=RoleForHit(hit.Kind);
@@ -210,6 +255,8 @@ namespace IdleClinic.App
         private void UpdateManagementMarkers()
         {
             var unlocked=State.Tutorial==ClinicTutorialStep.Complete;
+            ManagementMarker(new ClinicHit(ClinicHitKind.BossOffice),world.GetSupportRoomPoint(true),State.Location==ClinicLocation.StarterClinic);
+            ManagementMarker(new ClinicHit(ClinicHitKind.CleaningUtilities),world.GetSupportRoomPoint(false),State.Location==ClinicLocation.StarterClinic);
             foreach(var role in new[]{ClinicStaffRole.Receptionist,ClinicStaffRole.Nurse,ClinicStaffRole.Doctor,ClinicStaffRole.Pharmacist})
                 foreach(var id in StationIds(State,role))
                     ManagementMarker(StationHit(role,id),world.GetWorkstationPoint(role,id),unlocked);

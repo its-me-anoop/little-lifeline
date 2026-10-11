@@ -46,10 +46,13 @@ namespace IdleClinic.Core
                 V3.RenovationGrowth, room.Tier - 1);
         public static int RenovationSeconds(int currentTier) => currentTier == 1 || currentTier == 2
             ? (int)ScaleCost(V3.RenovationBaseSeconds, V3.RenovationTimeGrowth, currentTier - 1) : 0;
-        // Under rules 5 the longer facilities tracks spread the same queue places and seats over more levels,
-        // so the top level still fills exactly the places the building has.
-        public static int UnpaidQueueCapacity(ClinicState state) => (IsDoctors(state) ? 12 : 6)
-            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, IsDoctors(state) ? 11 : 5, 1);
+        // The starter reception is a fixed five-place line. Doctors facilities and waiting-room
+        // facilities spread their additional places over the longer rules-5 tracks.
+        public const int StarterQueueCapacity = 5;
+        public static int UnpaidQueueCapacity(ClinicState state) => IsDoctors(state) ? 12
+            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, 11, 1) : StarterQueueCapacity;
+        internal static int LegacyStarterQueueCapacity(ClinicState state) => 6
+            + SpreadLevels(state, state.Room(ClinicRoom.Reception).FacilitiesLevel, 5, 1);
         public static int WaitingCapacity(ClinicState state) => state.Room(ClinicRoom.Waiting).Built
             ? (IsDoctors(state) ? 8 : 4) + SpreadLevels(state, state.Room(ClinicRoom.Waiting).FacilitiesLevel, IsDoctors(state) ? 22 : 10, 2) : 2;
         /// <summary>Places added by a facilities level: a fixed step per level under earlier rules, and the same total

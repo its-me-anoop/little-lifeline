@@ -36,9 +36,12 @@ namespace IdleClinic.Presentation
         }
 
         internal int MovingCount { get {int count=0;foreach(var a in patients.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;foreach(var a in staff.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;return count;} }
+        private Actor boss;
+        private Transform bossBroom;
         internal void Render(ClinicState state,bool reducedMotion)
         {
             double tick=state.Tick+state.SubTick;
+            RenderBoss(state,tick,reducedMotion);
             float elapsed=lastRenderTick<0?0:(float)Math.Max(0,(tick-lastRenderTick)*.1);lastRenderTick=tick;
             retired.Clear();
             foreach(var entry in patients)
@@ -48,20 +51,24 @@ namespace IdleClinic.Presentation
             }
             for(int i=0;i<retired.Count;i++)
             {
-                var actor=patients[retired[i]];patients.Remove(retired[i]);
+                var actor=patients[retired[i]];patients.Remove(retired[i]);actor.Emoji.Hide();
                 if(leavingOnFoot.Remove(retired[i])&&actor.HasPosition&&actor.Root.gameObject.activeSelf)StartDeparture(actor,retired[i],state.Location);
                 else {actor.Root.gameObject.SetActive(false);patientPool.Push(actor);}
             }
             RenderDepartures(elapsed,tick,reducedMotion);
+            double emojiSeconds=tick*.1;int emojiBudget=2;
+            foreach(var leaving in departures)if(leaving.Actor.Emoji.Showing(emojiSeconds))emojiBudget--;
+            foreach(var existing in patients.Values)if(existing.Emoji!=null&&existing.Emoji.Showing(emojiSeconds))
+            {if(emojiBudget>0)emojiBudget--;else existing.Emoji.Hide();}
             for(int i=0;i<state.Patients.Count;i++)
             {
                 var person=state.Patients[i];
                 if(!patients.TryGetValue(person.Id,out var actor))
-                { actor=patientPool.Count>0?patientPool.Pop():Create("Patient");patients.Add(person.Id,actor);actor.Root.name="Patient "+person.Id;actor.ResetPlacement(person.Id*.17); }
+                { actor=patientPool.Count>0?patientPool.Pop():Create("Patient");patients.Add(person.Id,actor);actor.Root.name="Patient "+person.Id;actor.ResetPlacement(person.Id*.17);actor.Emoji.Assign(state.Seed,person.Id,emojiSeconds); }
                 bool inVehicle=person.Phase==ClinicPatientPhase.WaitingToPark||person.Phase==ClinicPatientPhase.DrivingToParking||
                     person.Phase==ClinicPatientPhase.WaitingToExit||person.Phase==ClinicPatientPhase.DrivingFromParking||person.Phase==ClinicPatientPhase.TaxiArriving||person.Phase==ClinicPatientPhase.TaxiDroppingOff||person.Phase==ClinicPatientPhase.TaxiPickingUp||person.Phase==ClinicPatientPhase.TaxiDeparting;
                 actor.Root.gameObject.SetActive(!inVehicle);
-                if(inVehicle){actor.HasPosition=false;actor.Moving=false;continue;}
+                if(inVehicle){actor.HasPosition=false;actor.Moving=false;actor.Emoji.InVehicle(emojiSeconds);continue;}
                 actor.Appearance.Apply(person.AppearanceId);
                 bool walking=person.Phase==ClinicPatientPhase.Arriving||person.Phase==ClinicPatientPhase.WalkingToReception||
                     person.Phase==ClinicPatientPhase.WalkingToWaiting||person.Phase==ClinicPatientPhase.WalkingToTreatment||person.Phase==ClinicPatientPhase.Leaving||
@@ -80,6 +87,7 @@ namespace IdleClinic.Presentation
                     !doctors&&person.Phase==ClinicPatientPhase.ReceptionQueue,savedPath,moveStarted);
                 int pose=actor.Moving?1:person.Phase==ClinicPatientPhase.CheckingIn||person.Phase==ClinicPatientPhase.Dispensing||person.Phase==ClinicPatientPhase.UsingAmenity&&!seated?2:seated?4:0;
                 actor.Sample(pose,tick*.1+person.Id*.17,reducedMotion,person.Phase==ClinicPatientPhase.Leaving||person.Phase==ClinicPatientPhase.WalkingToTaxi,person.FirstAidComplete);actor.Appearance.AfterPose(seated);
+                if(actor.Emoji.Render(emojiSeconds,actor.Root.position,world.SceneCamera.transform.rotation,reducedMotion,emojiBudget>0))emojiBudget--;
                 if(person.Phase==ClinicPatientPhase.Leaving&&person.ParkingBayId<0&&!person.UsesTaxi)leavingOnFoot.Add(person.Id);else leavingOnFoot.Remove(person.Id);
             }
             foreach(var entry in staff)
@@ -101,6 +109,65 @@ namespace IdleClinic.Presentation
                 Place(actor,member.FromAnchor,member.ToAnchor,Progress(tick,member.MoveStartedTick,member.MoveEndsTick),walking,true,tick,false);
                 actor.Sample(pose,tick*.1+member.Id*.13,reducedMotion);actor.Appearance.AfterPose(false);
             }
+        }
+        private void RenderBoss(ClinicState state,double tick,bool reducedMotion)
+        {
+            if(!state.OpeningEnabled || state.Location!=ClinicLocation.StarterClinic){if(boss!=null)boss.Root.gameObject.SetActive(false);return;}
+            if(boss==null)
+            {
+                boss=Create("Receptionist",ClinicStaffRole.Receptionist);boss.Root.name="Clinic boss";boss.Appearance.Apply(0,1);
+                foreach(var renderer in boss.Root.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    var materials=renderer.sharedMaterials;
+                    for(int i=0;i<materials.Length;i++)if(materials[i].name=="Clinic Sage"||materials[i].name=="Clinic Apricot")materials[i]=art.Material("Ink");
+                    renderer.sharedMaterials=materials;
+                }
+                art.Box("Boss gold tie",boss.Root,new Vector3(0,1.06f,.17f),new Vector3(.045f,.22f,.018f),"Gold");
+                bossBroom=art.Group("Boss cleaning broom",boss.Root,new Vector3(.29f,0,.30f));
+                art.Cylinder("Broom handle",bossBroom,new Vector3(0,.72f,0),new Vector3(.035f,1.2f,.035f),"Timber");
+                art.Box("Broom bristles",bossBroom,new Vector3(0,.05f,0),new Vector3(.38f,.09f,.13f),"Gold");
+            }
+            boss.Root.gameObject.SetActive(true);
+            bool task=state.OpeningTaskEndsTick>=0;
+            int zone=state.OpeningStep==ClinicOpeningStep.FirstCheckIn?0:state.BossZone;
+            Vector3 position=ClinicOpeningPresentation.BossPoint(zone),direction=Vector3.back;
+            float progress=task?Mathf.Clamp01((float)((tick-state.OpeningTaskStartedTick)/(state.OpeningTaskEndsTick-state.OpeningTaskStartedTick))):1;
+            bool walking=task&&progress<.7f&&state.BossFromZone!=zone;
+            if(walking)
+            {
+                var route=ClinicOpeningPresentation.BossRoute(state.BossFromZone,zone);float total=0;
+                for(int i=1;i<route.Count;i++)total+=Vector3.Distance(route[i-1],route[i]);
+                float distance=total*progress/.7f;boss.WalkCycles=distance/WalkCycleLength;
+                for(int i=1;i<route.Count;i++)
+                {
+                    float segment=Vector3.Distance(route[i-1],route[i]);direction=route[i]-route[i-1];
+                    if(distance<=segment){position=Vector3.Lerp(route[i-1],route[i],segment<=0?1:distance/segment);break;}distance-=segment;
+                }
+            }
+            boss.Moving=walking;boss.Root.position=position;if(direction.sqrMagnitude>.001f)boss.Root.rotation=Quaternion.LookRotation(direction);
+            bool cleaning=task&&!walking&&ClinicSimulation.OpeningCleaning(state.OpeningStep);
+            bossBroom.gameObject.SetActive(cleaning);
+            if(cleaning)bossBroom.localRotation=Quaternion.Euler(0,0,reducedMotion?0:Mathf.Sin((float)tick*.5f)*15);
+            boss.Sample(walking?1:task||state.OpeningStep==ClinicOpeningStep.FirstCheckIn?2:0,tick*.1,reducedMotion);
+        }
+        internal void TurnAway(ClinicEvent arrival)
+        {
+            int rejected=0;foreach(var walking in departures)if(walking.Rejected)rejected++;
+            if(rejected>=2)return;
+            if(departures.Count>=MaximumDepartures)FinishDeparture(0);
+            var actor=patientPool.Count>0?patientPool.Pop():Create("Patient");
+            int seed=(int)(arrival.Id%int.MaxValue);
+            actor.Root.name="Turned-away patient "+arrival.Id;actor.Root.gameObject.SetActive(true);
+            actor.ResetPlacement(seed*.17);actor.Emoji.Assign(42,seed,arrival.Tick*.1);
+            actor.Appearance.Apply(seed%12);
+            var gate=world.GetAnchorPoint("entrance");var start=gate+Vector3.back*1.10f;
+            actor.Root.position=start;actor.Root.rotation=Quaternion.LookRotation(Vector3.forward);
+            var departure=new Departure{Actor=actor,Seed=seed,Rejected=true,TurnDistance=1.10f};
+            departure.Add(start);departure.Add(gate);
+            departure.Add(gate+new Vector3(.55f,0,-.70f));
+            departure.Add(new Vector3(gate.x+.55f,gate.y,start.z));
+            departure.Add(new Vector3(seed%2==0?-26f:26f,gate.y,start.z));
+            departures.Add(departure);
         }
         private void StartDeparture(Actor actor,int id,ClinicLocation location)
         {
@@ -135,7 +202,13 @@ namespace IdleClinic.Presentation
                 actor.Root.position=departure.Sample(departure.Distance,out var direction);
                 if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
                 actor.WalkCycles+=elapsed*DepartureSpeed/WalkCycleLength;actor.Moving=true;
-                actor.Sample(1,tick*.1+departure.Seed*.17,reducedMotion,true,true);actor.Appearance.AfterPose(false);
+                actor.Sample(1,tick*.1+departure.Seed*.17,reducedMotion,!departure.Rejected,!departure.Rejected);actor.Appearance.AfterPose(false);
+                if(departure.Rejected)
+                {
+                    if(!departure.AngryStarted&&departure.Distance>=departure.TurnDistance)
+                    {departure.AngryStarted=true;actor.Emoji.Angry(tick*.1);}
+                    actor.Emoji.Render(tick*.1,actor.Root.position,world.SceneCamera.transform.rotation,reducedMotion,false);
+                }
             }
         }
         private void FinishDeparture(int index)
@@ -145,7 +218,7 @@ namespace IdleClinic.Presentation
         }
         private sealed class Departure
         {
-            internal Actor Actor;internal int Seed;internal float Distance,Length;
+            internal Actor Actor;internal int Seed;internal float Distance,Length,TurnDistance;internal bool Rejected,AngryStarted;
             private readonly Vector3[] points=new Vector3[6];private int count;
             internal void Add(Vector3 point){if(count>0)Length+=Vector3.Distance(points[count-1],point);points[count++]=point;}
             internal Vector3 Sample(float distance,out Vector3 direction)
@@ -219,7 +292,7 @@ namespace IdleClinic.Presentation
         {
             foreach(var entry in patients)if(Near(entry.Value,point,halfWidth,distance))return true;
             foreach(var entry in staff)if(Near(entry.Value,point,halfWidth,distance))return true;
-            return false;
+            return boss!=null&&Near(boss,point,halfWidth,distance);
         }
         private static bool Near(Actor actor,Vector3 point,float halfWidth,float distance)
         {
@@ -261,12 +334,13 @@ namespace IdleClinic.Presentation
                     art.Box("Relieved smile",relief,new Vector3(i*.015f,-.074f+.006f*i*i,.163f),new Vector3(.019f,.011f,.011f),"Ink");
                 relief.gameObject.SetActive(false);
             }
-            return new Actor(root,animation,states,head,relief,departureWave,new ClinicAppearance(art,root,model=="Patient",role));
+            return new Actor(root,animation,states,head,relief,departureWave,new ClinicAppearance(art,root,model=="Patient",role),model=="Patient"?new ClinicPatientEmoji(art,root,head):null);
         }
         private sealed class Actor
         {
             internal readonly Transform Root;
             internal readonly ClinicAppearance Appearance;
+            internal readonly ClinicPatientEmoji Emoji;
             internal readonly ClinicRoute Route=new ClinicRoute();
             internal string From,To;
             internal bool IsStaff,Moving,HasPosition,QueueMoving;
@@ -278,8 +352,8 @@ namespace IdleClinic.Presentation
             private readonly Transform head,relief;
             private readonly AnimationState departureWave;
             private int current=-1;
-            internal Actor(Transform root,Animation animation,AnimationState[] states,Transform head,Transform relief,AnimationState departureWave,ClinicAppearance appearance)
-            { Appearance=appearance;Root=root;this.animation=animation;this.states=states;this.head=head;this.relief=relief;this.departureWave=departureWave; }
+            internal Actor(Transform root,Animation animation,AnimationState[] states,Transform head,Transform relief,AnimationState departureWave,ClinicAppearance appearance,ClinicPatientEmoji emoji)
+            { Emoji=emoji;Appearance=appearance;Root=root;this.animation=animation;this.states=states;this.head=head;this.relief=relief;this.departureWave=departureWave; }
             internal void ResetPlacement(double cycle)
             { From=null;To=null;HasPosition=false;Moving=false;QueueMoving=false;QueueDistance=0;RouteStartProgress=0;SavedArrivalPath=null;SavedPhaseStartedTick=0;WalkCycles=cycle; }
             internal void Sample(int pose,double seconds,bool reducedMotion,bool departing=false,bool bandaged=false)
@@ -326,9 +400,9 @@ namespace IdleClinic.Presentation
             bool fromCare=Starts(from,"firstaid.station."),toCare=Starts(to,"firstaid.station.");
             bool fromParking=Starts(from,"parking.bay."),toParking=Starts(to,"parking.bay.");
             bool fromAmenity=Starts(from,"waiting.toilet.")||Starts(from,"waiting.vending."),toAmenity=Starts(to,"waiting.toilet.")||Starts(to,"waiting.vending.");
-            float deskAisle=staff?-1.15f:-4.05f;
-            float fromJunction=fromCare?1.03f:fromSeat||fromAmenity?WaitingWestLane:fromDesk?deskAisle:fromParking?-6.90f:world.GetAnchorPoint(from).z;
-            float toJunction=toCare?1.03f:toSeat||toAmenity?WaitingEastLane:toDesk?deskAisle:toParking?-6.90f:end.z;
+            float deskAisle=staff?.15f:-2.55f;
+            float fromJunction=fromCare?1.10f:fromSeat||fromAmenity?WaitingWestLane:fromDesk?deskAisle:fromParking?-6.90f:world.GetAnchorPoint(from).z;
+            float toJunction=toCare?.40f:toSeat||toAmenity?WaitingEastLane:toDesk?deskAisle:toParking?-6.90f:end.z;
             float lane=toJunction>=fromJunction?NorthLane:SouthLane;
             if(fromQueue&&toQueue)
             {
@@ -355,9 +429,9 @@ namespace IdleClinic.Presentation
                 else {Add(new Vector3(start.x,start.y,-3.42f));Add(new Vector3(3.40f,start.y,-3.42f));}
                 if(!toSeat){Add(new Vector3(3.40f,start.y,WaitingWestLane));Add(new Vector3(lane,start.y,WaitingWestLane));}
             }
-            else if(fromDesk) { float z=staff?-1.15f:-4.05f;Add(new Vector3(start.x,start.y,z));Add(new Vector3(lane,start.y,z)); }
+            else if(fromDesk) { float z=staff?.15f:-2.55f;float x=staff?start.x:start.x+.70f;Add(new Vector3(x,start.y,start.z));Add(new Vector3(x,start.y,z));Add(new Vector3(lane,start.y,z)); }
             else if(fromSeat) { Add(new Vector3(3.40f,start.y,start.z));if(!toAmenity){Add(new Vector3(3.40f,start.y,WaitingWestLane));Add(new Vector3(lane,start.y,WaitingWestLane));} }
-            else if(fromCare) { Add(new Vector3(start.x,start.y,1.03f));Add(new Vector3(lane,start.y,1.03f)); }
+            else if(fromCare) { float x=world.GetAnchorPoint(from.Replace(".staff",".patient")).x+.34f;Add(new Vector3(x,start.y,staff?1.95f:2.30f));Add(new Vector3(x,start.y,1.10f));Add(new Vector3(lane,start.y,1.10f)); }
             else if(fromQueue && !toDesk)
             { Add(new Vector3(lane,start.y,start.z));Add(new Vector3(lane,start.y,-4.05f)); }
             else if(!fromQueue)Add(new Vector3(lane,start.y,start.z));
@@ -371,7 +445,7 @@ namespace IdleClinic.Presentation
             }
             else if(toDesk)
             {
-                float z=staff?-1.15f:-4.05f;
+                float z=staff?.15f:-2.55f;
                 if(!fromQueue)Add(new Vector3(lane,end.y,z));
                 else if(start.z<-5.13f)
                 { Add(new Vector3(lane,start.y,start.z));Add(new Vector3(lane,end.y,z)); }
@@ -379,8 +453,8 @@ namespace IdleClinic.Presentation
                 Add(new Vector3(end.x,end.y,z));
             }
             else if(toSeat) { if(!fromAmenity){Add(new Vector3(lane,end.y,WaitingEastLane));Add(new Vector3(3.40f,end.y,WaitingEastLane));}Add(new Vector3(3.40f,end.y,end.z)); }
-            else if(toCare) { Add(new Vector3(lane,end.y,1.03f));Add(new Vector3(end.x,end.y,1.03f)); }
-            else if(toQueue) { Add(new Vector3(lane,end.y,-4.05f));Add(new Vector3(end.x,end.y,-4.05f)); }
+            else if(toCare) { float x=world.GetAnchorPoint(to.Replace(".staff",".patient")).x-.34f;Add(new Vector3(lane,end.y,.40f));Add(new Vector3(x,end.y,.40f));Add(new Vector3(x,end.y,1.95f));if(staff)Add(new Vector3(end.x,end.y,1.95f));else Add(new Vector3(x,end.y,2.30f)); }
+            else if(toQueue) { Add(new Vector3(lane,end.y,end.z)); }
             else Add(new Vector3(lane,end.y,end.z));
             Add(end);
         }

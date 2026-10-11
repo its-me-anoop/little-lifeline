@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using IdleClinic.Core;
+using IdleClinic.Presentation;
 using IdleClinic.Services;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,13 +23,13 @@ namespace IdleClinic.App
         private void BuildDockContent()
         {
             dock.Clear();readouts.Clear();
-            dock.RemoveFromClassList("upgrade-dock");dock.RemoveFromClassList("management-dock");dock.RemoveFromClassList("locations-dock");dock.RemoveFromClassList("room-dock");
+            dock.RemoveFromClassList("shop-dock");dock.RemoveFromClassList("upgrade-dock");dock.RemoveFromClassList("management-dock");dock.RemoveFromClassList("locations-dock");dock.RemoveFromClassList("room-dock");
             if(!gemsOpen&&!locationsOpen&&!settingsOpen && !selectedRoom.HasValue&&!selectedObject.HasValue){dock.style.display=DisplayStyle.None;ApplySafeArea();return;}
             dock.style.display=DisplayStyle.Flex;
             Box(dock,"dock-handle").pickingMode=PickingMode.Ignore;
             var heading=Box(dock,"dock-heading");
             var titles=Box(heading,"dock-titles");titles.pickingMode=PickingMode.Ignore;
-            var title=Text(titles,gemsOpen?"Gems & goals":locationsOpen?"Your clinics":settingsOpen?"Settings":selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title",true);
+            var title=Text(titles,gemsOpen?(gemTab==GemTab.Shop?"Clinic shop":"Gems & goals"):locationsOpen?"Your clinics":settingsOpen?"Settings":selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title",true);
             Display(title);
             var roomPanel=!gemsOpen&&!locationsOpen&&!settingsOpen&&!selectedObject.HasValue;
             if(roomPanel&&State.Tutorial==ClinicTutorialStep.Complete&&State.Room(selectedRoom.Value).Built)BuildRoomMeta(titles,State.Room(selectedRoom.Value));
@@ -37,6 +38,7 @@ namespace IdleClinic.App
             if(gemsOpen){BuildGemsDock();ApplySafeArea();return;}
             if(locationsOpen){BuildLocationsDock();ApplySafeArea();return;}
             if(settingsOpen){BuildSettings();ApplySafeArea();return;}
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){BuildOpeningDock();ApplySafeArea();return;}
             if(selectedObject.HasValue){BuildManagementDock(selectedObject.Value);ApplySafeArea();return;}
             var room=State.Room(selectedRoom.Value);
             if(!room.Built)
@@ -75,6 +77,12 @@ namespace IdleClinic.App
             else BuildUpgrade(body,room,upgradeTrack);
             var construction=State.Construction.FirstOrDefault(c=>c.Room==room.Kind);
             if(construction!=null)BuildConstructionReadout(construction,body);
+            else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.OfficeAnchored&&room.Tier>=State.OfficeLevel)
+            {
+                Text(body,"Upgrade the office to unlock room level "+(room.Tier+1)+".","room-detail");
+                var office=IconButton(body,ClinicGlyph.Room,"View office",()=>SelectObject(new ClinicHit(ClinicHitKind.BossOffice)),"track-action");
+                Text(office,"View office · Clinic level "+State.OfficeLevel,"action-label");
+            }
             else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.BuildersBusy)BuildBuilderBusy(body);
             else if(room.Tier<ClinicRules.MaximumTier(State))BuildRenovation(body,room);
             else Text(body,"Room complete. Every size is built.","max-room");
@@ -186,7 +194,7 @@ namespace IdleClinic.App
             }
 
             var controlName="upgrade-"+room.Kind.ToString().ToLowerInvariant()+"-"+track.ToString().ToLowerInvariant();
-            Action activate=()=>{if(capped)FocusRenovation(room);else Run(()=>simulation.Upgrade(room.Kind,track));};
+            Action activate=()=>{if(capped)FocusRenovation(room);else Run(()=>simulation.Upgrade(room.Kind,track),true);};
             var button=new Button(activate){name=controlName};
             button.AddToClassList("track-action");
             button.tooltip=TrackName(track)+" level "+level+". "+(capped?(!atTop?"Requires room "+unlockTier:"Fully improved"):
@@ -276,15 +284,15 @@ namespace IdleClinic.App
         {
             if(track==UpgradeTrack.Equipment)return room==ClinicRoom.Waiting?"Faster calls":UpgradeBenefit(room,track);
             if(track==UpgradeTrack.Decoration)return "A warmer welcome";
-            return room==ClinicRoom.Waiting?"Two more seats":room==ClinicRoom.Reception?"One more queue place":"Better care";
+            return room==ClinicRoom.Waiting?"Two more seats":room==ClinicRoom.Reception?(ClinicRules.IsDoctors(State)?"One more queue place":"Better check-in facilities"):"Better care";
         }
-        private static string TrackDescription(ClinicRoom room,UpgradeTrack track)
+        private string TrackDescription(ClinicRoom room,UpgradeTrack track)
         {
             if(track==UpgradeTrack.Equipment)return room==ClinicRoom.Waiting?"Better equipment by the seats. Patients answer the call sooner."
                 :"Better equipment at every station. Staff serve each patient faster.";
             if(track==UpgradeTrack.Decoration)return "A more welcoming room raises every visit fee.";
             return room==ClinicRoom.Waiting?"More paid patients wait inside, not out the door."
-                :room==ClinicRoom.Reception?"One more patient can queue before new arrivals turn away."
+                :room==ClinicRoom.Reception?(ClinicRules.IsDoctors(State)?"One more patient can queue before new arrivals turn away.":"Improves reception fittings. The check-in line holds up to five patients.")
                 :"Improved care raises the visit fee.";
         }
         private static string EffectLabel(ClinicRoom room,UpgradeTrack track)
@@ -313,7 +321,7 @@ namespace IdleClinic.App
         private string NextBenefit(ClinicRoomState room,UpgradeTrack track)
         {
             if(track==UpgradeTrack.Decoration)return "+5% fee";
-            if(track==UpgradeTrack.Facilities)return room.Kind==ClinicRoom.Waiting?"+2 seats":room.Kind==ClinicRoom.Reception?"+1 place":room.Kind==ClinicRoom.Consultation||room.Kind==ClinicRoom.Pharmacy?"+10% fee":"+15% fee";
+            if(track==UpgradeTrack.Facilities)return room.Kind==ClinicRoom.Waiting?"+2 seats":room.Kind==ClinicRoom.Reception?(ClinicRules.IsDoctors(State)?"+1 place":"Improved fittings"):room.Kind==ClinicRoom.Consultation||room.Kind==ClinicRoom.Pharmacy?"+10% fee":"+15% fee";
             return ServiceRange(room,1)??"Faster service";
         }
 
@@ -327,11 +335,11 @@ namespace IdleClinic.App
             return times.First()==times.Last()?ServiceTime(times.First()):ServiceTime(times.First()).TrimEnd('s')+"–"+ServiceTime(times.Last());
         }
 
-        private static string UpgradeBenefit(ClinicRoom room,UpgradeTrack track)
+        private string UpgradeBenefit(ClinicRoom room,UpgradeTrack track)
         {
             if(track==UpgradeTrack.Decoration)return "More welcoming furnishings increase the visit fee.";
             if(track==UpgradeTrack.Equipment)return room==ClinicRoom.FirstAid?"Faster first aid":room==ClinicRoom.Reception?"Faster check-in":room==ClinicRoom.Consultation?"Faster consultations":room==ClinicRoom.Pharmacy?"Faster dispensing":"Faster calls from the waiting room";
-            return room==ClinicRoom.Waiting?"Two more seats":room==ClinicRoom.Reception?"One more queue place":"Improved care increases the visit fee";
+            return room==ClinicRoom.Waiting?"Two more seats":room==ClinicRoom.Reception?(ClinicRules.IsDoctors(State)?"One more queue place":"Better check-in facilities"):"Improved care increases the visit fee";
         }
 
         private Button Purchase(VisualElement parent,ClinicGlyph glyph,string label,long price,Func<bool> unlocked,
@@ -355,7 +363,7 @@ namespace IdleClinic.App
             var price=ClinicRules.RenovationCost(State,room.Kind);
             var nextTier=room.Tier+1;
             Func<ClinicCommandResult> action=()=>simulation.Renovate(room.Kind);
-            var button=new Button(()=>Run(action)){name="expand-room",tooltip="Renovate to room "+nextTier+" for "+Money(price)+" coins"};
+            var button=new Button(()=>Run(action,true)){name="expand-room",tooltip="Renovate to room "+nextTier+" for "+Money(price)+" coins"};
             button.AddToClassList("renovate-card");
             var tile=Box(button,"icon-tile icon-tile-small tile-light");tile.Add(new ClinicIcon(ClinicGlyph.Upgrade,22,BuildInk));
             var words=Box(button,"renovate-words");
@@ -374,7 +382,7 @@ namespace IdleClinic.App
                 need.text=ready?"Ready":"Need "+Money(price-State.Wallet)+" more";
                 need.EnableInClassList("need-ready",ready);
             });
-            RegisterAccessibleButton(button,button.tooltip+". Upgrade limit "+ClinicRules.TrackCap(State,nextTier),()=>Run(action),
+            RegisterAccessibleButton(button,button.tooltip+". Upgrade limit "+ClinicRules.TrackCap(State,nextTier),()=>Run(action,true),
                 ()=>State.Wallet>=price?"Ready":"Need "+Money(price-State.Wallet)+" more coins");
         }
 

@@ -36,7 +36,7 @@ namespace IdleClinic.App
         {
             if(locationControl==null)return;
             locationControl.style.display=State.Tutorial==ClinicTutorialStep.Complete?DisplayStyle.Flex:DisplayStyle.None;
-            locationName.text=ClinicLocationReadout.Name(State.Location);
+            locationName.text=ClinicLocationReadout.Name(State.Location)+(simulation.OfficeAnchored?" · Level "+State.OfficeLevel:"");
             locationMultiplier.text=State.Location==ClinicLocation.DoctorsClinic?"2×":"1×";
         }
         private void ToggleLocations()

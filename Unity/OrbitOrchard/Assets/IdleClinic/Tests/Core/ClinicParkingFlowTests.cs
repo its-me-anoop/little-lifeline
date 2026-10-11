@@ -145,6 +145,12 @@ namespace IdleClinic.Tests
             bad=Clone(game.State);bad.Room(ClinicRoom.Reception).FacilitiesLevel=2;
             var first=bad.Patients.Single(p=>p.Id==car.Id);long originalEnd=first.PhaseEndsTick;
             first.Phase=ClinicPatientPhase.WaitingToPark;first.PhaseEndsTick=0;
+            // The old fixture increased queue capacity through facilities. Make room for
+            // the second reserved car inside the fixed five-place queue instead.
+            var removed=bad.Patients.Where(p=>p.QueueIndex>=0&&p.Id!=first.Id).OrderByDescending(p=>p.QueueIndex).First();
+            bad.Patients.Remove(removed);int queueIndex=0;
+            foreach(var p in bad.Patients.Where(p=>p.QueueIndex>=0).OrderBy(p=>p.Id))
+            {p.QueueIndex=queueIndex++;p.ToAnchor=ClinicRules.QueueAnchor(p.QueueIndex);if(p.Phase==ClinicPatientPhase.ReceptionQueue)p.FromAnchor=p.ToAnchor;}
             var second=(ClinicPatientState)Copy(car);second.Id=((bad.NextPatientId+2)/3)*3;bad.NextPatientId=second.Id+1;
             second.AppearanceId=ClinicRules.PatientAppearance(bad.Seed,second.Id);second.QueueIndex=bad.Patients.Max(p=>p.QueueIndex)+1;
             second.ParkingBayId=Enumerable.Range(0,6).First(bay=>bad.Patients.All(p=>p.ParkingBayId!=bay));

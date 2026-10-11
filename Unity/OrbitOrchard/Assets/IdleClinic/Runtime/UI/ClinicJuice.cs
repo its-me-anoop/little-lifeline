@@ -106,7 +106,7 @@ namespace IdleClinic.App
                 case ClinicEventKind.AmenityUpgraded:
                     Celebrate(world.GetAmenityPoint(change.Amenity), 1.2f, "Improved!"); break;
                 case ClinicEventKind.ConstructionCompleted:
-                    Celebrate(world.GetRoomPoint(change.Room), 2.6f, "Room ready!"); break;
+                    Celebrate(change.SourceAnchor=="office"?world.GetSupportRoomPoint(true):world.GetRoomPoint(change.Room), 2.6f, change.SourceAnchor=="office"?"Clinic level "+State.OfficeLevel:"Room ready!"); break;
                 case ClinicEventKind.PharmacyFeePaid:
                     FloatText(world.GetPharmacyCashPoint(change.DeskId), "+" + Money(change.Amount), "float-coins"); break;
                 case ClinicEventKind.TaxiFarePaid:

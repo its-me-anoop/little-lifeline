@@ -18,10 +18,20 @@ namespace IdleClinic.Tests
         [SetUp] public void SetUp() { directory = Path.Combine(Path.GetTempPath(), "clinic-profile-tests-" + Guid.NewGuid().ToString("N")); }
         [TearDown] public void TearDown() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 
+        // Seed an existing pre-opening save for the legacy tutorial and economy regression cases.
+        private ClinicProfileStore LegacyStore()
+        {
+            var store=new ClinicProfileStore(directory);var profile=store.LoadClinic(Start);
+            profile.state=ClinicSimulation.CreateNew().State;
+            ClinicSimulation.TryGrantReward(profile.state,ClinicProfileStore.NewPlayerCoins);
+            Assert.That(store.Save(profile,Start),Is.True,store.Error);
+            return store;
+        }
+
         private ClinicProfileStore OpenClinic(out DateTimeOffset now)
         {
-            var store = new ClinicProfileStore(directory);
-            var profile = store.LoadClinic(Start);
+            var store = LegacyStore();
+            var profile = store.Profile;
             var sim = new ClinicSimulation(profile.state);
             sim.Advance(25);
             Assert.That(sim.Collect(0).Success, Is.True);
@@ -35,10 +45,9 @@ namespace IdleClinic.Tests
 
         private static ClinicState Clone(ClinicState state) => JsonUtility.FromJson<ClinicState>(JsonUtility.ToJson(state));
 
-        [Test] public void FirstArrivalProgressesOfflineButCannotSkipCollectionOrHireTutorial()
+        [Test] public void LegacyFirstArrivalProgressesOfflineButCannotSkipCollectionOrHireTutorial()
         {
-            var store = new ClinicProfileStore(directory);
-            store.LoadClinic(Start);
+            var store = LegacyStore();
             var reopened = new ClinicProfileStore(directory);
             var profile = reopened.LoadClinic(Start.AddHours(1));
             Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.CollectFirstPayment));
@@ -50,8 +59,8 @@ namespace IdleClinic.Tests
 
         [Test] public void TutorialCollectionAndCashSurviveWithoutReplayingFirstPayment()
         {
-            var store = new ClinicProfileStore(directory);
-            var profile = store.LoadClinic(Start);
+            var store = LegacyStore();
+            var profile = store.Profile;
             var sim = new ClinicSimulation(profile.state);
             sim.Advance(25);
             Assert.That(sim.Collect(0).Success, Is.True);
@@ -122,6 +131,28 @@ namespace IdleClinic.Tests
             Assert.That(JsonUtility.ToJson(store.Profile.state), Is.EqualTo(JsonUtility.ToJson(expected)));
             Assert.That(store.ApplyOffline(now.AddDays(3)).applied, Is.False);
             Assert.That(store.Profile.lastAccountedUtcTicks, Is.EqualTo(now.AddDays(3).UtcDateTime.Ticks));
+        }
+
+        [Test] public void ChecksumVerifiedOlderQueueLoadsWithoutResettingClinicProgress()
+        {
+            var store=OpenClinic(out var now);var state=store.Profile.state;
+            state.Patients.RemoveAll(p=>p.QueueIndex>=0);
+            for(int index=0;index<6;index++)
+            {
+                var id=state.NextPatientId++;
+                state.Patients.Add(new ClinicPatientState{Id=id,AppearanceId=ClinicRules.PatientAppearance(state.Seed,id),
+                    Phase=ClinicPatientPhase.ReceptionQueue,QueueIndex=index,FromAnchor=ClinicRules.QueueAnchor(index),ToAnchor=ClinicRules.QueueAnchor(index)});
+            }
+            var wallet=state.Wallet;var earned=state.TotalEarned;var payments=state.TotalPayments;
+            WriteEnvelope(SavePath,JsonUtility.ToJson(store.Profile));
+            var reopened=new ClinicProfileStore(directory);var loaded=reopened.LoadClinic(now);
+            Assert.That(reopened.Error,Is.Null.Or.Empty);
+            Assert.That(loaded.state.Patients.FindAll(p=>p.QueueIndex>=0).Count,Is.EqualTo(5));
+            Assert.That(loaded.state.Wallet,Is.EqualTo(wallet));Assert.That(loaded.state.TotalEarned,Is.EqualTo(earned));
+            Assert.That(loaded.state.TotalPayments,Is.EqualTo(payments));
+            Assert.That(loaded.state.Tutorial,Is.EqualTo(ClinicTutorialStep.Complete));
+            Assert.That(reopened.Save(loaded,now),Is.True,reopened.Error);
+            Assert.That(new ClinicProfileStore(directory).LoadClinic(now).state.Patients.FindAll(p=>p.QueueIndex>=0).Count,Is.EqualTo(5));
         }
 
         [Test] public void ExistingSaveWithoutTrafficPauseFieldDefaultsToTheOriginalClock()
@@ -285,7 +316,7 @@ namespace IdleClinic.Tests
             Assert.That(profile.preferences.sound, Is.False); Assert.That(profile.preferences.haptics, Is.False);
             Assert.That(profile.preferences.reducedMotion, Is.True);
             Assert.That(profile.state.Wallet, Is.EqualTo(ClinicProfileStore.NewPlayerCoins)); Assert.That(profile.state.Tick, Is.Zero);
-            Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.FirstArrival));
+            Assert.That(profile.state.Tutorial, Is.EqualTo(ClinicTutorialStep.BossOpening));
             Assert.That(File.ReadAllText(legacyPath), Is.EqualTo(before));
             Assert.That(File.Exists(legacyPath + ".backup"), Is.False);
             Assert.That(JsonUtility.ToJson(profile), Does.Not.Contain("IsPassOwned"));

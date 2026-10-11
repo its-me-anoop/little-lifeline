@@ -19,26 +19,31 @@ namespace IdleClinic.Tests
         {
             var walls=Find("Joined clinic walls").GetComponentsInChildren<Renderer>();
             System.Action<float,float> covered=(x,z)=>Assert.That(walls.Any(r=>r.bounds.Contains(new Vector3(x,.40f,z))),Is.True,"Unframed wall gap at "+x+", "+z);
-            for(float z=-5.13f;z<=4.97f;z+=.025f){covered(-5.65f,z);covered(5.69f,z);}
+            for(float z=-5.43f;z<=4.97f;z+=.025f){covered(-5.65f,z);covered(5.69f,z);}
             for(float x=-5.65f;x<=5.69f;x+=.025f)
             {
-                if(x<-.235f||x>1.585f)covered(x,-5.13f);
-                if(x<2.955f||x>3.92f)covered(x,4.97f);
-                if(x<-.235f)covered(x,-.15f);
+                if(x<-.235f||x>1.585f)covered(x,-5.43f);
+                if((x<-.235f||x>1.585f)&&(x<2.955f||x>3.92f))covered(x,4.97f);
+                if(x<-.235f && (x< -4.875f || x> -3.525f) && (x< -2.175f || x> -.825f))covered(x,1.50f);
             }
-            covered(-5.65f,-.15f);covered(5.69f,-1.66f);
-            Assert.That(Find("Waiting corridor doorway"),Is.Not.Null);
-            Assert.That(Find("Waiting lobby doorway"),Is.Not.Null);
+            covered(-5.65f,1.50f);covered(5.69f,-1.66f);
+            Assert.That(Find("Nursing room 1 doorway"),Is.Not.Null);
+            Assert.That(Find("Nursing room 2 doorway"),Is.Not.Null);
+            for(float z=-4.7f;z<4.7f;z+=.1f)Assert.That(walls.Any(r=>r.bounds.Contains(new Vector3(1.67f,.40f,z))),Is.False,"Reception and waiting must remain open.");
+            Assert.That(Find("Staff corridor doorway"),Is.Not.Null);
         }
 
         [TestCase("entrance","reception.queue.0")]
         [TestCase("entrance","reception.queue.4")]
-        [TestCase("entrance","reception.queue.10")]
+        [TestCase("entrance","reception.queue.4")]
         [TestCase("reception.queue.4","reception.desk.0.patient")]
-        [TestCase("reception.queue.10","reception.desk.1.patient")]
+        [TestCase("reception.queue.4","reception.desk.1.patient")]
         [TestCase("reception.queue.4","reception.queue.3")]
         [TestCase("reception.desk.0.patient","waiting.seat.0")]
         [TestCase("waiting.seat.0","firstaid.station.1.patient")]
+        [TestCase("waiting.seat.0","firstaid.station.0.patient")]
+        [TestCase("firstaid.station.0.patient","exit")]
+        [TestCase("firstaid.station.1.patient","exit")]
         [TestCase("waiting.seat.13","waiting.toilet.patient")]
         [TestCase("waiting.seat.0","waiting.vending.patient")]
         [TestCase("waiting.vending.patient","waiting.seat.0")]
@@ -51,7 +56,8 @@ namespace IdleClinic.Tests
             state.Patients.Add(new ClinicPatientState{Id=901,Phase=ClinicPatientPhase.WalkingToWaiting,FromAnchor=from,ToAnchor=to,PhaseStartedTick=0,PhaseEndsTick=150});
             world.Render(state,0,true);
             var walls=Find("Joined clinic walls").GetComponentsInChildren<Renderer>()
-                .Concat(new[]{"Clinic entrance doorway","Care wing doorway","Waiting corridor doorway","Waiting lobby doorway"}.SelectMany(n=>Find(n).GetComponentsInChildren<Renderer>())).ToArray();
+                .Concat(Find("Treatment privacy partition").GetComponentsInChildren<Renderer>())
+                .Concat(new[]{"Clinic entrance doorway","Nursing room 1 doorway","Nursing room 2 doorway"}.SelectMany(n=>Find(n).GetComponentsInChildren<Renderer>())).ToArray();
             for(int tick=0;tick<=150;tick++)
             {
                 state.Tick=tick;world.Render(state,.1f);
@@ -64,8 +70,7 @@ namespace IdleClinic.Tests
             }
         }
 
-        [TestCase("Clinic entrance doorway")][TestCase("Care wing doorway")]
-        [TestCase("Waiting corridor doorway")][TestCase("Waiting lobby doorway")]
+        [TestCase("Clinic entrance doorway")][TestCase("Nursing room 1 doorway")][TestCase("Nursing room 2 doorway")]
         public void DoorLeavesMeetTheFrameHeadWithoutAnOpenStrip(string doorway)
         {
             world.Render(ClinicSimulation.CreateNew().State,0,true);

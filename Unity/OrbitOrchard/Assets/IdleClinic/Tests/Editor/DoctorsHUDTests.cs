@@ -79,11 +79,52 @@ namespace IdleClinic.Tests
                 var expand=dock.Q<Button>("expand-room");Assert.That(expand,Is.Not.Null);
                 Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-equipment"),Is.Not.Null,"The first upgradable piece can be bought.");
                 Assert.That(dock.Q<Button>("upgrade-"+kind.ToString().ToLowerInvariant()+"-facilities"),Is.Null,"Facilities are gone.");
-                Assert.That(dock.Q<Button>("gear-upgrade-19").enabledSelf,Is.False,"Later pieces wait for bigger rooms.");
+                Assert.That(dock.Q<Button>("gear-upgrade-19"),Is.Null,"Later pieces stay out of the compact card.");
+                Assert.That(dock.Query(className:"gear-row").ToList().Count,Is.EqualTo(1));
                 room.Tier=ClinicRules.MaximumTier(state);
                 Assert.That(ui.RoomDock(kind).Q<Button>("expand-room"),Is.Null);
             }
         }
+        [Test]
+        public void OfficeDockShowsClinicLevelAndRoomCatchUpBeforeNextUpgrade()
+        {
+            using(var ui=new DockFixture())
+            {
+                var sim=ClinicSimulation.CreateNew();sim.State.Tutorial=ClinicTutorialStep.Complete;
+                foreach(var room in sim.State.Rooms)room.Built=true;
+                sim.EnsureOfficeAnchor();sim.State.Wallet=100000;
+                ui.ReplaceSimulation(sim);
+                Assert.That(ui.RoomDock(ClinicRoom.Reception).Q<Button>("expand-room"),Is.Null);
+                var office=ui.ObjectDock(new ClinicHit(ClinicHitKind.BossOffice));
+                Assert.That(office.Q<Button>("office-upgrade"),Is.Not.Null);
+                sim.UpgradeOffice();
+                Assert.That(ui.ObjectDock(new ClinicHit(ClinicHitKind.BossOffice)).Q<Button>("office-upgrade"),Is.Null);
+                sim.AdvanceOffline(3600,0);
+                Assert.That(ui.RoomDock(ClinicRoom.Reception).Q<Button>("expand-room"),Is.Not.Null);
+                office=ui.ObjectDock(new ClinicHit(ClinicHitKind.BossOffice));
+                Assert.That(office.Q<Button>("office-upgrade"),Is.Null,"Room catch-up is required.");
+                Assert.That(office.Query<Label>().ToList().Any(l=>l.text.Contains("Clinic level 2")),Is.True);
+            }
+        }
+
+        [Test]
+        public void OpeningDockShowsOneTaskAndLocksUnrelatedRooms()
+        {
+            using(var ui=new DockFixture())
+            {
+                var sim=ClinicSimulation.CreateOpening();ui.ReplaceSimulation(sim);
+                var dock=ui.ObjectDock(new ClinicHit(ClinicHitKind.BossOffice));
+                Assert.That(dock.Q<Button>("opening-action"),Is.Not.Null);
+                Assert.That(dock.Q<Button>("expand-room"),Is.Null);
+                Assert.That(dock.Q(className:"track-tabs"),Is.Null);
+                Assert.That(ClinicSelectionPolicy.CanSelectRoom(sim.State,ClinicRoom.Reception),Is.False);
+                Assert.That(ClinicSelectionPolicy.CanSelectObject(sim.State,new ClinicHit(ClinicHitKind.BossOffice)),Is.True);
+                Assert.That(ClinicSelectionPolicy.CanSelectObject(sim.State,new ClinicHit(ClinicHitKind.CleaningUtilities)),Is.False);
+                sim.ContinueOpening(ClinicOpeningStep.CleanOffice);
+                Assert.That(ui.ObjectDock(new ClinicHit(ClinicHitKind.BossOffice)).Q<Button>("opening-action"),Is.Null,"A running task cannot be started twice.");
+            }
+        }
+
         [TestCase(ClinicAmenity.Parking,ClinicHitKind.Parking,"upgrade-car-park")]
         [TestCase(ClinicAmenity.Toilet,ClinicHitKind.Toilet,"upgrade-toilet")]
         [TestCase(ClinicAmenity.Vending,ClinicHitKind.Vending,"upgrade-vending-machine")]

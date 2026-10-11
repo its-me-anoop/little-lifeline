@@ -442,8 +442,63 @@ namespace IdleClinic.Tests
             Assert.That(game.HireReceptionist().Success, Is.True);
             game.AdvanceOffline(28800);
             Assert.That(ClinicRules.WaitingCapacity(game.State), Is.EqualTo(14));
-            Assert.That(ClinicRules.UnpaidQueueCapacity(game.State), Is.EqualTo(11));
+            Assert.That(ClinicRules.UnpaidQueueCapacity(game.State), Is.EqualTo(5));
             Assert.That(ClinicRules.VisitFee(game.State), Is.EqualTo(125));
+            Valid(game);
+        }
+
+        [Test]
+        public void FullQueueReportsTurnedAwayArrivalsWithoutAdmittingOrChargingThem()
+        {
+            var game=Ready();game.State.Patients.RemoveAll(p=>p.QueueIndex>=0);
+            foreach(var staff in game.State.Staff)staff.MoveEndsTick=game.State.Tick+1000;
+            for(int i=0;i<5;i++)
+            {
+                int id=game.State.NextPatientId++;
+                game.State.Patients.Add(new ClinicPatientState{Id=id,AppearanceId=ClinicRules.PatientAppearance(game.State.Seed,id),
+                    Phase=ClinicPatientPhase.ReceptionQueue,QueueIndex=i,FromAnchor=ClinicRules.QueueAnchor(i),ToAnchor=ClinicRules.QueueAnchor(i)});
+            }
+            int next=game.State.NextPatientId;long payments=game.State.TotalPayments,earned=game.State.TotalEarned;
+            var report=game.Advance(ClinicRules.ArrivalIntervalTicks*.1);
+            Assert.That(report.Events.Any(e=>e.Kind==ClinicEventKind.PatientTurnedAway),Is.True);
+            Assert.That(game.State.NextPatientId,Is.EqualTo(next));Assert.That(game.State.Patients.Count(p=>p.QueueIndex>=0),Is.EqualTo(5));
+            Assert.That(game.State.TotalPayments,Is.EqualTo(payments));Assert.That(game.State.TotalEarned,Is.EqualTo(earned));
+        }
+
+        [Test]
+        public void ReceptionQueueNeverExceedsFiveAfterFacilitiesUpgrades()
+        {
+            var game=Ready();var room=game.State.Room(ClinicRoom.Reception);
+            room.Tier=3;room.FacilitiesLevel=6;int maximum=0;
+            for(int i=0;i<1200;i++)
+            {
+                game.Advance(1);maximum=Math.Max(maximum,game.State.Patients.Count(p=>p.QueueIndex>=0));
+                Assert.That(game.State.Patients.Count(p=>p.QueueIndex>=0),Is.LessThanOrEqualTo(5));
+            }
+            Assert.That(maximum,Is.EqualTo(5));
+            Valid(game);
+        }
+
+        [Test]
+        public void ImportingOldLongQueuePreservesPaidVisitsAndLedgers()
+        {
+            var game=Ready();var state=game.State;
+            state.Patients.RemoveAll(p=>p.QueueIndex>=0);
+            for(int i=0;i<6;i++)
+            {
+                var id=state.NextPatientId++;
+                state.Patients.Add(new ClinicPatientState{Id=id,AppearanceId=ClinicRules.PatientAppearance(state.Seed,id),
+                    Phase=ClinicPatientPhase.ReceptionQueue,QueueIndex=i,FromAnchor=ClinicRules.QueueAnchor(i),ToAnchor=ClinicRules.QueueAnchor(i)});
+            }
+            var paid=state.Patients.Where(p=>p.Paid).Select(p=>p.Id).ToArray();
+            var wallet=state.Wallet;var earned=state.TotalEarned;var payments=state.TotalPayments;
+            Assert.That(ClinicSimulation.IsValidState(state),Is.False);
+            Assert.That(ClinicSimulation.TryMigrateStarterQueue(state),Is.True);
+            Assert.That(state.Patients.Count(p=>p.QueueIndex>=0),Is.EqualTo(5));
+            Assert.That(state.Patients.Where(p=>p.Paid).Select(p=>p.Id),Is.EqualTo(paid));
+            Assert.That(state.Wallet,Is.EqualTo(wallet));Assert.That(state.TotalEarned,Is.EqualTo(earned));
+            Assert.That(state.TotalPayments,Is.EqualTo(payments));
+            Assert.That(ClinicSimulation.TryMigrateStarterQueue(state),Is.True,"Import must be idempotent.");
             Valid(game);
         }
 

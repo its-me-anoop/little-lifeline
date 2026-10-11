@@ -16,6 +16,9 @@ namespace IdleClinic.App
         public static Vector3 ReceptionFloorPoint=>new Vector3(-2.8f,.14f,-3.8f);
         public static bool CanSelectObject(ClinicState state,ClinicHit hit)
         {
+            if(state==null)return false;
+            if(hit.Kind==ClinicHitKind.BossOffice||hit.Kind==ClinicHitKind.CleaningUtilities)return state.Location==ClinicLocation.StarterClinic
+                &&(!state.OpeningEnabled||state.OpeningStep==ClinicOpeningStep.Complete||hit.Kind==ClinicHitKind.BossOffice&&ClinicSimulation.OpeningZone(state.OpeningStep)==3);
             if(state.Tutorial!=ClinicTutorialStep.Complete)return false;
             switch(hit.Kind)
             {
@@ -31,7 +34,7 @@ namespace IdleClinic.App
             }
         }
         public static bool CanSelectRoom(ClinicState state,ClinicRoom room)
-            =>state!=null&&state.Room(room)!=null&&CanSelectRoom(state.Tutorial,room);
+            =>state!=null&&state.Room(room)!=null&&(state.OpeningEnabled&&state.OpeningStep!=ClinicOpeningStep.Complete ? ClinicSimulation.OpeningZone(state.OpeningStep)<3&&room==ClinicSimulation.OpeningRoom(state.OpeningStep) : CanSelectRoom(state.Tutorial,room));
         public static bool CanSelectRoom(ClinicTutorialStep tutorial,ClinicRoom room)
         {
             if(!Enum.IsDefined(typeof(ClinicRoom),room))return false;
@@ -278,7 +281,9 @@ namespace IdleClinic.App
                 case ClinicHitKind.Parking:
                 case ClinicHitKind.Toilet:
                 case ClinicHitKind.Vending:
-                case ClinicHitKind.Taxi:SelectObject(hit);break;
+                case ClinicHitKind.Taxi:
+                case ClinicHitKind.BossOffice:
+                case ClinicHitKind.CleaningUtilities:SelectObject(hit);break;
                 case ClinicHitKind.Reception:Select(ClinicRoom.Reception);break;
                 case ClinicHitKind.Treatment:Select(ClinicRoom.FirstAid);break;
                 case ClinicHitKind.Consultation:Select(ClinicRoom.Consultation);break;

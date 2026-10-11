@@ -353,6 +353,63 @@ Button:active { scale: .96 .96; }
 .text-link { height: 44px; padding: 0 4px; margin-left: 10px; justify-content: center; flex-shrink: 0; }
 .text-link-label { font-size: 14px; color: rgb(47,94,71); }
 
+/* Shop: a permanent benefit first, then a compact illustrated catalogue. */
+.shop-dock Button:disabled { opacity: 1; }
+.shop-builder-hero { position: relative; padding: 16px; margin: 2px 0 8px 0; border-radius: 20px; background-color: rgb(221,231,204); overflow: hidden; flex-shrink: 0; }
+.shop-dock .dock-heading { height: 40px; min-height: 40px; margin-bottom: 8px; padding-top: 0; }
+.shop-dock .close-control { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+.shop-dock .gem-tabs { height: 44px; margin-bottom: 8px; }
+.shop-dock .gem-tab { min-height: 36px; height: 36px; }
+.shop-builder-copy { width: 55%; min-height: 134px; }
+.shop-builder-art { position: absolute; right: 0; top: 0; width: 48%; height: 164px; }
+.shop-builder-headline { height: 38px; min-height: 38px; font-size: 34px; color: rgb(25,58,46); white-space: nowrap; }
+.shop-builder-copy-owned .shop-builder-headline { font-size: 26px; }
+.shop-builder-tag { align-self: flex-start; padding: 4px 9px; margin-top: 6px; margin-bottom: 6px; border-radius: 8px; background-color: rgb(36,58,49); color: rgb(251,250,240); font-size: 15px; }
+.shop-builder-benefit { min-height: 20px; font-size: 14px; color: rgb(36,58,49); white-space: normal; }
+.shop-builder-choices { flex-direction: row; justify-content: space-between; margin-top: 10px; }
+.shop-builder-cash { width: 48.5%; height: 48px; justify-content: center; align-items: center; background-color: rgb(47,107,79); border-radius: 14px; border-bottom-width: 3px; border-bottom-color: rgb(31,74,54); }
+.shop-builder-cash:disabled { background-color: rgb(213,221,196); border-bottom-color: rgb(200,211,188); }
+.shop-builder-cash:disabled .shop-cash-label { color: rgb(48,74,64); }
+.shop-builder-gems { width: 48.5%; min-height: 48px; height: 48px; margin: 0; padding: 0 6px; flex-direction: row; }
+.shop-builder-gems .price-chip { background-color: rgba(0,0,0,0); }
+.shop-builder-gems .price-chip-value { font-size: 17px; }
+.shop-builder-gems .offer-words { margin: 0; flex-grow: 0; }
+.shop-builder-gems.offer-confirm .price-chip-value { color: rgb(255,245,248); }
+.shop-builder-gems.offer-confirm .price-chip > ClinicIcon { opacity: 0; width: 0; }
+.shop-builder-shortfall { color: rgb(116,38,66); font-size: 13px; margin-top: 4px; -unity-text-align: middle-right; }
+.shop-payment-note { color: rgb(78,97,82); font-size: 13px; margin-top: 4px; -unity-text-align: middle-center; }
+.shop-builder-owned { color: rgb(47,94,71); font-size: 14px; margin-top: 8px; }
+.shop-pack-list { background-color: rgb(247,245,230); border-radius: 18px; padding: 0 8px; overflow: hidden; }
+.shop-pack-row { flex-direction: row; align-items: center; min-height: 52px; padding: 4px 2px; border-bottom-width: 1px; border-bottom-color: rgb(225,224,204); }
+.shop-pack-row-last { border-bottom-width: 0; }
+.shop-pack-art { width: 60px; height: 44px; flex-shrink: 0; }
+.shop-pack-amount { flex-grow: 1; flex-shrink: 1; margin-left: 8px; margin-right: 8px; font-size: 21px; color: rgb(25,58,46); white-space: nowrap; }
+.shop-cash-price { min-width: 94px; height: 36px; padding: 0 12px; flex-shrink: 0; justify-content: center; align-items: center; background-color: rgb(47,107,79); border-radius: 12px; border-bottom-width: 3px; border-bottom-color: rgb(31,74,54); }
+.shop-cash-label { color: rgb(251,250,240); font-size: 18px; -unity-text-align: middle-center; }
+.shop-pack-row:disabled .shop-cash-price { background-color: rgb(213,221,196); border-bottom-color: rgb(200,211,188); }
+.shop-pack-row:disabled .shop-cash-label { color: rgb(48,74,64); }
+.shop-extras-link { flex-direction: row; align-items: center; min-height: 64px; padding: 8px; margin-top: 8px; margin-bottom: 8px; background-color: rgb(247,245,230); border-radius: 18px; }
+.shop-extras-link > ClinicIcon { width: 32px; height: 32px; }
+.shop-extras-art { width: 60px; height: 48px; flex-shrink: 0; }
+.shop-extras-link .offer-words { margin-left: 12px; margin-right: 8px; }
+.shop-link-title { font-size: 18px; color: rgb(25,58,46); }
+.shop-dock .shop-footer { border-top-width: 1px; border-top-color: rgb(213,221,196); padding-top: 8px; }
+.shop-back { flex-direction: row; align-items: center; min-height: 44px; margin-bottom: 6px; }
+.shop-back > ClinicIcon { rotate: 180deg; width: 18px; height: 18px; }
+.shop-back-label { color: rgb(47,94,71); margin-left: 8px; font-size: 15px; }
+.shop-extra-offer { min-height: 76px; }
+.shop-shortfall { color: rgb(116,38,66); font-size: 13px; margin-top: 4px; white-space: normal; }
+.shop-dock .section-head { margin-top: 6px; margin-bottom: 6px; }
+.shop-dock .section-note { flex-shrink: 1; white-space: normal; }
+.compact .shop-builder-copy { min-height: 136px; }
+.compact .shop-builder-art { height: 164px; }
+.compact .shop-builder-headline { font-size: 30px; }
+.compact .shop-payment-note { display: none; }
+.compact .shop-pack-amount { font-size: 18px; }
+.compact .shop-pack-art { width: 56px; }
+.compact .shop-cash-price { min-width: 84px; }
+.compact .shop-builder-gems .price-chip-value { font-size: 15px; }
+
 /* ---------- Welcome back and room ready ---------- */
 .welcome-card { position: absolute; padding: 16px; background-color: rgb(251,250,240); border-radius: 24px; border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
 .welcome-heading { flex-direction: row; align-items: flex-start; margin-bottom: 12px; }
@@ -394,3 +451,14 @@ Button:active { scale: .96 .96; }
 .loading { flex-grow: 1; justify-content: center; align-items: center; }
 .loading-title { margin-top: 20px; font-size: 20px; }
 .loading ProgressBar { width: 180px; height: 8px; margin-top: 18px; }
+
+/* One current equipment upgrade keeps the room card compact. */
+.room-dock .gear-preview { width: 72px; height: 72px; min-width: 72px; }
+.room-dock .gear-panel { padding: 10px; margin-bottom: 8px; }
+.room-dock .gear-panel .track-title { font-size: 18px; }
+.room-dock .gear-panel .effect-row { margin-top: 6px; padding-top: 6px; padding-bottom: 6px; }
+.room-dock .gear-list { margin-bottom: 0; }
+.room-dock .gear-row { min-height: 48px; padding-top: 6px; padding-bottom: 0; border-bottom-width: 0; }
+
+.narrow .shop-builder-headline { font-size: 30px; }
+.narrow .shop-builder-benefit { font-size: 14px; }

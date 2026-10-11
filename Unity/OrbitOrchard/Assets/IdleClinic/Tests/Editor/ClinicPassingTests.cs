@@ -20,9 +20,9 @@ namespace IdleClinic.Tests
         [TestCase("waiting",false)][TestCase("waiting",true)]
         public void OpposingPatientsKeepBodyClearanceThroughSharedDoors(string doorway,bool reduced)
         {
-            string firstFrom="reception.desk.0.patient",firstTo="firstaid.station.1.patient";
+            string firstFrom="reception.desk.0.patient",firstTo="firstaid.station.0.patient";
             string secondFrom="firstaid.station.0.patient",secondTo="exit";
-            bool horizontal=doorway=="waiting";float crossing=doorway=="care"?-.15f:-5.13f;
+            bool horizontal=doorway=="waiting";float crossing=doorway=="care"?1.50f:-5.43f;
             if(doorway=="entrance"){firstFrom="entrance";firstTo="reception.queue.0";}
             if(horizontal){firstTo="waiting.seat.13";secondFrom="waiting.seat.0";secondTo="firstaid.station.1.patient";crossing=1.67f;}
             var firstRoute=new RouteProbe(world,firstFrom,firstTo);var secondRoute=new RouteProbe(world,secondFrom,secondTo);
@@ -36,7 +36,7 @@ namespace IdleClinic.Tests
             state.Tick=1000-window;world.Render(state,0,true);
             var first=Find("Patient 901");var second=Find("Patient 902");
             var walls=Find("Joined clinic walls").GetComponentsInChildren<Renderer>()
-                .Concat(new[]{"Clinic entrance doorway","Care wing doorway","Waiting corridor doorway"}.SelectMany(n=>Find(n).GetComponentsInChildren<Renderer>())).ToArray();
+                .Concat(new[]{"Clinic entrance doorway","Nursing room 1 doorway","Nursing room 2 doorway"}.SelectMany(n=>Find(n).GetComponentsInChildren<Renderer>())).ToArray();
             float minimum=float.MaxValue;bool before=false,after=false;var initialFoot=Foot(first);float footMovement=0;
             for(int tick=1000-window;tick<=1000+window;tick+=5)
             {
@@ -53,7 +53,7 @@ namespace IdleClinic.Tests
                 footMovement=Mathf.Max(footMovement,Vector3.Distance(initialFoot,Foot(first)));
             }
             Assert.That(before&&after,Is.True,"The fixture must actually pass the patients, not leave them on one side.");
-            Assert.That(minimum,Is.LessThan(.90f),"Both visitors must meet inside the same door aperture.");
+            Assert.That(minimum,Is.LessThan(.90f),"Both visitors must pass within the same circulation space.");
             Assert.That(footMovement,Is.GreaterThan(.03f),"Lane separation must retain articulated travel, including reduced motion.");
         }
 

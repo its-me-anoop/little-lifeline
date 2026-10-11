@@ -51,6 +51,7 @@ namespace IdleClinic.App
         /// <summary>After time away: what was earned, where it is, and any building still under way.</summary>
         private void ShowWelcome(ClinicOfflineReport report)
         {
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){Notify(OpeningTitles[(int)State.OpeningStep],4);return;}
             // A short gap only needs a line; the card is for real time away.
             if (welcomeCard == null || report.elapsedSeconds < 120) { Notify(OfflineMessage(report), 6); return; }
             welcomeCard.Clear(); welcomeReadouts.Clear();
@@ -149,7 +150,7 @@ namespace IdleClinic.App
 
         private void OpenShop()
         {
-            gemTab = GemTab.Shop; pendingConfirm = null;
+            gemTab = GemTab.Shop; shopExtrasOpen = false; pendingConfirm = null;
             if (!gemsOpen) ToggleGems(); else { dockKey = ""; UpdateReadouts(); }
         }
 

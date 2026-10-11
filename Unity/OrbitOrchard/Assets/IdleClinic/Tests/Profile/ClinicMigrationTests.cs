@@ -59,7 +59,7 @@ namespace IdleClinic.Tests
             Assert.That(loaded.state.Staff.All(s => s.TrainingLevel == 1), Is.True);
             Assert.That(loaded.state.ReceptionDesks.All(d => d.EquipmentLevel == 1), Is.True);
             Assert.That(loaded.state.TreatmentStations.Count, Is.EqualTo(2));
-            foreach (var patient in legacy.state.Patients)
+            foreach (var patient in legacy.state.Patients.Where(p=>p.QueueIndex<ClinicRules.StarterQueueCapacity))
             {
                 var restored = loaded.state.Patients.Single(p => p.Id == patient.Id);
                 Assert.That(restored.Phase, Is.EqualTo(patient.Phase));

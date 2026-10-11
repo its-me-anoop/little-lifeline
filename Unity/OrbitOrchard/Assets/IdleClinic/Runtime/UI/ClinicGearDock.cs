@@ -8,7 +8,7 @@ namespace IdleClinic.App
 {
     public sealed partial class ClinicApp
     {
-        // The piece the panel's picture shows: the one last tapped or upgraded, else the first that can still be upgraded.
+        // Show the next unfinished piece available in the current room.
         private int gearFocus=-1;
 
         private bool GearList(ClinicRoomState room,UpgradeTrack track)=>track==UpgradeTrack.Equipment&&ClinicGear.Active(State,room.Kind);
@@ -30,14 +30,13 @@ namespace IdleClinic.App
             return (ticks/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
         }
 
-        /// <summary>First aid equipment: one row per piece, each with ten versions. Pieces arrive with room size.</summary>
+        /// <summary>One available equipment upgrade, with its next version and price.</summary>
         private void BuildGearList(VisualElement parent,ClinicRoomState room)
         {
             var kind=room.Kind;var unlocked=ClinicGear.UnlockedCount(State,kind);
             var panel=Box(parent,"track-panel gear-panel");
             var intro=Box(panel,"track-intro");intro.pickingMode=PickingMode.Ignore;
-            var focus=gearFocus>=0&&gearFocus<ClinicGear.ItemCount?gearFocus:-1;
-            if(focus<0)focus=Enumerable.Range(0,ClinicGear.ItemCount).FirstOrDefault(i=>ClinicGear.Unlocked(State,kind,i)&&!ClinicGear.AtTop(State,kind,i));
+            var focus=Enumerable.Range(0,unlocked).Where(i=>!ClinicGear.AtTop(State,kind,i)).DefaultIfEmpty(Math.Max(0,unlocked-1)).First();
             var focusOpen=ClinicGear.Unlocked(State,kind,focus);var focusVersion=ClinicGear.Version(State,kind,focus);
             var shownVersion=focusOpen?Math.Min(ClinicGear.MaximumVersion,focusVersion+(focusVersion<ClinicGear.MaximumVersion?1:0)):1;
             var tile=Box(intro,"gear-preview");tile.pickingMode=PickingMode.Ignore;
@@ -46,26 +45,13 @@ namespace IdleClinic.App
             var words=Box(intro,"track-words");words.pickingMode=PickingMode.Ignore;
             Text(words,!focusOpen?"ARRIVES WITH ROOM SIZE "+ClinicGear.UnlockTier(State,focus):focusVersion>=ClinicGear.MaximumVersion?"FULLY UPGRADED":"NEXT VERSION · "+ClinicGear.VersionName(shownVersion).ToUpperInvariant(),"eyebrow",true);
             Display(Text(words,ClinicGear.ItemName(kind,focus),"track-title",true));
-            Text(words,unlocked+" of "+ClinicGear.ItemCount+" pieces unlocked. Every piece has ten versions, basic to advanced. Each upgrade shortens "+GearTask(kind)+" and helps the clinic grow.","track-description");
+            Text(words,"Version "+focusVersion+" → "+shownVersion+" of "+ClinicGear.MaximumVersion,"track-description");
             var effect=Box(panel,"effect-row");effect.pickingMode=PickingMode.Ignore;
             Text(effect,GearTimeLabel(kind),"effect-label",true);
             var values=Box(effect,"effect-values");values.pickingMode=PickingMode.Ignore;
             Display(Text(values,GearTime(kind),"effect-after",true));
-            GearProgress(State,room,out var owned,out var allowed);
-            var total=ClinicGear.ItemCount*ClinicGear.StepsPerItem;
-            var meter=Box(panel,"level-pips");meter.pickingMode=PickingMode.Ignore;
-            meter.tooltip=owned+" of "+total+" equipment upgrades owned";
-            for(var i=0;i<ClinicGear.ItemCount;i++)
-            {
-                var pip=Box(meter,"level-pip");pip.pickingMode=PickingMode.Ignore;
-                var version=ClinicGear.Version(State,kind,i);
-                pip.EnableInClassList("pip-have",version>=ClinicGear.MaximumVersion);
-                pip.EnableInClassList("pip-next",i<unlocked&&version<ClinicGear.MaximumVersion);
-                pip.EnableInClassList("pip-locked",i>=unlocked);
-            }
-            var list=Box(parent,"gear-list");
-            var guideItem=Enumerable.Range(0,ClinicGear.ItemCount).FirstOrDefault(i=>ClinicGear.Unlocked(State,kind,i)&&!ClinicGear.AtTop(State,kind,i));
-            for(var item=0;item<ClinicGear.ItemCount;item++)BuildGearRow(list,kind,item,item==guideItem);
+            var list=Box(panel,"gear-list");
+            BuildGearRow(list,kind,focus,true);
         }
 
         private void BuildGearRow(VisualElement list,ClinicRoom kind,int item,bool guideTarget)
@@ -73,10 +59,8 @@ namespace IdleClinic.App
             var open=ClinicGear.Unlocked(State,kind,item);var version=ClinicGear.Version(State,kind,item);var top=version>=ClinicGear.MaximumVersion;
             var row=Box(list,"gear-row");
             row.EnableInClassList("gear-focus",item==gearFocus);
-            row.RegisterCallback<ClickEvent>(e=>{if(gearFocus==item)return;gearFocus=item;dockKey="";UpdateReadouts();});
             row.EnableInClassList("gear-locked",!open);row.EnableInClassList("gear-top",open&&top);
             var words=Box(row,"gear-words");words.pickingMode=PickingMode.Ignore;
-            Display(Text(words,ClinicGear.ItemName(kind,item),"gear-name",true));
             Text(words,open?"Version "+version+" of "+ClinicGear.MaximumVersion+" · "+ClinicGear.VersionName(version):"Arrives with room size "+ClinicGear.UnlockTier(State,item),"gear-version");
             var pips=Box(words,"gear-pips");pips.pickingMode=PickingMode.Ignore;
             for(var v=1;v<=ClinicGear.MaximumVersion;v++)
@@ -104,13 +88,13 @@ namespace IdleClinic.App
             }
             var price=ClinicGear.UpgradeCost(State,kind,item);var next=ClinicGear.VersionName(version+1);
             Func<ClinicCommandResult> action=()=>simulation.UpgradeGear(kind,item);
-            var buy=new Button(()=>{gearFocus=item;Run(action);}){name=name,tooltip="Upgrade the "+ClinicGear.ItemName(kind,item).ToLowerInvariant()+" to "+next.ToLowerInvariant()+" for "+Money(price)+" coins"};
+            var buy=new Button(()=>{gearFocus=item;Run(action,true);}){name=name,tooltip="Upgrade the "+ClinicGear.ItemName(kind,item).ToLowerInvariant()+" to "+next.ToLowerInvariant()+" for "+Money(price)+" coins"};
             buy.AddToClassList("gear-action");buy.AddToClassList("primary-action");
             buy.Add(new ClinicIcon(ClinicGlyph.Coin,15,new Color(.98f,.86f,.45f)));
             Display(Text(buy,Money(price),"gear-price",true));
             row.Add(buy);
             readouts.Add(()=>buy.SetEnabled(State.Wallet>=price));
-            RegisterAccessibleButton(buy,buy.tooltip,()=>Run(action));
+            RegisterAccessibleButton(buy,buy.tooltip,()=>Run(action,true));
         }
     }
 }

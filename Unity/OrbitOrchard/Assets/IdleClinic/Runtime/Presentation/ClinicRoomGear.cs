@@ -52,8 +52,8 @@ namespace IdleClinic.Presentation
                 new[]{new Lane(-5.1f,-.70f,-.70f,-.70f,0,8),new Lane(-.55f,-1.3f,-.55f,-4.0f,90,4),new Lane(-5.05f,-1.4f,-5.05f,-4.0f,-90,4)},
                 new[]{new Lane(-5.47f,-4.3f,-5.47f,-1.7f,-90,4)},1f);
             d[Key(false,ClinicRoom.FirstAid)]=new Layout(Wall(0,1,9,11,14),
-                new[]{new Lane(-5.0f,4.40f,-.75f,4.40f,0,5),new Lane(-5.15f,.75f,-5.15f,3.7f,-90,3),new Lane(-.50f,2.9f,-.50f,4.1f,90,3),new Lane(-4.9f,.50f,-2.4f,.50f,180,4)},
-                new[]{new Lane(-5.0f,4.79f,-2.4f,4.79f,0,4),new Lane(-5.42f,1.5f,-5.42f,1.5f,-90,1)},1f);
+                new[]{new Lane(-5.0f,4.40f,-3.20f,4.40f,0,2),new Lane(-2.45f,4.40f,-.65f,4.40f,0,3),new Lane(-5.15f,.75f,-5.15f,3.7f,-90,3),new Lane(-.50f,2.9f,-.50f,4.1f,90,3),new Lane(-.50f,1.30f,-.50f,2.70f,90,4)},
+                new[]{new Lane(-5.0f,4.79f,-3.20f,4.79f,0,2),new Lane(-2.45f,4.79f,-.65f,4.79f,0,2),new Lane(-5.42f,1.5f,-5.42f,1.5f,-90,1)},1f);
             // The waiting room reaches the front wall. Seats keep both side walls and the walking spine down the middle; the pieces
             // stand in four rows of the lobby end (clear of the second west doorway, the walk to the vending machine at -3.4 and
             // the vending patient's spot) and by the back wall beside the toilet door.

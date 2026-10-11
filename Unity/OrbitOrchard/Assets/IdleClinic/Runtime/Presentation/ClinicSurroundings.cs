@@ -22,8 +22,8 @@ namespace IdleClinic.Presentation
             for(int i=0;i<14;i++)art.Box("Pavement joint",town,new Vector3(-11.5f+i*1.8f,.05f,-11.04f),new Vector3(.018f,.004f,.85f),"Slate");
 
             House(art,town,0,new Vector3(-10.3f,.05f,8.3f),new Vector3(2.6f,2.5f,3.2f),"Brick");
-            House(art,town,1,new Vector3(-4.5f,.05f,8.5f),new Vector3(3.2f,2.9f,3.0f),"Sage");
-            House(art,town,2,new Vector3(.3f,.05f,8.9f),new Vector3(3.4f,3.4f,3.5f),"Render");
+            House(art,town,1,new Vector3(-4.5f,.05f,12.9f),new Vector3(3.2f,2.9f,3.0f),"Sage");
+            House(art,town,2,new Vector3(.3f,.05f,13.3f),new Vector3(3.4f,3.4f,3.5f),"Render");
             House(art,town,3,new Vector3(5.4f,.05f,10.3f),new Vector3(2.8f,2.6f,3.0f),"Blue");
             House(art,town,4,new Vector3(-5.3f,.05f,-13.3f),new Vector3(3.3f,2.1f,2.6f),"Render");
             House(art,town,5,new Vector3(11.8f,.05f,1.4f),new Vector3(2.1f,2.5f,3.2f),"Brick");

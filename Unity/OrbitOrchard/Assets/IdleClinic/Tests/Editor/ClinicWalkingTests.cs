@@ -55,7 +55,7 @@ namespace IdleClinic.Tests
         }
 
         [TestCase(1,0,true)][TestCase(1,0,false)][TestCase(3,2,true)][TestCase(3,2,false)]
-        [TestCase(6,5,true)][TestCase(6,5,false)]
+        [TestCase(4,3,true)][TestCase(4,3,false)]
         public void QueueAdvanceWalksBetweenSlotsWithoutAQueuePhaseChange(int from,int to,bool reduced)
         {
             var state=PatientJourney(ClinicPatientPhase.ReceptionQueue,"reception.queue."+from,"reception.queue."+from);
@@ -75,11 +75,11 @@ namespace IdleClinic.Tests
         [TestCase(true)][TestCase(false)]
         public void ASecondQueueAdvanceStartsFromTheCurrentVisiblePosition(bool reduced)
         {
-            var state=PatientJourney(ClinicPatientPhase.ReceptionQueue,"reception.queue.6","reception.queue.6");
+            var state=PatientJourney(ClinicPatientPhase.ReceptionQueue,"reception.queue.4","reception.queue.4");
             state.Patients[0].PhaseEndsTick=0;world.Render(state,.1f,reduced);
-            state.Patients[0].FromAnchor=state.Patients[0].ToAnchor="reception.queue.5";
+            state.Patients[0].FromAnchor=state.Patients[0].ToAnchor="reception.queue.3";
             state.Tick=1;world.Render(state,.1f,reduced);var actor=Find("Patient 1");var before=actor.position;
-            state.Patients[0].FromAnchor=state.Patients[0].ToAnchor="reception.queue.4";
+            state.Patients[0].FromAnchor=state.Patients[0].ToAnchor="reception.queue.2";
             state.Tick=2;world.Render(state,.1f,reduced);
             Assert.That(Vector3.Distance(actor.position,before),Is.InRange(.05f,.14f),"Retargeting cannot snap back to an authoritative slot.");
         }
@@ -138,12 +138,12 @@ namespace IdleClinic.Tests
         }
 
         [TestCase("reception.queue.3","reception.desk.0.patient")]
-        [TestCase("reception.queue.6","reception.desk.1.patient")]
+        [TestCase("reception.queue.4","reception.desk.1.patient")]
         [TestCase("reception.queue.3","reception.queue.2")]
         [TestCase("reception.queue.2","reception.queue.3")]
-        [TestCase("reception.queue.6","reception.queue.2")]
-        [TestCase("reception.queue.2","reception.queue.6")]
-        [TestCase("reception.queue.6","firstaid.station.0.patient")]
+        [TestCase("reception.queue.4","reception.queue.2")]
+        [TestCase("reception.queue.2","reception.queue.4")]
+        [TestCase("reception.queue.4","firstaid.station.0.patient")]
         public void QueueRoutesCrossTheFrontWallOnlyThroughTheEntrance(string from,string to)
         {
             var route=new RouteProbe(world,from,to);bool crossed=false;

@@ -44,6 +44,7 @@ namespace IdleClinic.App
         private string GuideAccessibleValue()
         {
             var step = CurrentGuide();
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete) return OpeningTitles[(int)State.OpeningStep]+". "+OpeningReasons[(int)State.OpeningStep];
             if (step == null) return "";
             return saves.IsGuideStepDone(step) ? step.Title + " done. Collect " + step.GemReward + " gems." : step.Title + ". " + step.Why;
         }
@@ -51,6 +52,8 @@ namespace IdleClinic.App
         private void UpdateGuide()
         {
             if (guideCard == null) return;
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){UpdateOpeningGuide();return;}
+            guideRewardGem.parent.style.display=DisplayStyle.Flex;
             var step = CurrentGuide();
             var dockOpen = dock.style.display == DisplayStyle.Flex;
             var done = step != null && saves.IsGuideStepDone(step);
@@ -94,6 +97,7 @@ namespace IdleClinic.App
 
         private void OnGuideTap()
         {
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){OpenOpeningTask();return;}
             var step = CurrentGuide();
             if (step == null) return;
             if (saves.IsGuideStepDone(step))

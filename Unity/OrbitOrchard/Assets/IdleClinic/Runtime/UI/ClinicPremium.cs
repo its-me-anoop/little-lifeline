@@ -40,9 +40,11 @@ namespace IdleClinic.App
             gemBadge.style.display = claimableGoals > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        private string GemDockKey() => gemTab + ":" + pendingConfirm + ":" + profile.daily?.claimed.Count + ":" + profile.daily?.loginDay + ":" + saves.BoostActive(DateTimeOffset.UtcNow) + ":" + saves.OfflineLimitHours + ":"
+        private string GemDockKey() => gemTab + ":" + shopExtrasOpen + ":" + pendingConfirm + ":" + profile.daily?.claimed.Count + ":" + profile.daily?.loginDay + ":" + saves.BoostActive(DateTimeOffset.UtcNow) + ":" + saves.OfflineLimitHours + ":"
             + profile.premium.gems + ":" + claimableGoals + ":" + profile.premium.milestonesClaimed.Count
-            + ":" + (apple?.Products.Count(p => ClinicGemPacks.IsGemPack(p.id)) ?? 0) + ":" + (apple?.IsPurchasing ?? false);
+            + ":" + saves.HasUnlock(ClinicUnlocks.ExtraBuilder)
+            + ":" + string.Join(";", apple?.Products.Select(p => p.id + "=" + p.price) ?? Enumerable.Empty<string>())
+            + ":" + apple?.StoreStatus + ":" + (apple?.IsPurchasing ?? false) + ":" + (apple?.IsRestoring ?? false);
 
         private void ToggleGems()
         {
@@ -185,48 +187,94 @@ namespace IdleClinic.App
             }
         }
 
+        private bool shopExtrasOpen;
+
+        private Image ShopArt(VisualElement parent, string asset, string classes)
+        {
+            var image = new Image { image = Resources.Load<Texture2D>("Shop/" + asset), scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+            foreach (var name in classes.Split(' ')) image.AddToClassList(name);
+            parent.Add(image);
+            return image;
+        }
+
         private void BuildShopTab(VisualElement content)
         {
-            var now = DateTimeOffset.UtcNow;
-            Section(content, "Gems");
-            var packs = apple == null ? new List<AppleProduct>() : apple.Products.Where(p => ClinicGemPacks.IsGemPack(p.id)).OrderBy(p => ClinicGemPacks.GemsFor(p.id)).ToList();
-            if (packs.Count == 0)
+            dock.AddToClassList("shop-dock");
+            if (shopExtrasOpen)
             {
-                Text(content, apple == null || string.IsNullOrEmpty(apple.StoreStatus) ? "Gem packs are loading from the App Store." : apple.StoreStatus, "gem-note");
-                if (apple != null) apple.LoadProducts();
+                var back = IconButton(content, ClinicGlyph.Chevron, "Back to gem packs", () => { shopExtrasOpen = false; pendingConfirm = null; dockKey = ""; UpdateReadouts(); }, "shop-back");
+                back.name = "shop-back";
+                Text(back, "Back to gem packs", "shop-back-label", true);
+                BuildShopExtras(content);
             }
             else
             {
-                var shelf = Box(content, "shop-grid shop-grid-2");
-                foreach (var pack in packs)
+                BuildBuilderSection(content);
+                Section(content, "Gems");
+                var packs = apple == null ? new List<AppleProduct>() : apple.Products.Where(p => ClinicGemPacks.IsGemPack(p.id)).OrderBy(p => ClinicGemPacks.GemsFor(p.id)).ToList();
+                if (packs.Count == 0)
                 {
-                    var product = pack.id; var gems = ClinicGemPacks.GemsFor(product);
-                    var button = IconButton(shelf, ClinicGlyph.Gem, "Buy " + gems + " gems for " + pack.price, () => BuyGems(product), "gem-pack");
-                    var icon = button.Q<ClinicIcon>(); icon.Tint = GemInk; icon.style.width = 30; icon.style.height = 30;
-                    var words = Box(button, "pack-words"); words.pickingMode = PickingMode.Ignore;
-                    Display(Text(words, gems.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), "gem-pack-amount", true));
-                    Text(words, pack.price, "gem-pack-price", true);
-                    if (product == ClinicGemPacks.Medium) { button.AddToClassList("gem-pack-best"); Text(button, "Best value", "best-value", true); }
-                    button.SetEnabled(!apple.IsPurchasing);
+                    Text(content, apple == null || string.IsNullOrEmpty(apple.StoreStatus) ? "Gem packs are loading from the App Store." : apple.StoreStatus, "gem-note");
+                    if (apple != null) apple.LoadProducts();
                 }
+                else
+                {
+                    var list = Box(content, "shop-pack-list");
+                    foreach (var pack in packs)
+                    {
+                        var product = pack.id;
+                        var gems = ClinicGemPacks.GemsFor(product);
+                        var button = IconButton(list, ClinicGlyph.Gem, "Buy " + gems + " gems for " + pack.price, () => BuyGems(product), "shop-pack-row");
+                        button.name = "shop-pack-" + gems;
+                        button.Q<ClinicIcon>().RemoveFromHierarchy();
+                        var asset = product == ClinicGemPacks.Small ? "GemsSmall" : product == ClinicGemPacks.Medium ? "GemsMedium" : product == ClinicGemPacks.Large ? "GemsLarge" : "GemsExtraLarge";
+                        ShopArt(button, asset, "shop-pack-art");
+                        Display(Text(button, gems.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " gems", "shop-pack-amount", true));
+                        var price = Box(button, "shop-cash-price"); price.pickingMode = PickingMode.Ignore;
+                        Text(price, pack.price, "shop-cash-label", true);
+                        button.SetEnabled(!apple.IsPurchasing);
+                        if (pack == packs[packs.Count - 1]) button.AddToClassList("shop-pack-row-last");
+                    }
+                }
+                var extras = IconButton(content, ClinicGlyph.Coin, "Browse coins and boosts", () => { shopExtrasOpen = true; pendingConfirm = null; dockKey = ""; UpdateReadouts(); }, "shop-extras-link");
+                extras.name = "shop-coins-boosts";
+                extras.Q<ClinicIcon>().RemoveFromHierarchy();
+                ShopArt(extras, "CoinsBoosts", "shop-extras-art");
+                var words = Box(extras, "offer-words"); words.pickingMode = PickingMode.Ignore;
+                Text(words, "Coins & boosts", "shop-link-title", true);
+                Text(words, "More ways to progress your clinic", "offer-detail");
+                extras.Add(new ClinicIcon(ClinicGlyph.Chevron, 20, LeafInk));
             }
+            var footer = Box(content, "shop-footer");
+            Text(footer, "Gems stay with this clinic on this device.", "gem-note");
+            if (apple != null)
+            {
+                var restore = IconButton(footer, ClinicGlyph.Restore, "Restore existing purchases", RequestRestore, "text-link");
+                restore.name = "shop-restore-purchases";
+                restore.Q<ClinicIcon>().RemoveFromHierarchy();
+                Text(restore, "Restore purchases", "text-link-label", true);
+                restore.SetEnabled(!restoreRequested && !apple.IsRestoring);
+            }
+        }
 
-            Section(content, "Coins");
-            var coins = Box(content, "shop-grid shop-grid-3");
+        private void BuildShopExtras(VisualElement content)
+        {
+            var now = DateTimeOffset.UtcNow;
+            Section(content, "Coins", "Spend gems · receive coins instantly");
+            var coins = Box(content, "shop-grid shop-grid-1");
             foreach (var pack in ClinicShopOffers.CoinPacks)
             {
                 var offer = pack; var amount = saves.CoinPackAmount(pack);
-                GemOffer(coins, offer.Id, ClinicGlyph.Coin, Money(amount), null, offer.Gems, () => saves.BuyCoinPack(offer.Id, DateTimeOffset.UtcNow),
-                    "+" + Money(amount) + " coins", "offer-coins");
+                GemOffer(coins, offer.Id, ClinicGlyph.Coin, Money(amount) + " coins", "Instantly added to your balance", offer.Gems, () => saves.BuyCoinPack(offer.Id, DateTimeOffset.UtcNow),
+                    "+" + Money(amount) + " coins", "shop-extra-offer");
             }
-
-            Section(content, "Speed ups", saves.BoostActive(now) ? "2× active · " + TimeLabel(saves.BoostRemaining(now).TotalSeconds) + " left" : null);
-            var boosts = Box(content, "shop-grid shop-grid-2");
+            Section(content, "Boosts", saves.BoostActive(now) ? "2× active · " + TimeLabel(saves.BoostRemaining(now).TotalSeconds) + " left" : null);
+            var boosts = Box(content, "shop-grid shop-grid-1");
             foreach (var boost in ClinicShopOffers.Boosts)
             {
                 var offer = boost;
                 GemOffer(boosts, offer.Id, ClinicGlyph.Bolt, "2× collections", offer.Hours + (offer.Hours == 1 ? " hour" : " hours"), offer.Gems,
-                    () => saves.BuyBoost(offer.Id, DateTimeOffset.UtcNow), "Double collections for " + offer.Hours + (offer.Hours == 1 ? " hour" : " hours"), "offer-boost");
+                    () => saves.BuyBoost(offer.Id, DateTimeOffset.UtcNow), "Double collections for " + offer.Hours + (offer.Hours == 1 ? " hour" : " hours"), "shop-extra-offer");
             }
             foreach (var tier in ClinicShopOffers.OfflineTiers)
             {
@@ -234,24 +282,13 @@ namespace IdleClinic.App
                 var offer = tier;
                 var shelf = Box(content, "shop-grid shop-grid-1");
                 GemOffer(shelf, offer.Id, ClinicGlyph.Clock, offer.Name, "Now " + saves.OfflineLimitHours + " hours · tills hold " + Money(saves.OfflineCoinCap), offer.Gems,
-                    () => saves.BuyOfflineUpgrade(offer.Id, DateTimeOffset.UtcNow), offer.Name + " unlocked", "offer-wide");
+                    () => saves.BuyOfflineUpgrade(offer.Id, DateTimeOffset.UtcNow), offer.Name + " unlocked", "shop-extra-offer");
                 break;
-            }
-            BuildBuilderSection(content);
-            var footer = Box(content, "shop-footer");
-            Text(footer, "Gems never expire and are saved with this clinic on this device.", "gem-note");
-            if (apple != null)
-            {
-                var restore = IconButton(footer, ClinicGlyph.Restore, "Restore existing purchases", RequestRestore, "text-link");
-                restore.name = "shop-restore-purchases";
-                restore.Q<ClinicIcon>().RemoveFromHierarchy();
-                Text(restore, "Restore", "text-link-label", true);
-                restore.SetEnabled(!restoreRequested && !apple.IsRestoring);
             }
         }
 
         /// <summary>A gem purchase button. Spends of 50 gems or more ask for a second tap before anything is spent.</summary>
-        private void GemOffer(VisualElement shelf, string id, ClinicGlyph glyph, string title, string detail, long gems, Func<bool> buy, string done, string style)
+        private Button GemOffer(VisualElement shelf, string id, ClinicGlyph glyph, string title, string detail, long gems, Func<bool> buy, string done, string style)
         {
             var confirming = pendingConfirm == id && Time.unscaledTimeAsDouble < pendingConfirmUntil;
             var button = IconButton(shelf, glyph, title + (detail == null ? "" : ", " + detail) + " for " + gems + " gems", () =>
@@ -276,7 +313,11 @@ namespace IdleClinic.App
             var price = Box(button, "price-chip"); price.pickingMode = PickingMode.Ignore;
             price.Add(new ClinicIcon(ClinicGlyph.Gem, 14, GemInk));
             Display(Text(price, gems.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), "price-chip-value", true));
-            button.SetEnabled(profile.premium.gems >= gems);
+            button.name = "shop-offer-" + id;
+            var shortfall = Math.Max(0, gems - profile.premium.gems);
+            if (shortfall > 0 && !priceOnly) Text(button.Q(className: "offer-words"), "Need " + Money(shortfall) + " more gems", "shop-shortfall");
+            button.SetEnabled(shortfall == 0);
+            return button;
         }
 
         private void ClaimLogin()
@@ -299,26 +340,35 @@ namespace IdleClinic.App
 
         private void BuildBuilderSection(VisualElement content)
         {
-            if (saves.HasUnlock(ClinicUnlocks.ExtraBuilder))
+            var owned = saves.HasUnlock(ClinicUnlocks.ExtraBuilder);
+            var hero = Box(content, "shop-builder-hero"); hero.name = "shop-builder-hero";
+            ShopArt(hero, "BuilderHero", "shop-builder-art").scaleMode = ScaleMode.ScaleAndCrop;
+            var copy = Box(hero, "shop-builder-copy"); copy.pickingMode = PickingMode.Ignore;
+            copy.EnableInClassList("shop-builder-copy-owned", owned);
+            Text(copy, owned ? "Your building" : "Build more.", "shop-builder-headline", true);
+            Text(copy, owned ? "team is ready." : "Wait less.", "shop-builder-headline", true);
+            Text(copy, "Second builder", "shop-builder-tag", true);
+            Text(copy, "Build two rooms at once.", "shop-builder-benefit");
+            Text(copy, owned ? "Permanently unlocked." : "Yours permanently.", "shop-builder-benefit");
+            if (owned)
             {
-                Text(content, "Two builders: two rooms can build or renovate at once.", "gem-note");
+                Text(hero, "Owned · works in all your clinics", "shop-builder-owned", true);
                 return;
             }
-            var row = Box(content, "builder-row");
-            row.Add(new ClinicIcon(ClinicGlyph.Upgrade, 24, LeafInk));
-            var words = Box(row, "offer-words"); words.pickingMode = PickingMode.Ignore;
-            Text(words, "Second builder", "offer-title", true);
-            Text(words, "Two rooms build at once", "offer-detail");
-            GemOffer(row, ClinicUnlocks.ExtraBuilder, ClinicGlyph.Gem, "Second builder", null, ClinicUnlocks.ExtraBuilderGems,
-                () => saves.UnlockExtraBuilderWithGems(DateTimeOffset.UtcNow), "Your second builder is ready. Two rooms can now build at once.", "offer-price-only");
+            var choices = Box(hero, "shop-builder-choices");
             var product = apple?.Products.FirstOrDefault(p => p.id == ClinicUnlocks.ExtraBuilderProduct);
-            if (product != null)
-            {
-                var buy = IconButton(row, ClinicGlyph.Upgrade, "Buy a second builder for " + product.price + ", keep forever", () => BuyGems(product.id), "offer-price-only store-price");
-                buy.Q<ClinicIcon>().RemoveFromHierarchy();
-                Text(buy, product.price, "price-chip-value", true);
-                buy.SetEnabled(!apple.IsPurchasing);
-            }
+            var cash = IconButton(choices, ClinicGlyph.Upgrade, product == null ? "Second builder price is loading" : "Buy a second builder for " + product.price + ", keep forever", () => { if (product != null) BuyGems(product.id); }, "shop-builder-cash");
+            cash.name = "shop-builder-store";
+            cash.Q<ClinicIcon>().RemoveFromHierarchy();
+            Text(cash, product?.price ?? "Loading…", "shop-cash-label", true);
+            cash.SetEnabled(product != null && !apple.IsPurchasing);
+            var gem = GemOffer(choices, ClinicUnlocks.ExtraBuilder, ClinicGlyph.Gem, "Second builder", null, ClinicUnlocks.ExtraBuilderGems,
+                () => saves.UnlockExtraBuilderWithGems(DateTimeOffset.UtcNow), "Your second builder is ready. Two rooms can now build at once.", "offer-price-only shop-builder-gems");
+            gem.name = "shop-builder-gems";
+            Text(gem.Q(className: "price-chip"), "gems", "price-chip-value", true);
+            var shortage = Math.Max(0, ClinicUnlocks.ExtraBuilderGems - profile.premium.gems);
+            if (shortage > 0) Text(hero, "Need " + Money(shortage) + " more gems", "shop-builder-shortfall");
+            Text(hero, "Choose one payment option", "shop-payment-note");
         }
 
         /// <summary>An App Store unlock the player owns is copied into the save so it also works offline.</summary>

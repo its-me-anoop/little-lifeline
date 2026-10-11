@@ -18,26 +18,26 @@ namespace IdleClinic.Presentation
             for(int kind=0;kind<2;kind++)for(int station=0;station<2;station++)for(int level=2;level<=TopLevel;level++)
             {
                 var root=art.Group((kind==0?"Desk ":"Station ")+station+" equipment "+level,parent);stationDetails[kind,station,level-2]=root.gameObject;
-                float x=(kind==0?-3.85f:-3.88f)+station*(kind==0?2.12f:2.15f);int n=level-2,slot=n%5;bool upper=n>=5;
+                float x=(kind==0?-3.85f:-4.20f)+station*(kind==0?2.12f:2.70f);int n=level-2,slot=n%5;bool upper=n>=5;
                 if(kind==0)
                 {
                     float px=x-.65f+slot*.13f;
                     if(!upper)
                     {
-                        art.Box("Individual desk terminal",root,new Vector3(px,1.245f,-2.70f),new Vector3(.11f,.17f,.16f),level%2==0?"SageDark":"Gold");
-                        art.Box("Individual terminal display",root,new Vector3(px,1.335f,-2.70f),new Vector3(.08f,.015f,.10f),"Blue");
+                        art.Box("Individual desk terminal",root,new Vector3(px,1.245f,-1.18f),new Vector3(.11f,.17f,.16f),level%2==0?"SageDark":"Gold");
+                        art.Box("Individual terminal display",root,new Vector3(px,1.335f,-1.18f),new Vector3(.08f,.015f,.10f),"Blue");
                     }
-                    else art.Box("Desk accessory tray",root,new Vector3(px,1.345f,-2.70f),new Vector3(.10f,.035f,.12f),level%2==0?"Apricot":"Linen");
+                    else art.Box("Desk accessory tray",root,new Vector3(px,1.345f,-1.18f),new Vector3(.10f,.035f,.12f),level%2==0?"Apricot":"Linen");
                 }
                 else
                 {
                     float px=x-.84f+slot*.10f;
                     if(!upper)
                     {
-                        art.Box("Individual care instrument",root,new Vector3(px,1.27f,3.08f),new Vector3(.08f,.22f,.20f),level%2==0?"Blue":"Apricot");
-                        art.Box("Instrument clean label",root,new Vector3(px,1.29f,2.973f),new Vector3(.052f,.06f,.013f),"Linen");
+                        art.Box("Individual care instrument",root,new Vector3(px,1.27f,3.48f),new Vector3(.08f,.22f,.20f),level%2==0?"Blue":"Apricot");
+                        art.Box("Instrument clean label",root,new Vector3(px,1.29f,3.373f),new Vector3(.052f,.06f,.013f),"Linen");
                     }
-                    else art.Orb("Instrument status light",root,new Vector3(px,1.40f,3.00f),new Vector3(.05f,.05f,.05f),level%2==0?"Gold":"Leaf");
+                    else art.Orb("Instrument status light",root,new Vector3(px,1.40f,3.40f),new Vector3(.05f,.05f,.05f),level%2==0?"Gold":"Leaf");
                 }
                 root.gameObject.SetActive(false);
             }
@@ -81,13 +81,13 @@ namespace IdleClinic.Presentation
                 float x=-4.45f+slot*.27f;
                 if(!second)
                 {
-                    art.Box("Register accessory base",root,new Vector3(x,1.23f,-2.27f),new Vector3(.22f,.15f,.20f),n%2==0?"Ivory":"SageDark");
-                    art.Box("Receipt and appointment slips",root,new Vector3(x,1.32f,-2.26f),new Vector3(.13f,.015f,.16f),"Linen");
+                    art.Box("Register accessory base",root,new Vector3(x,1.23f,-.75f),new Vector3(.22f,.15f,.20f),n%2==0?"Ivory":"SageDark");
+                    art.Box("Receipt and appointment slips",root,new Vector3(x,1.32f,-.74f),new Vector3(.13f,.015f,.16f),"Linen");
                 }
                 else
                 {
-                    art.Box("Appointment screen",root,new Vector3(x,1.44f,-2.20f),new Vector3(.18f,.13f,.02f),"Ink");
-                    art.Box("Appointment screen glow",root,new Vector3(x,1.44f,-2.21f),new Vector3(.15f,.10f,.01f),"Blue");
+                    art.Box("Appointment screen",root,new Vector3(x,1.44f,-.68f),new Vector3(.18f,.13f,.02f),"Ink");
+                    art.Box("Appointment screen glow",root,new Vector3(x,1.44f,-.69f),new Vector3(.15f,.10f,.01f),"Blue");
                 }
             }
             else

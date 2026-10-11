@@ -30,10 +30,10 @@ namespace IdleClinic.Presentation
             toiletClosure=art.Box("Future toilet doorway closure",annex,new Vector3(3.4375f,.94f,4.97f),new Vector3(.90f,1.60f,.08f),"Wood");
             art.Box("Toilet construction crossbar",toiletClosure.transform,new Vector3(0,.10f,-.56f),new Vector3(.85f,.09f,.10f),"Apricot");
             toilet=art.Group("Patient toilet",annex).gameObject;
-            art.Box("Toilet privacy back",toilet.transform,new Vector3(4.2f,1.15f,7.20f),new Vector3(3.15f,2.0f,.14f),"TileSage");
-            art.Box("Toilet privacy east",toilet.transform,new Vector3(5.75f,.80f,6.1f),new Vector3(.14f,1.3f,2.15f),"TileSage");
-            art.Box("Toilet privacy west",toilet.transform,new Vector3(2.63f,.85f,6.1f),new Vector3(.12f,1.4f,2.15f),"Sage");
-            art.Box("Toilet privacy front",toilet.transform,new Vector3(4.83f,1.0f,5.03f),new Vector3(1.76f,1.7f,.11f),"TileSage");
+            art.Box("Toilet privacy back",toilet.transform,new Vector3(4.2f,.14f+ClinicArchitecture.WallHeight*.5f,7.20f),new Vector3(3.15f,ClinicArchitecture.WallHeight,.14f),"TileSage");
+            art.Box("Toilet privacy east",toilet.transform,new Vector3(5.75f,.14f+ClinicArchitecture.WallHeight*.5f,6.1f),new Vector3(.14f,ClinicArchitecture.WallHeight,2.15f),"TileSage");
+            art.Box("Toilet privacy west",toilet.transform,new Vector3(2.63f,.14f+ClinicArchitecture.WallHeight*.5f,6.1f),new Vector3(.12f,ClinicArchitecture.WallHeight,2.15f),"Sage");
+            art.Box("Toilet privacy front",toilet.transform,new Vector3(4.83f,.14f+ClinicArchitecture.WallHeight*.5f,5.03f),new Vector3(1.76f,ClinicArchitecture.WallHeight,.11f),"TileSage");
             toiletDoor=art.Group("Toilet sliding privacy door",toilet.transform,new Vector3(3.43f,.14f,5.0f));
             art.Box("Toilet door panel",toiletDoor,new Vector3(0,.8f,0),new Vector3(.93f,1.60f,.055f),"Sage");
             art.Box("Toilet occupied indicator",toiletDoor,new Vector3(.28f,1.13f,-.035f),new Vector3(.15f,.09f,.02f),"Apricot");

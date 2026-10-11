@@ -13,6 +13,42 @@ namespace IdleClinic.Tests
         [SetUp] public void SetUp() { host=new GameObject("Clinic world test");world=host.AddComponent<ClinicWorld>();world.Initialize(); }
         [TearDown] public void TearDown() => Object.DestroyImmediate(host);
 
+        [TestCase(true,ClinicHitKind.BossOffice)][TestCase(false,ClinicHitKind.CleaningUtilities)]
+        public void SupportRoomsAreSelectableAndFitTheHomeCamera(bool office,ClinicHitKind kind)
+        {
+            world.SetRenderSize(1398,2034);world.Home(true);
+            var state=ClinicSimulation.CreateNew().State;world.Render(state,0,true);
+            var point=world.GetSupportRoomPoint(office);var uv=world.WorldToViewport(point);
+            AssertViewport(point,.06f,.94f,.14f,.80f);
+            Assert.That(world.Pick(uv).Kind,Is.EqualTo(kind));
+            Assert.That(ClinicSelectionPolicy.CanSelectObject(state,new ClinicHit(kind)),Is.True);
+            var position=world.SceneCamera.transform.position;
+            world.SelectRoom(new ClinicHit(kind));
+            Assert.That(Find("Room selection").gameObject.activeSelf,Is.True);
+            Assert.That(world.SceneCamera.transform.position,Is.EqualTo(position));
+            world.ConfigureLocation(ClinicLocation.DoctorsClinic);
+            Assert.That(Find(office?"Boss office":"Cleaning utilities room"),Is.Null);
+            state.Location=ClinicLocation.DoctorsClinic;
+            Assert.That(ClinicSelectionPolicy.CanSelectObject(state,new ClinicHit(kind)),Is.False);
+            world.ConfigureLocation(ClinicLocation.StarterClinic);
+            Assert.That(Find(office?"Boss office":"Cleaning utilities room"),Is.Not.Null);
+        }
+
+        [Test]
+        public void StaffWingLeavesTheMainCorridorAndBothDoorwaysClear()
+        {
+            var wing=Find("Clinic staff wing");Assert.That(wing,Is.Not.Null);
+            foreach(var p in new[]{new Vector3(.6f,.9f,5.0f),new Vector3(-3.6f,.9f,6.02f),new Vector3(.03f,.9f,6.02f)})
+                foreach(var renderer in wing.GetComponentsInChildren<Renderer>())
+                {
+                    if(renderer.bounds.max.y<.3f)continue;
+                    var bounds=renderer.bounds;bounds.Expand(new Vector3(.4f,0,.4f));
+                    Assert.That(bounds.Contains(p),Is.False,renderer.name+" blocks a staff doorway");
+                }
+            foreach(var name in new[]{"Boss desk","Boss swivel chair","Office filing cabinet","Stored mop","Stored broom","Mop bucket and wringer","Janitor utility sink","Cleaning supply shelves","Janitor supply trolley"})
+                Assert.That(Find(name),Is.Not.Null,name);
+        }
+
         [TestCase("Patient")][TestCase("Nurse")][TestCase("Receptionist")]
         public void CharactersHaveSkinningAndArticulatedBones(string name)
         {
@@ -268,14 +304,14 @@ namespace IdleClinic.Tests
             var state=new ClinicState();
             if(journey==0)state.Staff.Add(new ClinicStaffState { Id=100,Role=ClinicStaffRole.Nurse,FromAnchor="entrance",ToAnchor="firstaid.station.0.staff",MoveStartedTick=0,MoveEndsTick=40 });
             else state.Patients.Add(new ClinicPatientState { Id=9,Phase=journey==1?ClinicPatientPhase.WalkingToWaiting:ClinicPatientPhase.Leaving,
-                FromAnchor=journey==1?"reception.desk.0.patient":"firstaid.station.0.patient",ToAnchor=journey==1?"firstaid.standing.0":"exit",PhaseStartedTick=0,PhaseEndsTick=40 });
-            world.Render(state,.1f);var left=Find("Care door left panel");float closed=left.localPosition.x;bool crossed=false;
+                FromAnchor=journey==1?"reception.desk.0.patient":"firstaid.station.0.patient",ToAnchor=journey==1?"firstaid.station.0.patient":"exit",PhaseStartedTick=0,PhaseEndsTick=40 });
+            world.Render(state,.1f);var left=Find("Care door left panel");float closed=-1.35f*.25f;bool crossed=false;
             for(int tick=1;tick<=40;tick++)
             {
                 state.Tick=tick;world.Render(state,.1f);var actor=Find(journey==0?"Staff 100":"Patient 9");
-                if(Mathf.Abs(actor.position.z+.15f)>.35f)continue;crossed=true;
-                Assert.That(left.localPosition.x,Is.LessThan(closed-.70f));
-                foreach(var renderer in Find("Care wing doorway").GetComponentsInChildren<Renderer>())
+                if(Mathf.Abs(actor.position.z-1.50f)>.35f)continue;crossed=true;
+                Assert.That(left.localPosition.x,Is.LessThan(closed-.55f));
+                foreach(var renderer in Find("Nursing room 1 doorway").GetComponentsInChildren<Renderer>())
                 { var bounds=renderer.bounds;bounds.Expand(new Vector3(.60f,0,.60f));Assert.That(bounds.Contains(actor.position+Vector3.up*.80f),Is.False,"Door panel obstructs actor clearance."); }
             }
             Assert.That(crossed,Is.True);
@@ -286,11 +322,11 @@ namespace IdleClinic.Tests
         [TestCase(false)][TestCase(true)]
         public void RestoringAnActorNearTheDoorStartsWithAClearPassage(bool reducedMotion)
         {
-            var state=new ClinicState { Tick=19 };state.Staff.Add(new ClinicStaffState { Id=100,Role=ClinicStaffRole.Nurse,
+            var state=new ClinicState { Tick=30 };state.Staff.Add(new ClinicStaffState { Id=100,Role=ClinicStaffRole.Nurse,
                 FromAnchor="entrance",ToAnchor="firstaid.station.0.staff",MoveStartedTick=0,MoveEndsTick=40 });
             world.Render(state,0,reducedMotion);
-            Assert.That(Find("Care door left panel").localPosition.x,Is.LessThan(-1.2f));
-            Assert.That(Find("Care door right panel").localPosition.x,Is.GreaterThan(1.2f));
+            Assert.That(Find("Care door left panel").localPosition.x,Is.LessThan(-.90f));
+            Assert.That(Find("Care door right panel").localPosition.x,Is.GreaterThan(.90f));
         }
 
         private void AssertBoundsInside(Bounds bounds,float left,float right,float bottom,float top)
@@ -302,13 +338,13 @@ namespace IdleClinic.Tests
         { foreach(var item in host.GetComponentsInChildren<Transform>(true))if(item.name==name)return item;return null; }
 
         [Test]
-        public void PrivacyPartitionsAppearOnlyWhenTheSecondWorkplaceOpens()
+        public void NursingRoomsStaySeparateBeforeAndAfterTheSecondStationOpens()
         {
             var state=new ClinicState();var care=new ClinicRoomState{Kind=ClinicRoom.FirstAid,StationCount=1};state.Rooms.Add(care);
             state.ReceptionDesks.Add(new ReceptionDeskState{Id=0});world.Render(state,.1f);
             var reception=Find("Reception privacy divider");var treatment=Find("Treatment privacy partition");
             Assert.That(reception,Is.Not.Null);Assert.That(treatment,Is.Not.Null);
-            Assert.That(reception.gameObject.activeSelf,Is.False);Assert.That(treatment.gameObject.activeSelf,Is.False);
+            Assert.That(reception.gameObject.activeSelf,Is.False);Assert.That(treatment.gameObject.activeSelf,Is.True);
             state.ReceptionDesks.Add(new ReceptionDeskState{Id=1});care.StationCount=2;world.Render(state,.1f);
             Assert.That(reception.gameObject.activeInHierarchy,Is.True);Assert.That(treatment.gameObject.activeInHierarchy,Is.True);
         }
@@ -338,8 +374,7 @@ namespace IdleClinic.Tests
             }
         }
 
-        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
-        [TestCase(6)][TestCase(7)][TestCase(8)][TestCase(9)][TestCase(10)]
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)]
         public void EntrancePanelsLeaveEveryQueueApproachClear(int queue)
         {
             var state=new ClinicState();state.Patients.Add(new ClinicPatientState{Id=91,Phase=ClinicPatientPhase.Arriving,
@@ -515,15 +550,32 @@ namespace IdleClinic.Tests
             Assert.That(closest,Is.GreaterThanOrEqualTo(.60f));
         }
 
+        [TestCase(0)][TestCase(1)]
+        public void NursingRoomApproachesLeaveOccupiedReceptionCountersClear(int station)
+        {
+            var state=ClinicSimulation.CreateNew().State;state.Patients.Clear();state.Staff.Clear();
+            state.Staff.Add(new ClinicStaffState{Id=0,Role=ClinicStaffRole.Receptionist,
+                FromAnchor="reception.desk.0.staff",ToAnchor="reception.desk.0.staff"});
+            state.Staff.Add(new ClinicStaffState{Id=100+station,Role=ClinicStaffRole.Nurse,
+                FromAnchor="entrance",ToAnchor="firstaid.station."+station+".staff",MoveEndsTick=150});
+            for(int tick=0;tick<=150;tick++)
+            {
+                state.Tick=tick;world.Render(state,.1f,true);
+                Assert.That(Vector3.Distance(Find("Staff 0").position,Find("Staff "+(100+station)).position),
+                    Is.GreaterThanOrEqualTo(.60f),"A nurse must not walk through the receptionist.");
+            }
+        }
+
         [Test]
-        public void AllQueueSocketsStandInsideTheReceptionBetweenTheDeskAisleAndTheFrontWall()
+        public void FiveQueueSocketsFormOneVerticalLineInsideReception()
         {
             var floor=Find("Reception style").GetComponentInChildren<Renderer>(true);
-            for(int i=0;i<11;i++)
+            for(int i=0;i<ClinicRules.StarterQueueCapacity;i++)
             {
                 var point=world.GetAnchorPoint("reception.queue."+i);
-                Assert.That(point.x,Is.InRange(-5.3f,-.4f),"queue "+i);
-                Assert.That(point.z,Is.InRange(-4.85f,-4.15f),"Inside the front wall (-5.13), clear of the desk aisle (-4.05): queue "+i);
+                Assert.That(point.x,Is.EqualTo(world.GetAnchorPoint("reception.desk.0.patient").x).Within(.001f),"Faces the counter: queue "+i);
+                Assert.That(point.z,Is.InRange(-4.90f,-2.50f),"Inside the reception: queue "+i);
+                if(i>0)Assert.That(world.GetAnchorPoint("reception.queue."+(i-1)).z-point.z,Is.EqualTo(.60f).Within(.001f));
                 Assert.That(Mathf.Abs(point.y-.14f),Is.LessThan(.01f));
             }
         }

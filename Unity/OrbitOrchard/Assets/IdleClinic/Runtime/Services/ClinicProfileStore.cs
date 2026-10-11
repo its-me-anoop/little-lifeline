@@ -77,7 +77,7 @@ namespace IdleClinic.Services
                         recovery = "Your clinic save could not be read. A fresh clinic is ready; the original files are preserved.";
                     Profile = new ClinicProfile
                     {
-                        state = ClinicSimulation.CreateNew().State,
+                        state = ClinicSimulation.CreateOpening().State,
                         preferences = ReadLegacyPreferences(),
                         lastAccountedUtcTicks = now.UtcDateTime.Ticks
                     };
@@ -578,6 +578,7 @@ namespace IdleClinic.Services
                     candidate.preferences.music = candidate.preferences.sound;
                     candidate.schemaVersion = 3;
                 }
+                if (!ClinicSimulation.TryMigrateStarterQueue(candidate.state)) return false;
                 if (candidate.schemaVersion == 3)
                 {
                     // Version 3 predates premium currency. Validate the clinics exactly as 3.3 did,
