@@ -39,7 +39,14 @@ namespace IdleClinic.App
             var gear = Value("CLINIC_QA_GEAR", "-qaGear");
             if (gear != null && int.TryParse(gear, out var gearVersion)) IdleClinic.Presentation.ClinicWorld.PreviewGear = gearVersion;
             // Video captures: the doctors clinic, a fully staffed clinic, and a clean frame without any interface.
-            if (Value("CLINIC_QA_DOCTORS", "-qaDoctors") != null && saves.QaOpenDoctorsClinic(DateTimeOffset.UtcNow)) PublishLocation();
+            // The doctors clinic: plays the opening if needed, completes the starter clinic through its real rules (QA coins,
+            // building time skipped) and opens the doctors clinic as a player would. Later switches then apply to it.
+            if (Value("CLINIC_QA_DOCTORS", "-qaDoctors") != null && State.Location == ClinicLocation.StarterClinic)
+            {
+                if (State.Tutorial != ClinicTutorialStep.Complete) PlayOpeningTo(ClinicOpeningStep.Complete);
+                if (saves.QaOpenDoctorsClinic(DateTimeOffset.UtcNow)) PublishLocation();
+                else Debug.LogWarning("Clinic QA: doctors clinic not opened: " + saves.Error);
+            }
             if (Value("CLINIC_QA_CLEAN", "-qaClean") != null) StartCoroutine(HideInterface());
             // Screenshot state: play the opening (collect, hire), earn extra coins, then let the clinic run for a while.
             if (Value("CLINIC_QA_TUTORIAL", "-qaTutorial") != null && State.Tutorial != ClinicTutorialStep.Complete)

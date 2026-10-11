@@ -150,14 +150,41 @@ namespace IdleClinic.Services
         }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
-        /// <summary>Development-build QA only: open the doctors clinic without its requirements, for captures.</summary>
+        /// <summary>Development-build QA only, for isolated QA saves: complete the starter clinic through its real purchase rules
+        /// (QA coins cover each price, building time is skipped the way time away skips it), then open the doctors clinic exactly
+        /// as a player does. The result passes the same validation as a played save, so it can be saved and reloaded.</summary>
         public bool QaOpenDoctorsClinic(DateTimeOffset now)
         {
-            if (!CanCommit() || Profile.doctorsState != null) return false;
+            if (!CanCommit()) return false;
+            if (Profile.doctorsState != null) { Error = "The doctors’ clinic is already open."; return false; }
             var candidate = Copy(Profile);
-            candidate.doctorsState = ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic, candidate.state.Seed).State;
-            candidate.activeLocation = ClinicLocation.DoctorsClinic;
-            return CommitCandidate(candidate, now);
+            var starter = new ClinicSimulation(candidate.state);
+            if (!QaCompleteStarter(starter)) { Error = "QA: finish the opening first; the starter clinic could not be completed."; return false; }
+            var unlockCost = ClinicRules.DoctorsClinicUnlockCost;
+            if (candidate.state.Wallet < unlockCost) ClinicSimulation.TryGrantReward(candidate.state, unlockCost - candidate.state.Wallet);
+            return OpenDoctorsIn(candidate) && CommitCandidate(candidate, now);
+        }
+
+        private static bool QaCompleteStarter(ClinicSimulation starter)
+        {
+            var state = starter.State;
+            if (state.Tutorial != ClinicTutorialStep.Complete) return false;
+            for (var guard = 0; guard < 20000 && ClinicRules.StarterCompletion(state).Count > 0; guard++)
+            {
+                var option = ClinicPurchases.Options(starter).OrderBy(o => o.Cost).FirstOrDefault();
+                if (option != null)
+                {
+                    if (state.Wallet < option.Cost) ClinicSimulation.TryGrantReward(state, option.Cost - state.Wallet);
+                    if (ClinicPurchases.Buy(starter, option).Success) continue;
+                }
+                long ends = -1;
+                foreach (var job in state.Construction) ends = ends < 0 ? job.EndsTick : Math.Min(ends, job.EndsTick);
+                if (state.OfficeUpgradeEndsTick >= 0) ends = ends < 0 ? state.OfficeUpgradeEndsTick : Math.Min(ends, state.OfficeUpgradeEndsTick);
+                if (ends < 0) return false;
+                starter.AdvanceOffline(Math.Max(1, ends - state.Tick) / (double)ClinicRules.TicksPerSecond, 0);
+            }
+            starter.DrainEvents();
+            return ClinicRules.StarterCompletion(state).Count == 0 && ClinicSimulation.IsValidState(state);
         }
 #endif
 
@@ -178,6 +205,12 @@ namespace IdleClinic.Services
             if (Profile.doctorsState != null || Profile.activeLocation != ClinicLocation.StarterClinic)
             { Error = "The doctors’ clinic is already open."; return false; }
             var candidate = Copy(Profile);
+            return OpenDoctorsIn(candidate) && CommitCandidate(candidate, now);
+        }
+
+        /// <summary>Unlock the doctors clinic in <paramref name="candidate"/>, move the wallet there and make it active.</summary>
+        private bool OpenDoctorsIn(ClinicProfile candidate)
+        {
             var starter = new ClinicSimulation(candidate.state);
             var unlocked = starter.UnlockDoctorsClinic();
             if (!unlocked.Success) { Error = unlocked.Message; return false; }
@@ -186,7 +219,7 @@ namespace IdleClinic.Services
             if (!transferred.Success) { Error = transferred.Message; return false; }
             candidate.doctorsState = doctors.State;
             candidate.activeLocation = ClinicLocation.DoctorsClinic;
-            return CommitCandidate(candidate, now);
+            return true;
         }
 
         /// <summary>Rooms that can build or renovate at once.</summary>

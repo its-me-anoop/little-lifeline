@@ -92,7 +92,8 @@ shot() {
   local name="$1" wait="$2"; shift 2
   xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1; sleep 1
   local envs=(); for pair in "$@"; do envs+=("SIMCTL_CHILD_$pair"); done
-  env "${envs[@]}" xcrun simctl launch --stdout="$OUT/console/$name.out" --stderr="$OUT/console/$name.err" "$UDID" "$BUNDLE" > "$OUT/console/$name.launch" 2>&1
+  # macOS bash 3.2 treats an empty array as unbound under set -u, hence the ${envs[@]+...} form.
+  env ${envs[@]+"${envs[@]}"} xcrun simctl launch --stdout="$OUT/console/$name.out" --stderr="$OUT/console/$name.err" "$UDID" "$BUNDLE" > "$OUT/console/$name.launch" 2>&1
   sleep "$wait"
   if xcrun simctl spawn "$UDID" launchctl list 2>/dev/null | grep -q "UIKitApplication:$BUNDLE"; then
     xcrun simctl io "$UDID" screenshot --type=png "$OUT/shots/$name.png" >/dev/null 2>&1 && log "shot $name ($*)"
@@ -127,7 +128,13 @@ if [ -n "$DATA" ]; then
   cp "$DATA/Documents/clinic-performance-v1.json" "$OUT/simulator-performance.json" 2>/dev/null && log "Performance report copied (simulator, not device evidence)"
   cp "$DATA/Documents/idle-clinic-profile-v1.json" "$OUT/qa-save.json" 2>/dev/null && log "QA save copied"
 fi
-# 5. Crash reports written during this run that name the app.
+# 5. The doctors clinic, last because it moves this QA save there: the starter clinic is completed through its real rules
+#    (QA coins, building time skipped) and the shared wallet moves across; then a plain relaunch must return to it.
+shot 20-doctors-clinic 14 CLINIC_QA_DOCTORS=1
+shot 21-doctors-relaunch 12
+xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1; sleep 2
+[ -n "$DATA" ] && cp "$DATA/Documents/idle-clinic-profile-v1.json" "$OUT/qa-save-doctors.json" 2>/dev/null && log "Doctors clinic QA save copied"
+# 6. Crash reports written during this run that name the app.
 find "$HOME/Library/Logs/DiagnosticReports" -newer "$CRASH_MARK" \( -iname "*LittleLifeline*" -o -iname "*Little Lifeline*" -o -iname "*UnityFramework*" \) -exec cp {} "$OUT/crashes/" \; 2>/dev/null
 log "Crash reports from this run: $(ls "$OUT/crashes" | wc -l | tr -d ' ')"
 log "Done. Evidence: $OUT"
