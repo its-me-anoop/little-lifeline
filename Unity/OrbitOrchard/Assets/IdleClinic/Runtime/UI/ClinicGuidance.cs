@@ -58,10 +58,12 @@ namespace IdleClinic.App
         private string GuideAccessibleValue()
         {
             var step = CurrentGuide();
-            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete) return OpeningTitles[(int)State.OpeningStep]+". "+OpeningReasons[(int)State.OpeningStep];
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete) return "Opening step "+((int)State.OpeningStep+1)+" of "+(int)ClinicOpeningStep.Complete+". "+OpeningTitles[(int)State.OpeningStep]+". "+OpeningReasons[(int)State.OpeningStep];
             if (nextGoal != null && ShowsNextGoal(step)) return guideEyebrow.text + ": " + guideTitle.text + ". " + guideWhy.text;
             if (step == null) return "";
-            return saves.IsGuideStepDone(step) ? step.Title + " done. Collect " + step.GemReward + " gems." : step.Title + ". " + step.Why;
+            var place = ClinicGuide.Position(step);
+            var lesson = place.Total > 0 ? "Lesson " + place.Number + " of " + place.Total + ". " : "";
+            return lesson + (saves.IsGuideStepDone(step) ? step.Title + " done. Collect " + step.GemReward + " gems." : step.Title + ". " + step.Why);
         }
 
         private void UpdateGuide()
@@ -86,7 +88,8 @@ namespace IdleClinic.App
             ShowGuideSkip(display == DisplayStyle.Flex && ClinicGuide.CanSkip(step) && !done);
             if (step != null)
             {
-                guideEyebrow.text = done ? "DONE" : "NEXT STEP";
+                var position = ClinicGuide.Position(step);
+                guideEyebrow.text = (done ? "DONE" : "NEXT STEP") + (position.Total > 0 ? " · " + position.Number + " OF " + position.Total : "");
                 guideTitle.text = step.Title;
                 guideWhy.text = done ? "Tap to collect your reward." : step.Why;
                 guideReward.text = "+" + step.GemReward;

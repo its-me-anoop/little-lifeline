@@ -125,7 +125,22 @@ shot 19-performance-sample "$PERF"
 xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1; sleep 2
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2>/dev/null)"
 if [ -n "$DATA" ]; then
-  cp "$DATA/Documents/clinic-performance-v1.json" "$OUT/simulator-performance.json" 2>/dev/null && log "Performance report copied (simulator, not device evidence)"
+  if cp "$DATA/Documents/clinic-performance-v1.json" "$OUT/simulator-performance.json" 2>/dev/null; then
+    log "Performance report copied (simulator, not device evidence)"
+    /usr/bin/python3 - "$OUT/simulator-performance.json" <<'PY' | tee "$OUT/simulator-performance-summary.txt"
+import json, sys
+r = json.load(open(sys.argv[1]))
+mb = lambda b: "%.0f MB" % (b / 1048576.0)
+print("SIMULATOR ONLY, not device evidence. app %s, Unity %s, %dx%d, target %s fps" % (r.get("appVersion"), r.get("unityVersion"),
+      r.get("screenWidth", 0), r.get("screenHeight", 0), r.get("targetFrameRate")))
+for s in r.get("samples") or []:
+    print("t=%5.0fs frames=%4d median %.2f ms  p95 %.2f ms  max %.2f ms  unity %s  managed %s  thermal %s" % (
+        s["elapsedActiveSeconds"], s["windowFrameCount"], s["medianFrameMs"], s["p95FrameMs"], s["maximumFrameMs"],
+        mb(s["unityAllocatedBytes"]), mb(s["managedUsedBytes"]), s["thermalState"]))
+print("peak sampled: unity %s, managed %s; max thermal state %s" % (mb(r.get("peakSampledUnityAllocatedBytes", 0)),
+      mb(r.get("peakSampledManagedUsedBytes", 0)), r.get("maximumThermalState")))
+PY
+  fi
   cp "$DATA/Documents/idle-clinic-profile-v1.json" "$OUT/qa-save.json" 2>/dev/null && log "QA save copied"
 fi
 # 5. The doctors clinic, last because it moves this QA save there: the starter clinic is completed through its real rules

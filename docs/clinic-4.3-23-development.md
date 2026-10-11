@@ -24,6 +24,8 @@ build, raise the build number before any upload.
 - **The finish-early lesson means what it says.** It completed on any gem spend, so buying decor counted. It now counts
   only work finished early with gems. A save from before the fix keeps every claim; a player who had already spent gems
   but not collected the lesson keeps that credit once.
+- **Progress on the guide card.** The opening shows its step (*OPEN YOUR CLINIC · 3 OF 12*) and each lesson its place in
+  its clinic's chapter (*NEXT STEP · 3 OF 12*; the doctors clinic counts its own 10); VoiceOver reads the same.
 - **Next-goal card.** When no lesson is left, or during the long *open the doctors clinic* lesson, the guide card names
   what to work towards: BUILDING (what the builder finishes and when), NEXT IMPROVEMENT (price, ready to buy or when the
   builder is free) or SAVING FOR (coins held against the price, an estimate from the measured earning rate, and a
@@ -89,7 +91,8 @@ five-patient check-in queue, chairs facing the nursing rooms, the glass front wa
   exit code kept together.
 - `Tools/qa/simulator_preview.sh`: fresh export, unsigned Debug simulator build under the QA identity
   `com.flutterly.gravitile.qa`, install on an owned QA simulator only, 20 runtime screenshots, console output, crash
-  reports, the simulator performance report and the QA saves.
+  reports, the simulator performance report with a summary (median, p95 and maximum frame time and memory per 30-second
+  window; simulator only) and the QA saves.
 - The QA identity applies only to the simulator export and is validated; release exports always use
   `com.flutterly.gravitile`, and the original identity is restored after export.
 - Development-only launch switches (compiled out of release builds): `CLINIC_QA_OPENING`, `CLINIC_QA_PLAY`,
@@ -107,7 +110,7 @@ five-patient check-in queue, chairs facing the nursing rooms, the glass front wa
 | Unity EditMode | `d84ac3e`, reviewer run | 638 passed, 0 failed, 0 skipped, exit 0 (276 s) |
 | Unity EditMode | `8c9d3fa`, reviewer run with `run_editmode_tests.sh` | 657 passed, 0 failed, exit 0 (399.8 s) |
 | Unity EditMode | `757d56b` and later | **pending** |
-| Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 225 passed, 0 failed (subset; not a substitute for Unity) |
+| Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 226 passed, 0 failed (subset; not a substitute for Unity) |
 | Release tooling `Tools/tests` | unchanged by this work | host baseline 105 passed (Blender Python 3.11); Linux Python 3.13: 92 passed, 1 skipped, 1 macOS-only `xcrun` error |
 | Simulator export and Xcode build | `d84ac3e`, reviewer | succeeded; launch on the QA review simulator logged no FMOD or CoreAudio errors |
 | Runtime screenshots, play-test, performance | current checkpoint | **pending** (`simulator_preview.sh`, reviewer) |

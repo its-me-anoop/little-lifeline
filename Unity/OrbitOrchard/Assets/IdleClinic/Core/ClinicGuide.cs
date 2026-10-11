@@ -117,6 +117,16 @@ namespace IdleClinic.Core
 
         public static bool CanSkip(ClinicGuideStep step) => step != null && step.Optional;
 
+        /// <summary>Where a lesson sits in its clinic's chapter, from 1: the starter clinic and the doctors clinic each have
+        /// their own count, so the card can say "3 of 12". (0, 0) for an unknown lesson.</summary>
+        public static (int Number, int Total) Position(ClinicGuideStep step)
+        {
+            if (step == null) return (0, 0);
+            var chapter = Steps.Where(s => s.Location == step.Location).ToList();
+            var index = chapter.FindIndex(s => s.Id == step.Id);
+            return index < 0 ? (0, 0) : (index + 1, chapter.Count);
+        }
+
         /// <summary>The next lesson: the first one not yet collected, passing over optional lessons the player skipped.
         /// A skipped free lesson (from a stale or edited save) is never passed over.</summary>
         public static ClinicGuideStep Current(ICollection<string> claimed, ICollection<string> skipped)

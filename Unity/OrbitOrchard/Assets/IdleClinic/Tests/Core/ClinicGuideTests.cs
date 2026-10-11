@@ -23,6 +23,16 @@ namespace IdleClinic.Tests
             Assert.That(ClinicGuide.Find("guide.finish").GemReward, Is.EqualTo(5));
         }
 
+        [Test] public void EachClinicCountsItsOwnLessons()
+        {
+            Assert.That(ClinicGuide.Position(ClinicGuide.Find("guide.equipment")), Is.EqualTo((1, 12)));
+            Assert.That(ClinicGuide.Position(ClinicGuide.Find("guide.decor")), Is.EqualTo((3, 12)));
+            Assert.That(ClinicGuide.Position(ClinicGuide.Find("guide.doctors")), Is.EqualTo((12, 12)));
+            Assert.That(ClinicGuide.Position(ClinicGuide.Find("guide.doctors.consult")), Is.EqualTo((1, 10)));
+            Assert.That(ClinicGuide.Position(ClinicGuide.Find("guide.doctors.tier6")), Is.EqualTo((10, 10)));
+            Assert.That(ClinicGuide.Position(null), Is.EqualTo((0, 0)));
+        }
+
         [Test] public void OnlyTheTwoGemLessonsAreOptional()
         {
             Assert.That(ClinicGuide.Steps.Where(s => s.Optional).Select(s => s.Id), Is.EqualTo(new[] { "guide.decor", "guide.finish" }));

@@ -45,7 +45,8 @@ namespace IdleClinic.App
             var step=State.OpeningStep;bool busy=State.OpeningTaskEndsTick>=0;
             var display=dock.style.display==DisplayStyle.Flex?DisplayStyle.None:DisplayStyle.Flex;
             if(guideCard.style.display!=display){guideCard.style.display=display;ApplySafeArea();}
-            guideEyebrow.text=busy?"BOSS AT WORK":"OPEN YOUR CLINIC";
+            // Progress through the twelve opening steps, so a returning player sees how far the clinic has come.
+            guideEyebrow.text=(busy?"BOSS AT WORK":"OPEN YOUR CLINIC")+" · "+((int)step+1)+" OF "+(int)ClinicOpeningStep.Complete;
             guideTitle.text=OpeningTitles[(int)step];
             guideWhy.text=busy?"Ready in "+TimeLabel((State.OpeningTaskEndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond)+" · tap to help":OpeningReasons[(int)step];
             guideRewardGem.parent.style.display=DisplayStyle.None;
