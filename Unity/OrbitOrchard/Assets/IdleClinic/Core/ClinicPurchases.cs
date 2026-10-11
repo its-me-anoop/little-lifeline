@@ -23,6 +23,25 @@ namespace IdleClinic.Core
         public override string ToString() => Kind + ":" + Room + ":" + Track + ":" + Role + ":" + Amenity + ":" + Item + ":" + StaffId + "=" + Cost;
     }
 
+    /// <summary>The improvement a player is working towards, with how far away it is.</summary>
+    public sealed class ClinicNextGoal
+    {
+        public ClinicPurchaseOption Option;
+        public string Label;
+        public long Cost, Wallet, Tills;
+        public bool WaitsForBuilder;
+        /// <summary>Nothing can be bought until building finishes; <see cref="Option"/> is null.</summary>
+        public bool WaitingOnly;
+        public double BuilderFreeInSeconds;
+        /// <summary>Where to take the player: a room, or null for the office or an amenity (see <see cref="Option"/>).</summary>
+        public ClinicRoom? Room;
+        /// <summary>Coins still to earn after collecting every till.</summary>
+        public long Shortfall => Math.Max(0, Cost - Wallet - Tills);
+        public bool Affordable => Wallet >= Cost;
+        /// <summary>Seconds of earning left at <paramref name="coinsPerSecond"/>; 0 when already covered, -1 when unknown.</summary>
+        public double SecondsToAfford(double coinsPerSecond) => Shortfall == 0 ? 0 : coinsPerSecond > 0 ? Shortfall / coinsPerSecond : -1;
+    }
+
     /// <summary>Every coin purchase still open in a clinic, as a player sees them across its panels. Decor is left out
     /// under rules 5, where it costs gems. Used to keep daily goals achievable and to measure free progression.</summary>
     public static class ClinicPurchases
@@ -116,6 +135,39 @@ namespace IdleClinic.Core
             }
         }
 
+        /// <summary>What the player is working towards when nothing is affordable: the nearest improvement, how far the wallet
+        /// and tills are from it, and whether it waits for a builder. Null when the clinic is complete.</summary>
+        public static ClinicNextGoal NextGoal(ClinicSimulation game)
+        {
+            var option = Suggest(game);
+            var s = game.State;
+            var busyJobs = s.Construction.Select(c => c.EndsTick).Concat(s.OfficeUpgradeEndsTick >= 0 ? new[] { s.OfficeUpgradeEndsTick } : new long[0]).ToList();
+            if (option == null)
+            {
+                // Nothing to buy until building finishes: say what is being built and when it is done.
+                if (busyJobs.Count == 0) return null;
+                var office = s.OfficeUpgradeEndsTick >= 0 && s.OfficeUpgradeEndsTick == busyJobs.Min();
+                var job = office ? null : s.Construction.OrderBy(c => c.EndsTick).First();
+                return new ClinicNextGoal
+                {
+                    Label = office ? "Clinic level " + (s.OfficeLevel + 1) + " opens when the office upgrade finishes"
+                        : RoomTitle(job.Room) + (s.Room(job.Room).Built ? " reaches room " + job.TargetTier : " opens") + " when building finishes",
+                    Wallet = s.Wallet, Tills = game.TillCash, WaitsForBuilder = true, WaitingOnly = true,
+                    BuilderFreeInSeconds = Math.Max(0, busyJobs.Min() - s.Tick) / (double)ClinicRules.TicksPerSecond,
+                    Room = office ? (ClinicRoom?)null : job.Room
+                };
+            }
+            return new ClinicNextGoal
+            {
+                Option = option, Label = Describe(s, option), Cost = option.Cost, Wallet = s.Wallet, Tills = game.TillCash,
+                WaitsForBuilder = option.WaitsForBuilder,
+                BuilderFreeInSeconds = option.WaitsForBuilder && busyJobs.Count > 0 ? Math.Max(0, busyJobs.Min() - s.Tick) / (double)ClinicRules.TicksPerSecond : 0,
+                Room = option.Kind == ClinicPurchaseKind.Office || option.Kind == ClinicPurchaseKind.Amenity ? (ClinicRoom?)null
+                    : option.Kind == ClinicPurchaseKind.Renovate || option.Kind == ClinicPurchaseKind.RoomUpgrade || option.Kind == ClinicPurchaseKind.Gear ? option.Room
+                    : ClinicRules.RoomForRole(option.Role)
+            };
+        }
+
         /// <summary>The next step to suggest after a purchase: the nearest open improvement, by price.</summary>
         public static ClinicPurchaseOption Suggest(ClinicSimulation game)
             => Options(game, true).OrderBy(o => o.Cost).ThenBy(o => (int)o.Kind).FirstOrDefault();
@@ -138,6 +190,7 @@ namespace IdleClinic.Core
             }
         }
 
+        private static string RoomTitle(ClinicRoom room) { var name = RoomName(room); return name.StartsWith("the ") ? char.ToUpperInvariant(name[4]) + name.Substring(5) : char.ToUpperInvariant(name[0]) + name.Substring(1); }
         private static string RoomName(ClinicRoom room) => room == ClinicRoom.FirstAid ? "first aid" : room == ClinicRoom.Waiting ? "the waiting room"
             : room == ClinicRoom.Consultation ? "consultations" : room == ClinicRoom.Pharmacy ? "the pharmacy" : "reception";
         private static string RoleName(ClinicStaffRole role) => role == ClinicStaffRole.Receptionist ? "receptionist" : role == ClinicStaffRole.Nurse ? "nurse"

@@ -17,6 +17,12 @@ namespace IdleClinic.App
         private Button guideHighlighted;
         // Optional lessons (gem decor, finishing early) can be skipped: the guide then carries on with free lessons.
         private Button guideSkip;
+        // When no lesson is left (or the long "open the doctors clinic" lesson is under way) the card names the next improvement
+        // the player is saving for, how far away it is at their measured earning rate, or what the builder is finishing.
+        private ClinicNextGoal nextGoal;
+        private double nextGoalAt, earnSampleAt;
+        private long earnSampleTotal = -1;
+        private double coinsPerSecond;
 
         private void BuildGuide()
         {
@@ -53,6 +59,7 @@ namespace IdleClinic.App
         {
             var step = CurrentGuide();
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete) return OpeningTitles[(int)State.OpeningStep]+". "+OpeningReasons[(int)State.OpeningStep];
+            if (nextGoal != null && ShowsNextGoal(step)) return guideEyebrow.text + ": " + guideTitle.text + ". " + guideWhy.text;
             if (step == null) return "";
             return saves.IsGuideStepDone(step) ? step.Title + " done. Collect " + step.GemReward + " gems." : step.Title + ". " + step.Why;
         }
@@ -61,9 +68,18 @@ namespace IdleClinic.App
         {
             if (guideCard == null) return;
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){ShowGuideSkip(false);UpdateOpeningGuide();return;}
-            guideRewardGem.parent.style.display=DisplayStyle.Flex;
             var step = CurrentGuide();
             var dockOpen = dock.style.display == DisplayStyle.Flex;
+            if (ShowsNextGoal(step) && UpdateNextGoal())
+            {
+                ShowGuideSkip(false);
+                var goalDisplay = dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
+                if (guideCard.style.display != goalDisplay) { guideCard.style.display = goalDisplay; ApplySafeArea(); }
+                RenderNextGoal();
+                if (guideHighlighted != null) { guideHighlighted.RemoveFromClassList("guide-target"); guideHighlighted = null; }
+                return;
+            }
+            guideRewardGem.parent.style.display=DisplayStyle.Flex;
             var done = step != null && saves.IsGuideStepDone(step);
             var display = step == null || dockOpen ? DisplayStyle.None : DisplayStyle.Flex;
             if (guideCard.style.display != display) { guideCard.style.display = display; ApplySafeArea(); }
@@ -89,6 +105,60 @@ namespace IdleClinic.App
                 target?.AddToClassList("guide-target");
                 guideHighlighted = target;
             }
+        }
+
+        private bool ShowsNextGoal(ClinicGuideStep step)
+            => State.Tutorial == ClinicTutorialStep.Complete && (step == null || step.Id == "guide.doctors" && !saves.IsGuideStepDone(step));
+
+        /// <summary>Refresh the goal twice a second and the earning rate every ten seconds (smoothed). False when nothing is left.</summary>
+        private bool UpdateNextGoal()
+        {
+            var now = Time.unscaledTimeAsDouble;
+            if (earnSampleTotal < 0 || State.TotalEarned < earnSampleTotal) { earnSampleTotal = State.TotalEarned; earnSampleAt = now; coinsPerSecond = 0; }
+            else if (now - earnSampleAt >= 10)
+            {
+                var rate = (State.TotalEarned - earnSampleTotal) / (now - earnSampleAt);
+                coinsPerSecond = coinsPerSecond <= 0 ? rate : coinsPerSecond * .6 + rate * .4;
+                earnSampleTotal = State.TotalEarned; earnSampleAt = now;
+            }
+            if (now >= nextGoalAt || nextGoal == null) { nextGoal = ClinicPurchases.NextGoal(simulation); nextGoalAt = now + .5; }
+            return nextGoal != null;
+        }
+
+        private void RenderNextGoal()
+        {
+            guideRewardGem.parent.style.display = DisplayStyle.None;
+            guidePointer.style.display = DisplayStyle.None;
+            guideCard.EnableInClassList("guide-ready", false);
+            var goal = nextGoal;
+            guideTitle.text = goal.Label;
+            if (goal.WaitingOnly)
+            {
+                guideEyebrow.text = "BUILDING";
+                guideWhy.text = "Ready in " + TimeLabel(goal.BuilderFreeInSeconds) + ". Your clinic keeps earning meanwhile.";
+            }
+            else if (goal.Affordable)
+            {
+                guideEyebrow.text = "NEXT IMPROVEMENT";
+                guideWhy.text = Money(goal.Cost) + " coins · " + (goal.WaitsForBuilder ? "when the builder is free in " + TimeLabel(goal.BuilderFreeInSeconds) : "ready to buy");
+            }
+            else
+            {
+                guideEyebrow.text = "SAVING FOR";
+                var eta = goal.SecondsToAfford(coinsPerSecond);
+                guideWhy.text = Money(Math.Min(goal.Cost, goal.Wallet + goal.Tills)) + " of " + Money(goal.Cost) + " coins"
+                    + (eta > 0 ? " · about " + TimeLabel(eta) : "") + (goal.Tills > 0 ? " · collect your counters" : "");
+            }
+        }
+
+        /// <summary>Take the player to where the next goal happens.</summary>
+        private void GoToNextGoal()
+        {
+            var goal = nextGoal;
+            if (goal == null) return;
+            if (goal.Option != null && goal.Option.Kind == ClinicPurchaseKind.Amenity) { SelectObject(AmenityHit(goal.Option.Amenity)); return; }
+            if (goal.Room.HasValue) { Select(goal.Room.Value); return; }
+            SelectObject(new ClinicHit(ClinicHitKind.BossOffice));
         }
 
         private void ShowGuideSkip(bool show)
@@ -127,6 +197,7 @@ namespace IdleClinic.App
         {
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){OpenOpeningTask();return;}
             var step = CurrentGuide();
+            if (nextGoal != null && ShowsNextGoal(step)) { GoToNextGoal(); return; }
             if (step == null) return;
             if (saves.IsGuideStepDone(step))
             {

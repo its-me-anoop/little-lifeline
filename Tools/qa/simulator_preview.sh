@@ -97,7 +97,7 @@ shot() {
   if xcrun simctl spawn "$UDID" launchctl list 2>/dev/null | grep -q "UIKitApplication:$BUNDLE"; then
     xcrun simctl io "$UDID" screenshot --type=png "$OUT/shots/$name.png" >/dev/null 2>&1 && log "shot $name ($*)"
   else
-    log "NOT RUNNING after ${wait}s: $name ($*) — see console/$name.err and crashes/"
+    log "NOT RUNNING after ${wait}s: $name ($*); see console/$name.err and crashes/"
   fi
 }
 shot 01-opening-fresh 14

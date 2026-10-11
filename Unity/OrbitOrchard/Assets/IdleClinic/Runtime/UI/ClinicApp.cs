@@ -415,6 +415,8 @@ namespace IdleClinic.App
         {
             CancelWorldGesture();
             WithdrawGemConfirm();
+            // Each clinic earns at its own rate: start the next-goal estimate afresh.
+            earnSampleTotal=-1;nextGoal=null;
             profile = saves.Profile;
             BindSimulations();
             world.ConfigureLocation(profile.activeLocation);

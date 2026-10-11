@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using IdleClinic.Core;
 using NUnit.Framework;
@@ -49,6 +50,42 @@ namespace IdleClinic.Tests
             var decorated = ClinicStats.Of(sim.State);
             Assert.That(ClinicStats.Changes(before, decorated), Is.EqualTo(new[] { "Visit fee " + before.VisitFee + " → " + decorated.VisitFee + " coins" }));
             Assert.That(ClinicStats.Changes(decorated, decorated), Is.Empty, "Nothing changed, nothing to report.");
+        }
+
+        [Test] public void TheNextGoalSaysWhatIsBeingSavedForAndHowFarAwayItIs()
+        {
+            var sim = OpenClinic();
+            sim.State.Wallet = 0;
+            var goal = ClinicPurchases.NextGoal(sim);
+            Assert.That(goal, Is.Not.Null);
+            Assert.That(goal.Label, Is.EqualTo(ClinicPurchases.Describe(sim.State, goal.Option)));
+            Assert.That(goal.Affordable, Is.False);
+            Assert.That(goal.Shortfall, Is.EqualTo(Math.Max(0, goal.Cost - sim.TillCash)));
+            Assert.That(goal.SecondsToAfford(0), Is.EqualTo(goal.Shortfall == 0 ? 0 : -1), "No earnings yet: no guess.");
+            Assert.That(goal.SecondsToAfford(10), Is.EqualTo(goal.Shortfall / 10d));
+            Assert.That(ClinicPurchases.NextGoal(DoctorsProgressionFixture.MaxStarter()), Is.Null, "A complete clinic has nothing left to save for.");
+        }
+
+        [Test] public void WhenOnlyBuildingIsLeftTheGoalSaysWhenTheBuilderIsFree()
+        {
+            var sim = ClinicFreeProgression.OpenedClinic();
+            ClinicSimulation.TryGrantReward(sim.State, 10000000);
+            // Buy everything that needs no builder, and start the office upgrade: what is left waits for the builder.
+            Assert.That(sim.UpgradeOffice().Success, Is.True);
+            for (var i = 0; i < 2000; i++)
+            {
+                var option = ClinicPurchases.Options(sim).OrderBy(o => o.Cost).FirstOrDefault();
+                if (option == null || !ClinicPurchases.Buy(sim, option).Success) break;
+            }
+            var goal = ClinicPurchases.NextGoal(sim);
+            Assert.That(goal, Is.Not.Null);
+            Assert.That(goal.WaitsForBuilder, Is.True, goal.Label);
+            Assert.That(goal.WaitingOnly, Is.True, "Every room is at the clinic level: nothing to buy until the office finishes.");
+            Assert.That(goal.Label, Is.EqualTo("Clinic level 2 opens when the office upgrade finishes"));
+            Assert.That(goal.BuilderFreeInSeconds, Is.EqualTo((sim.State.OfficeUpgradeEndsTick - sim.State.Tick) / 10d));
+            sim.Advance(goal.BuilderFreeInSeconds + 1, false);
+            var after = ClinicPurchases.NextGoal(sim);
+            Assert.That(after.WaitingOnly, Is.False, "Then renovations open up again.");
         }
 
         [Test] public void EveryOpenPurchaseHasAReadableNameAndTheSuggestionIsTheNearestOne()
