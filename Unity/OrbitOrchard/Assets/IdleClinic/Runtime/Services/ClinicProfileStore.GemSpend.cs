@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using IdleClinic.Core;
-using UnityEngine;
 
 namespace IdleClinic.Services
 {
@@ -13,6 +12,7 @@ namespace IdleClinic.Services
         {
             var q = new ClinicGemQuote { Kind = kind, Key = key, Balance = Profile?.premium?.gems ?? 0 };
             if (Profile?.premium == null) return Unavailable(q, "Your clinic is still loading.");
+            q.Location = Profile.activeLocation;
             var active = Profile.ActiveState;
             var place = ClinicRules.IsDoctors(active) ? "doctors clinic" : "starter clinic";
             switch (kind)
@@ -65,12 +65,11 @@ namespace IdleClinic.Services
                         return Unavailable(q, "That room cannot be decorated.");
                     var gems = ClinicRules.DecorationGemCost(active, room);
                     if (gems <= 0) return Unavailable(q, "This room is fully decorated.");
-                    var copy = JsonUtility.FromJson<ClinicState>(JsonUtility.ToJson(active));
-                    var before = ClinicRules.VisitFee(copy);
-                    copy.Room(room).DecorationLevel++;
-                    var after = ClinicRules.VisitFee(copy);
+                    // The exact fees, with the game's own rounding: the added amount is stated in coins, never as a percentage.
+                    var before = ClinicRules.VisitFee(active);
+                    var after = ClinicStats.VisitFeeAfterDecor(active, room);
                     q.Title = "Decor for " + RoomLabel(room); q.Gems = gems;
-                    q.Benefit = "Visit fee " + N(before) + " → " + N(after) + " coins (+" + ClinicBalance.For(active).DecorationFeePercent + "%)";
+                    q.Benefit = "Visit fee " + N(before) + " → " + N(after) + " coins (+" + N(after - before) + (after - before == 1 ? " coin" : " coins") + " a visit)";
                     q.Duration = "Permanent";
                     q.Detail = "Optional. Nothing in the clinic needs decor.";
                     break;
@@ -95,10 +94,11 @@ namespace IdleClinic.Services
 
         /// <summary>Spend gems for a confirmed offer, at no more than <paramref name="maxGems"/>. Nothing is spent unless the
         /// result is durably saved.</summary>
-        public bool SpendGemsFor(ClinicGemSpendKind kind, string key, long maxGems, DateTimeOffset now)
+        public bool SpendGemsFor(ClinicGemSpendKind kind, string key, long maxGems, DateTimeOffset now, ClinicLocation? quotedIn = null)
         {
             var quote = QuoteGemSpend(kind, key, now);
             if (!quote.Available) { Error = quote.Unavailable; return false; }
+            if (quotedIn.HasValue && quotedIn.Value != quote.Location) { Error = "You moved to another clinic. Nothing was spent."; return false; }
             if (quote.Gems > maxGems) { Error = "The price is now " + quote.Gems + " gems. Nothing was spent."; return false; }
             switch (kind)
             {

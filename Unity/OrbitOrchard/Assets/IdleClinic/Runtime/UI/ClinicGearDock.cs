@@ -25,8 +25,7 @@ namespace IdleClinic.App
             :kind==ClinicRoom.Waiting?"Time to call a patient":kind==ClinicRoom.Consultation?"Consultation time":"Dispensing time";
         private string GearTime(ClinicRoom kind)
         {
-            var role=RoomRole(kind);
-            var ticks=kind==ClinicRoom.Waiting||!role.HasValue?ClinicRules.WaitingCallTicks(State):ClinicRules.StationServiceTicks(State,role.Value,0);
+            var ticks=ClinicStats.ServiceTicks(State,kind);
             return (ticks/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
         }
 
@@ -49,7 +48,16 @@ namespace IdleClinic.App
             var effect=Box(panel,"effect-row");effect.pickingMode=PickingMode.Ignore;
             Text(effect,GearTimeLabel(kind),"effect-label",true);
             var values=Box(effect,"effect-values");values.pickingMode=PickingMode.Ignore;
-            Display(Text(values,GearTime(kind),"effect-after",true));
+            // Before → after: the time this one upgrade will give, so the player sees exactly what the coins buy.
+            var canUpgrade=focusOpen&&focusVersion<ClinicGear.MaximumVersion;
+            if(canUpgrade)
+            {
+                Display(Text(values,GearTime(kind),"effect-before",true));
+                values.Add(new ClinicIcon(ClinicGlyph.Arrow,14,new Color(.34f,.41f,.35f)));
+                var after=ClinicStats.ServiceTicksAfterGear(State,kind);
+                Display(Text(values,(after/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s","effect-after",true));
+            }
+            else Display(Text(values,GearTime(kind),"effect-after",true));
             var list=Box(panel,"gear-list");
             BuildGearRow(list,kind,focus,true);
         }

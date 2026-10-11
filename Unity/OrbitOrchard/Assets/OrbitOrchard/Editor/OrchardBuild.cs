@@ -43,10 +43,8 @@ namespace OrbitOrchard.Editor
             PlayerSettings.productName = "Little Lifeline";
             // 4.3 (22) went to internal TestFlight on 4 October 2026 and 4.3 has not shipped, so development continues as 4.3 (23).
             PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.3";
-            // ORCHARD_BUNDLE_ID gives a local QA preview its own app identity and save container on a simulator.
-            // Release and TestFlight exports leave it unset and always use the App Store identifier.
-            var qaBundle = Environment.GetEnvironmentVariable("ORCHARD_BUNDLE_ID");
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, string.IsNullOrEmpty(qaBundle) ? "com.flutterly.gravitile" : qaBundle);
+            // Every build starts from the App Store identity. Only BuildIOSSimulator may swap in a QA identity, after this.
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, IdleClinic.Services.ClinicQaIdentity.Production);
             PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "23";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
@@ -120,8 +118,15 @@ namespace OrbitOrchard.Editor
             var output = Environment.GetEnvironmentVariable("ORCHARD_IOS_EXPORT");
             if (string.IsNullOrEmpty(output)) output = "Builds/iOSSimulator";
             var previousArchitecture = PlayerSettings.iOS.simulatorSdkArchitecture;
+            // A local simulator preview can run under its own QA identity and save container (ORCHARD_BUNDLE_ID, for example
+            // com.flutterly.gravitile.qa). Anything else is refused; device, release and TestFlight builds never read it.
+            var requested = Environment.GetEnvironmentVariable("ORCHARD_BUNDLE_ID");
+            var qaIdentity = IdleClinic.Services.ClinicQaIdentity.Validate(requested);
+            if (!string.IsNullOrEmpty(requested) && qaIdentity == null && requested != IdleClinic.Services.ClinicQaIdentity.Production)
+                throw new BuildFailedException("ORCHARD_BUNDLE_ID must be a QA identity such as com.flutterly.gravitile.qa: " + requested);
             try
             {
+                if (qaIdentity != null) PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, qaIdentity);
                 PlayerSettings.iOS.sdkVersion = iOSSdkVersion.SimulatorSDK;
                 PlayerSettings.iOS.simulatorSdkArchitecture = AppleMobileArchitectureSimulator.ARM64;
                 WriteExportProvenance(output, true, "simulator", false);
@@ -138,7 +143,7 @@ namespace OrbitOrchard.Editor
                 PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
                 PlayerSettings.iOS.simulatorSdkArchitecture = previousArchitecture;
                 // A QA preview's separate identity never stays in the project settings.
-                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, "com.flutterly.gravitile");
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, IdleClinic.Services.ClinicQaIdentity.Production);
                 AssetDatabase.SaveAssets();
             }
             // Record the restored source tree, not the temporary SimulatorSDK setting.

@@ -30,6 +30,16 @@ namespace IdleClinic.App
             { selectedObject=null;selectedRoom=ClinicSimulation.OpeningRoom(State.OpeningStep);world.SelectRoom(selectedRoom.Value); }
             dockKey="";UpdateReadouts();
         }
+        private void HelpBoss()
+        {
+            var room=State.OpeningStep;
+            if(!simulation.HelpOpeningTask().Success)return;
+            Feedback(0);
+            var point=ClinicSimulation.OpeningZone(room)==3?world.GetSupportRoomPoint(true):world.GetRoomPoint(ClinicSimulation.OpeningRoom(room));
+            FloatText(point,ClinicSimulation.OpeningCleaning(room)?"Helping!":"Nearly there!","float-good");
+            UpdateReadouts();
+        }
+
         private void UpdateOpeningGuide()
         {
             var step=State.OpeningStep;bool busy=State.OpeningTaskEndsTick>=0;
@@ -37,7 +47,7 @@ namespace IdleClinic.App
             if(guideCard.style.display!=display){guideCard.style.display=display;ApplySafeArea();}
             guideEyebrow.text=busy?"BOSS AT WORK":"OPEN YOUR CLINIC";
             guideTitle.text=OpeningTitles[(int)step];
-            guideWhy.text=busy?"Ready in "+TimeLabel((State.OpeningTaskEndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond):OpeningReasons[(int)step];
+            guideWhy.text=busy?"Ready in "+TimeLabel((State.OpeningTaskEndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond)+" · tap to help":OpeningReasons[(int)step];
             guideRewardGem.parent.style.display=DisplayStyle.None;
             guidePointer.style.display=DisplayStyle.None;
             guideCard.EnableInClassList("guide-ready",false);
@@ -51,10 +61,15 @@ namespace IdleClinic.App
             {
                 var status=Text(dock,"","room-detail");
                 readouts.Add(()=>status.text="Boss at work · "+TimeLabel((State.OpeningTaskEndsTick-State.Tick)/(double)ClinicRules.TicksPerSecond)+" remaining");
+                // Optional: lend a hand instead of watching the timer. Each tap takes a moment off; waiting works just as well.
+                var help=IconButton(dock,ClinicGlyph.Bolt,"Help the boss, finishes a little sooner",HelpBoss,"track-action help-action");
+                help.name="opening-help";
+                Text(help,ClinicSimulation.OpeningCleaning(step)?"Help clear up":"Help set up","action-label",true);
                 return;
             }
             if(step==ClinicOpeningStep.FirstCheckIn || step==ClinicOpeningStep.QueueArrivals) return;
-            var label=ClinicSimulation.OpeningCleaning(step)?"Clean · 8s":ClinicSimulation.OpeningManual(step)?"Set up · 10s"
+            var seconds=ClinicSimulation.OpeningTaskTicks(step)/ClinicRules.TicksPerSecond;
+            var label=ClinicSimulation.OpeningCleaning(step)?"Clean · "+seconds+"s":ClinicSimulation.OpeningManual(step)?"Set up · "+seconds+"s"
                 :step==ClinicOpeningStep.HireNurse?"Hire first nurse":"Recruit first receptionist";
             var captured=step;
             var button=IconButton(dock,ClinicSimulation.OpeningCleaning(step)?ClinicGlyph.Facility:ClinicGlyph.Upgrade,label,

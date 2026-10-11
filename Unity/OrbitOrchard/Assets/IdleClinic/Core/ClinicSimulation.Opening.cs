@@ -33,9 +33,28 @@ namespace IdleClinic.Core
             State.BossFromZone = State.BossZone;
             State.BossZone = OpeningZone(expected);
             State.OpeningTaskStartedTick = State.Tick;
-            State.OpeningTaskEndsTick = State.Tick + (OpeningCleaning(expected) ? 80 : 100);
+            State.OpeningTaskEndsTick = State.Tick + OpeningTaskTicks(expected);
             Emit(ClinicEventKind.TutorialAdvanced, OpeningRoom(expected));
             return Yes(OpeningCleaning(expected) ? "The boss is cleaning." : "The boss is setting up the room.");
+        }
+
+        /// <summary>Ticks of boss work for a task. The office's clean and set-up show the rhythm; later rooms repeat it more briskly
+        /// (4.3 build 22 used 8s and 10s for every room). Saves started under the longer timers finish them unchanged.</summary>
+        public static int OpeningTaskTicks(ClinicOpeningStep step)
+            => step == ClinicOpeningStep.CleanOffice ? 60 : step == ClinicOpeningStep.SetUpOffice ? 80 : OpeningCleaning(step) ? 40 : 50;
+        /// <summary>The longest a task can have been given by any version, for saves made mid-task.</summary>
+        private static int LongestOpeningTaskTicks(ClinicOpeningStep step) => OpeningCleaning(step) ? 80 : 100;
+        /// <summary>Each tap on Help takes this much off the boss's current task.</summary>
+        public const int OpeningHelpTicks = 15;
+
+        /// <summary>The player lends a hand: the boss's current task finishes a little sooner. Optional; waiting works too.</summary>
+        public ClinicCommandResult HelpOpeningTask()
+        {
+            if (!State.OpeningEnabled || State.OpeningStep == ClinicOpeningStep.Complete || State.OpeningTaskEndsTick < 0)
+                return No("The boss is not working on anything right now.");
+            if (State.OpeningTaskEndsTick - State.Tick <= 1) return No("Nearly done.");
+            State.OpeningTaskEndsTick = Math.Max(State.Tick + 1, State.OpeningTaskEndsTick - OpeningHelpTicks);
+            return Yes(OpeningCleaning(State.OpeningStep) ? "You help clear up." : "You help set up.");
         }
 
         private void FinishOpeningTask()
@@ -106,7 +125,8 @@ namespace IdleClinic.Core
                 || state.BossZone < 0 || state.BossZone > 3 || state.BossFromZone < 0 || state.BossFromZone > 3
                 || state.OpeningTaskStartedTick < 0 || state.OpeningTaskStartedTick > state.Tick
                 || state.OpeningTaskEndsTick != -1 && (state.OpeningTaskEndsTick <= state.Tick || !OpeningManual(state.OpeningStep)
-                    || state.OpeningTaskEndsTick-state.OpeningTaskStartedTick != (OpeningCleaning(state.OpeningStep)?80:100))) return false;
+                    || state.OpeningTaskEndsTick-state.OpeningTaskStartedTick < 1
+                    || state.OpeningTaskEndsTick-state.OpeningTaskStartedTick > LongestOpeningTaskTicks(state.OpeningStep))) return false;
             var step=state.OpeningStep;
             if (state.OfficeCleaned != (step > ClinicOpeningStep.CleanOffice) || (step == ClinicOpeningStep.Complete ? state.OfficeLevel < 1 : state.OfficeLevel != (step > ClinicOpeningStep.SetUpOffice ? 1 : 0))) return false;
             if (step == ClinicOpeningStep.Complete) return state.Tutorial == ClinicTutorialStep.Complete;

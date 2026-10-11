@@ -229,15 +229,16 @@ namespace IdleClinic.App
             var words=Box(intro,"track-words");words.pickingMode=PickingMode.Ignore;
             Text(words,atTop?"FULLY DECORATED":"OPTIONAL · DECOR LEVEL "+(level+1),"eyebrow",true);
             Display(Text(words,DecorHeadline(level),"track-title",true));
-            Text(words,"Decor is bought with gems and never needed to progress. Each level adds "+percent+"% to every visit fee.","track-description");
+            Text(words,"Decor is bought with gems and never needed to progress. Each level adds "+percent+"% of the base visit fee.","track-description");
+            // The exact visit fee now and after this level, with the game's own rounding.
             var effect=Box(panel,"effect-row");effect.pickingMode=PickingMode.Ignore;
-            Text(effect,"Decor fee bonus","effect-label",true);
+            Text(effect,"Visit fee","effect-label",true);
             var values=Box(effect,"effect-values");values.pickingMode=PickingMode.Ignore;
-            Display(Text(values,"+"+percent*(level-1)+"%","effect-before",true));
+            Display(Text(values,Money(ClinicRules.VisitFee(State)),"effect-before",true));
             if(!atTop)
             {
                 values.Add(new ClinicIcon(ClinicGlyph.Arrow,14,new Color(.34f,.41f,.35f)));
-                Display(Text(values,"+"+percent*level+"%","effect-after decor-after",true));
+                Display(Text(values,Money(ClinicStats.VisitFeeAfterDecor(State,room.Kind)),"effect-after decor-after",true));
             }
             var pips=Box(panel,"level-pips");pips.pickingMode=PickingMode.Ignore;
             pips.tooltip="Decor level "+level+" of "+most;
@@ -259,7 +260,7 @@ namespace IdleClinic.App
             var buy=GemActionButton(panel,"Add decor to "+RoomName(kind)+" for "+ClinicRules.DecorationGemCost(State,kind)+" gems","Add decor",
                 ()=>BuyDecor(kind),()=>ClinicRules.DecorationGemCost(State,kind),"gem-action gem-action-wide",readouts);
             buy.name=name;
-            buy.tooltip="Decor level "+level+". "+ClinicRules.DecorationGemCost(State,kind)+" gems. Adds "+percent+"% to every visit fee.";
+            buy.tooltip="Decor level "+level+". "+ClinicRules.DecorationGemCost(State,kind)+" gems. Visit fee "+Money(ClinicRules.VisitFee(State))+" to "+Money(ClinicStats.VisitFeeAfterDecor(State,kind))+" coins.";
         }
 
         private static string DecorHeadline(int level)

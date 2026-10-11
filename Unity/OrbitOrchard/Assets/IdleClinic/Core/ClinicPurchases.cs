@@ -116,6 +116,37 @@ namespace IdleClinic.Core
             }
         }
 
+        /// <summary>The next step to suggest after a purchase: the nearest open improvement, by price.</summary>
+        public static ClinicPurchaseOption Suggest(ClinicSimulation game)
+            => Options(game, true).OrderBy(o => o.Cost).ThenBy(o => (int)o.Kind).FirstOrDefault();
+
+        /// <summary>A purchase in the words the panels use.</summary>
+        public static string Describe(ClinicState state, ClinicPurchaseOption option)
+        {
+            switch (option.Kind)
+            {
+                case ClinicPurchaseKind.Renovate: return "Renovate " + RoomName(option.Room) + " to room " + (state.Room(option.Room).Tier + 1);
+                case ClinicPurchaseKind.RoomUpgrade: return "Improve " + RoomName(option.Room) + " " + (option.Track == UpgradeTrack.Equipment ? "equipment" : option.Track == UpgradeTrack.Facilities ? "facilities" : "decor");
+                case ClinicPurchaseKind.Gear: return "Upgrade the " + ClinicGear.ItemName(option.Room, option.Item).ToLowerInvariant() + " in " + RoomName(option.Room);
+                case ClinicPurchaseKind.AddStation: return "Add a " + StationName(option.Role);
+                case ClinicPurchaseKind.Hire: return "Hire a " + RoleName(option.Role);
+                case ClinicPurchaseKind.Train: return "Train a " + RoleName(option.Role);
+                case ClinicPurchaseKind.UpgradeStation: return "Upgrade a " + StationName(option.Role);
+                case ClinicPurchaseKind.Amenity: return "Improve the " + AmenityName(option.Amenity);
+                case ClinicPurchaseKind.Office: return "Upgrade the office to clinic level " + (state.OfficeLevel + 1);
+                default: return "Improve the clinic";
+            }
+        }
+
+        private static string RoomName(ClinicRoom room) => room == ClinicRoom.FirstAid ? "first aid" : room == ClinicRoom.Waiting ? "the waiting room"
+            : room == ClinicRoom.Consultation ? "consultations" : room == ClinicRoom.Pharmacy ? "the pharmacy" : "reception";
+        private static string RoleName(ClinicStaffRole role) => role == ClinicStaffRole.Receptionist ? "receptionist" : role == ClinicStaffRole.Nurse ? "nurse"
+            : role == ClinicStaffRole.Doctor ? "doctor" : "pharmacist";
+        private static string StationName(ClinicStaffRole role) => role == ClinicStaffRole.Receptionist ? "check-in desk" : role == ClinicStaffRole.Nurse ? "treatment station"
+            : role == ClinicStaffRole.Doctor ? "consultation room" : "pharmacy counter";
+        private static string AmenityName(ClinicAmenity amenity) => amenity == ClinicAmenity.Parking ? "car park" : amenity == ClinicAmenity.Toilet ? "toilets"
+            : amenity == ClinicAmenity.Vending ? "vending machine" : "taxi stand";
+
         private static void Add(List<ClinicPurchaseOption> list, ClinicPurchaseOption option)
         {
             if (option.Cost > 0) list.Add(option);

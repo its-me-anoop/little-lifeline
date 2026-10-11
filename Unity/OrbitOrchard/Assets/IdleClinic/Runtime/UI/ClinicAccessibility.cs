@@ -12,7 +12,9 @@ namespace IdleClinic.App
     {
         private readonly List<AccessibleBinding> accessible=new List<AccessibleBinding>();
         private AccessibilityHierarchy accessibility;
-        private AccessibilityNode walletNode,hintNode;
+        private AccessibilityNode walletNode,hintNode,gemConfirmNode;
+        // Move screen-reader focus to the gem confirmation when it opens, and back to the clinic when it closes.
+        private bool screenChangePending,screenChangeToSheet;
         private readonly Dictionary<AccessibilityNode,Rect> accessibilityFrames=new Dictionary<AccessibilityNode,Rect>();
         private bool accessibilityLayoutDirty;
         private double nextAccessibilityNotification;
@@ -30,6 +32,9 @@ namespace IdleClinic.App
             walletNode.frameGetter=()=>AccessibleScreenFrame(wallet);
             hintNode=accessibility.AddNode("Clinic guidance");hintNode.role=AccessibilityRole.StaticText;
             hintNode.frameGetter=()=>AccessibleScreenFrame(hint);
+            // The whole quote in one readable node: what it gives, how long, the price and the balance after.
+            gemConfirmNode=accessibility.AddNode("Gem spend confirmation");gemConfirmNode.role=AccessibilityRole.StaticText;
+            gemConfirmNode.frameGetter=()=>AccessibleScreenFrame(GemConfirmReadable());
             foreach(var binding in accessible)AddAccessibilityNode(binding);
             AssistiveSupport.screenReaderStatusChanged+=ScreenReaderStatusChanged;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -89,8 +94,12 @@ namespace IdleClinic.App
             };
 #endif
         }
+        private VisualElement GemConfirmReadable()=>gemConfirmBody!=null?(VisualElement)gemConfirmBody:gemConfirmCard;
+        private void AnnounceScreenChange(bool toSheet){screenChangePending=true;screenChangeToSheet=toSheet;accessibilityLayoutDirty=true;}
         private bool IsAccessible(VisualElement element)
         {
+            // While the gem confirmation is open only its own facts and buttons exist for assistive technology.
+            if(!ClinicModalPolicy.Allows(gemConfirm,element))return false;
             if(element==null||element.panel==null||element.resolvedStyle.display==DisplayStyle.None
                 ||element.resolvedStyle.visibility==Visibility.Hidden)return false;
             for(var p=element.parent;p!=null;p=p.parent)
@@ -184,6 +193,7 @@ namespace IdleClinic.App
             if(accessibility==null)return;
             UpdateAccessibilityNode(walletNode,wallet);
             UpdateAccessibilityNode(hintNode,hint);
+            UpdateAccessibilityNode(gemConfirmNode,GemConfirmReadable());
             for(var i=accessible.Count-1;i>=0;i--)
             {
                 var binding=accessible[i];
@@ -196,6 +206,15 @@ namespace IdleClinic.App
             }
             // Menus, markers and camera motion mutate the live hierarchy. Coalesce
             // invalidations so screen readers see them without a notification every frame.
+            if(screenChangePending&&AssistiveSupport.activeHierarchy==accessibility)
+            {
+                // A modal change is a new screen: focus the quote summary, or let the reader choose its place on return.
+                gemConfirmNode.value=GemConfirmSummary();
+                AssistiveSupport.notificationDispatcher.SendScreenChanged(screenChangeToSheet&&gemConfirmNode.isActive?gemConfirmNode:null);
+                screenChangePending=false;accessibilityLayoutDirty=false;
+                nextAccessibilityNotification=Time.unscaledTimeAsDouble+.2;
+            }
+            else if(screenChangePending)screenChangePending=false;
             if(accessibilityLayoutDirty&&AssistiveSupport.activeHierarchy==accessibility
                 &&Time.unscaledTimeAsDouble>=nextAccessibilityNotification)
             {
@@ -222,6 +241,7 @@ namespace IdleClinic.App
             if(accessibility==null)return;
             walletNode.value=State.Wallet.ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins";
             hintNode.value=hintLabel.text;
+            gemConfirmNode.value=GemConfirmSummary();
             foreach(var binding in accessible)
             {
                 binding.Node.state=IsAccessible(binding.Element)&&binding.Element.enabledInHierarchy?AccessibilityState.None:AccessibilityState.Disabled;

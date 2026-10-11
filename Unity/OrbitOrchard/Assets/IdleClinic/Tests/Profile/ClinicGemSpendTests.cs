@@ -29,7 +29,7 @@ namespace IdleClinic.Tests
             Assert.That(store.Save(store.Profile, now), Is.True, store.Error);
             Assert.That(store.GrantPurchase("txn-test-1", 1000, now), Is.EqualTo(ClinicPurchaseGrant.Granted));
             start = store.Profile.premium.gems;
-            flow = new ClinicGemSpendFlow((kind, key) => store.QuoteGemSpend(kind, key, now), (quote, max) => store.SpendGemsFor(quote.Kind, quote.Key, max, now));
+            flow = new ClinicGemSpendFlow((kind, key) => store.QuoteGemSpend(kind, key, now), (quote, max) => store.SpendGemsFor(quote.Kind, quote.Key, max, now, quote.Location));
         }
         [TearDown] public void TearDown() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 
@@ -215,6 +215,79 @@ namespace IdleClinic.Tests
             }
             Assert.That(store.SpendGemsFor(ClinicGemSpendKind.CoinPack, "coins.unknown", start, now), Is.False);
             Assert.That(store.SpendGemsFor(ClinicGemSpendKind.FinishWork, "not-a-job", start, now), Is.False);
+        }
+
+        [Test] public void AnOpenBoostSheetKeepsItsTimeLeftCurrentWithoutAskingAgain()
+        {
+            // Review 8c9d3fa: same price and balance, but the shown time already left changes as the clock runs.
+            Assert.That(store.SpendGemsFor(ClinicGemSpendKind.Boost, "boost.1h", 30, now), Is.True, store.Error);
+            var opened = flow.Begin(ClinicGemSpendKind.Boost, "boost.1h"); var token = flow.Token;
+            Assert.That(opened.Duration, Does.Contain("1h already left"));
+            now = now.AddMinutes(2);
+            Assert.That(flow.Refresh(), Is.EqualTo(ClinicGemSpendRefresh.DetailsChanged));
+            Assert.That(flow.Pending.Duration, Does.Contain("58m already left"));
+            Assert.That(flow.Token, Is.EqualTo(token), "Nothing the player agreed to got worse, so the confirmation stays valid.");
+            Assert.That(flow.Refresh(), Is.EqualTo(ClinicGemSpendRefresh.Unchanged));
+            Assert.That(flow.Confirm(token, out _), Is.EqualTo(ClinicGemSpendOutcome.Spent), store.Error);
+            Assert.That(store.BoostRemaining(now).TotalMinutes, Is.EqualTo(118).Within(.01));
+        }
+
+        [Test] public void DecorStatesTheExactFeeAndCoinsAddedNotAPercentage()
+        {
+            var quote = store.QuoteGemSpend(ClinicGemSpendKind.Decoration, "Reception", now);
+            var before = ClinicRules.VisitFee(store.Profile.state);
+            var after = ClinicStats.VisitFeeAfterDecor(store.Profile.state, ClinicRoom.Reception);
+            Assert.That(ClinicRules.VisitFee(store.Profile.state), Is.EqualTo(before), "Previewing changes nothing.");
+            Assert.That(quote.Benefit, Is.EqualTo("Visit fee " + before + " → " + after + " coins (+" + (after - before) + (after - before == 1 ? " coin" : " coins") + " a visit)"));
+            Assert.That(quote.Benefit, Does.Not.Contain("%"));
+            Assert.That(store.SpendGemsFor(ClinicGemSpendKind.Decoration, "Reception", quote.Gems, now), Is.True, store.Error);
+            Assert.That(ClinicRules.VisitFee(store.Profile.state), Is.EqualTo(after), "The preview was exact.");
+        }
+
+        [Test] public void AQuoteOnlyEverSpendsInTheClinicItWasMadeIn()
+        {
+            // Construction ids repeat between clinics, so a quote is bound to the clinic it was made in.
+            var job = StartRenovation(ClinicRoom.Reception);
+            var quoted = store.QuoteGemSpend(ClinicGemSpendKind.FinishWork, job.ToString(), now);
+            Assert.That(quoted.Location, Is.EqualTo(ClinicLocation.StarterClinic));
+            Assert.That(store.SpendGemsFor(ClinicGemSpendKind.FinishWork, job.ToString(), quoted.Gems, now, ClinicLocation.DoctorsClinic), Is.False,
+                "A confirmation made in the other clinic never spends here.");
+            Assert.That(store.Error, Does.Contain("another clinic"));
+            Assert.That(store.Profile.premium.gems, Is.EqualTo(start));
+            Assert.That(store.Profile.state.Construction.Count, Is.EqualTo(1));
+
+            // The flow refuses when the player has moved between opening the sheet and confirming it.
+            var location = ClinicLocation.StarterClinic; var spent = 0;
+            var moving = new ClinicGemSpendFlow((kind, key) => new ClinicGemQuote { Kind = kind, Key = key, Title = "T", Benefit = "B", Duration = "D", Gems = 10, Balance = 100, Available = true, Location = location },
+                (quote, max) => { spent++; return true; });
+            moving.Begin(ClinicGemSpendKind.FinishWork, "0"); var token = moving.Token;
+            location = ClinicLocation.DoctorsClinic;
+            Assert.That(moving.Confirm(token, out var current), Is.EqualTo(ClinicGemSpendOutcome.Unavailable));
+            Assert.That(current.Unavailable, Does.Contain("another clinic"));
+            Assert.That(spent, Is.Zero);
+            moving.Begin(ClinicGemSpendKind.FinishWork, "0");
+            location = ClinicLocation.StarterClinic;
+            Assert.That(moving.Refresh(), Is.EqualTo(ClinicGemSpendRefresh.NoLongerAvailable), "An open sheet closes when the clinic changes.");
+        }
+
+        [Test] public void TheScreenReaderSummaryReadsEveryFactTheSheetShows()
+        {
+            var quote = store.QuoteGemSpend(ClinicGemSpendKind.OfflineUpgrade, "offline.12h", now);
+            foreach (var part in new[] { quote.Title, quote.Benefit, quote.Duration, quote.Detail, "Costs 150 gems", "leaving " + (start - 150).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) })
+                Assert.That(quote.Summary, Does.Contain(part));
+            var poor = new ClinicGemQuote { Title = "T", Benefit = "B", Duration = "D", Gems = 90, Balance = 5 };
+            Assert.That(poor.Summary, Does.Contain("need 85 gems more"));
+        }
+
+        [Test] public void OnlyAWellFormedSeparateIdentityCanReplaceTheAppStoreOneForQa()
+        {
+            Assert.That(ClinicQaIdentity.Validate(null), Is.Null);
+            Assert.That(ClinicQaIdentity.Validate(""), Is.Null);
+            Assert.That(ClinicQaIdentity.Validate(ClinicQaIdentity.Production), Is.Null);
+            Assert.That(ClinicQaIdentity.Validate("com.example.other"), Is.Null);
+            Assert.That(ClinicQaIdentity.Validate("com.flutterly.gravitile.qa;rm"), Is.Null);
+            Assert.That(ClinicQaIdentity.Validate("com.flutterly.gravitile.qa"), Is.EqualTo("com.flutterly.gravitile.qa"));
+            Assert.That(ClinicQaIdentity.Validate("com.flutterly.gravitile.review2"), Is.EqualTo("com.flutterly.gravitile.review2"));
         }
 
         [Test] public void FreeGemRoutesAreCountedHonestly()

@@ -15,15 +15,20 @@ namespace IdleClinic.App
         private const double GemConfirmGuardSeconds = .35;
         private ClinicGemSpendFlow gemFlow;
         private VisualElement gemConfirm, gemConfirmCard;
+        // The facts scroll inside the card when a compact screen cannot fit them; heading and actions stay in view.
+        private ScrollView gemConfirmBody;
+        private string gemConfirmBanner;
         private double gemConfirmOpenedAt, gemConfirmRefreshAt;
         private bool gemConfirmWorking;
 
-        private bool GemConfirmOpen => gemConfirm != null && gemConfirm.style.display == DisplayStyle.Flex;
+        private bool GemConfirmOpen => ClinicModalPolicy.IsOpen(gemConfirm);
+        /// <summary>True when a control outside the open sheet must not act (defence in depth behind the backdrop and masking).</summary>
+        private bool ModalBlocks(VisualElement element) => GemConfirmOpen && !ClinicModalPolicy.Allows(gemConfirm, element);
 
         private void BuildGemConfirm()
         {
             gemFlow = new ClinicGemSpendFlow((kind, key) => saves.QuoteGemSpend(kind, key, DateTimeOffset.UtcNow),
-                (quote, maxGems) => saves.SpendGemsFor(quote.Kind, quote.Key, maxGems, DateTimeOffset.UtcNow));
+                (quote, maxGems) => saves.SpendGemsFor(quote.Kind, quote.Key, maxGems, DateTimeOffset.UtcNow, quote.Location));
             gemConfirm = Box(root, "gem-confirm"); gemConfirm.name = "gem-confirm";
             // Tapping the dimmed area around the card cancels; it never confirms.
             gemConfirm.RegisterCallback<ClickEvent>(e => { if (e.target == gemConfirm) CancelGemSpend(); });
@@ -44,6 +49,9 @@ namespace IdleClinic.App
             gemConfirmRefreshAt = gemConfirmOpenedAt + .5;
             RenderGemConfirm(null);
             gemConfirm.style.display = DisplayStyle.Flex;
+            ApplySafeArea();
+            // Screen readers move to the sheet; everything behind it is masked until it closes.
+            AnnounceScreenChange(true);
         }
 
         private void CancelGemSpend()
@@ -55,8 +63,18 @@ namespace IdleClinic.App
         private void HideGemConfirm()
         {
             if (gemConfirm == null) return;
+            var wasOpen = GemConfirmOpen;
             gemConfirm.style.display = DisplayStyle.None;
-            gemConfirmCard.Clear();
+            gemConfirmCard.Clear(); gemConfirmBody = null; gemConfirmBanner = null;
+            if (wasOpen) AnnounceScreenChange(false);
+        }
+
+        /// <summary>An interruption (backgrounding, losing focus, changing clinic) withdraws an open confirmation: when the
+        /// player returns, nothing can be confirmed against a clinic or price they have not looked at again.</summary>
+        private void WithdrawGemConfirm()
+        {
+            if (!GemConfirmOpen) return;
+            CancelGemSpend();
         }
 
         /// <summary>Keep the open sheet true: a falling finish price is shown; work that completed on its own closes it.</summary>
@@ -64,15 +82,15 @@ namespace IdleClinic.App
         {
             if (!GemConfirmOpen || gemConfirmWorking || Time.unscaledTimeAsDouble < gemConfirmRefreshAt) return;
             gemConfirmRefreshAt = Time.unscaledTimeAsDouble + .5;
-            var before = gemFlow.Pending?.Gems ?? 0; var balance = gemFlow.Pending?.Balance ?? 0;
+            var before = gemFlow.Pending?.Gems ?? 0;
             switch (gemFlow.Refresh())
             {
                 case ClinicGemSpendRefresh.NothingOpen: HideGemConfirm(); break;
-                case ClinicGemSpendRefresh.NoLongerAvailable: HideGemConfirm(); Notify("It finished on its own. No gems were used.", 5); break;
+                case ClinicGemSpendRefresh.NoLongerAvailable: HideGemConfirm(); Notify("That offer has changed or finished. No gems were used.", 5); break;
                 case ClinicGemSpendRefresh.PriceRose: RenderGemConfirm("The price is now " + Gems(gemFlow.Pending.Gems) + ". Check it, then confirm again."); break;
                 case ClinicGemSpendRefresh.PriceFell: RenderGemConfirm("The price fell from " + Gems(before) + "."); break;
-                // Gems can arrive while the sheet is open (a restored or delayed App Store purchase): show the true balance.
-                case ClinicGemSpendRefresh.Unchanged: if (gemFlow.Pending.Balance != balance) RenderGemConfirm(null); break;
+                // Same price, but a shown fact changed: time left on a boost, or the balance after a delivered purchase.
+                case ClinicGemSpendRefresh.DetailsChanged: RenderGemConfirm(gemConfirmBanner); break;
             }
         }
 
@@ -82,6 +100,7 @@ namespace IdleClinic.App
             gemConfirmCard.Clear();
             if (quote == null) { HideGemConfirm(); return; }
             var token = gemFlow.Token;
+            gemConfirmBanner = banner;
 
             var heading = Box(gemConfirmCard, "gem-confirm-heading");
             var tile = Box(heading, "icon-tile gem-confirm-tile"); tile.pickingMode = PickingMode.Ignore;
@@ -91,13 +110,17 @@ namespace IdleClinic.App
             Display(Text(titles, quote.Title, "gem-confirm-title", true));
             IconButton(heading, ClinicGlyph.Close, "Cancel, spend nothing", CancelGemSpend, "round-control close-control").name = "gem-confirm-close";
 
-            if (!string.IsNullOrEmpty(banner)) Text(gemConfirmCard, banner, "gem-confirm-banner", true).name = "gem-confirm-banner";
-            var facts = Box(gemConfirmCard, "gem-confirm-facts"); facts.pickingMode = PickingMode.Ignore;
+            gemConfirmBody = new ScrollView(ScrollViewMode.Vertical) { name = "gem-confirm-body", horizontalScrollerVisibility = ScrollerVisibility.Hidden };
+            gemConfirmBody.AddToClassList("gem-confirm-body"); gemConfirmCard.Add(gemConfirmBody);
+            BindTouchCaptureLifecycle(gemConfirmBody.contentContainer); BindTouchCaptureLifecycle(gemConfirmBody.contentViewport);
+            var body = gemConfirmBody.contentContainer;
+            if (!string.IsNullOrEmpty(banner)) Text(body, banner, "gem-confirm-banner", true).name = "gem-confirm-banner";
+            var facts = Box(body, "gem-confirm-facts"); facts.pickingMode = PickingMode.Ignore;
             Fact(facts, ClinicGlyph.Check, "You get", quote.Benefit);
             Fact(facts, ClinicGlyph.Clock, "Lasts", quote.Duration);
-            if (!string.IsNullOrEmpty(quote.Detail)) Text(gemConfirmCard, quote.Detail, "gem-confirm-detail");
+            if (!string.IsNullOrEmpty(quote.Detail)) Text(body, quote.Detail, "gem-confirm-detail");
 
-            var cost = Box(gemConfirmCard, "gem-confirm-cost"); cost.pickingMode = PickingMode.Ignore;
+            var cost = Box(body, "gem-confirm-cost"); cost.pickingMode = PickingMode.Ignore;
             var price = Box(cost, "gem-confirm-price"); price.pickingMode = PickingMode.Ignore;
             price.Add(new ClinicIcon(ClinicGlyph.Gem, 22, GemInk));
             Display(Text(price, quote.Gems.ToString("N0", CultureInfo.InvariantCulture), "gem-confirm-amount", true)).name = "gem-confirm-amount";
@@ -114,7 +137,7 @@ namespace IdleClinic.App
                 var earn = IconButton(actions, ClinicGlyph.Goal, "Earn free gems from today's goals", () => { CancelGemSpend(); OpenGemTab(GemTab.Today); }, "gem-confirm-earn");
                 earn.name = "gem-confirm-earn"; earn.Q<ClinicIcon>().Tint = LeafInk;
                 Text(earn, "Earn free gems", "gem-confirm-earn-label", true);
-                var shop = IconButton(gemConfirmCard, ClinicGlyph.Gem, "See gem packs", () => { CancelGemSpend(); OpenShop(); }, "text-link gem-confirm-shop");
+                var shop = IconButton(body, ClinicGlyph.Gem, "See gem packs", () => { CancelGemSpend(); OpenShop(); }, "text-link gem-confirm-shop");
                 shop.name = "gem-confirm-shop"; shop.Q<ClinicIcon>().RemoveFromHierarchy();
                 Text(shop, "See gem packs", "text-link-label", true);
             }
@@ -126,7 +149,22 @@ namespace IdleClinic.App
                 Text(spend, label, "gem-confirm-spend-label", true);
             }
             Unstyle(gemConfirmCard);
+            LimitGemConfirm();
         }
+
+        /// <summary>Fit the sheet inside the safe area: the facts scroll if they must, Cancel and Spend never leave the screen.</summary>
+        private float gemConfirmMaxHeight = 600;
+        private void LimitGemConfirm()
+        {
+            if (gemConfirmCard == null) return;
+            var cardMax = Math.Max(240f, gemConfirmMaxHeight);
+            gemConfirmCard.style.maxHeight = cardMax;
+            // Heading, actions and card padding take about 170 points; the rest is for the facts.
+            if (gemConfirmBody != null) gemConfirmBody.style.maxHeight = Math.Max(96f, cardMax - 170f);
+        }
+
+        /// <summary>A screen reader hears the whole quote, in the order the sheet shows it.</summary>
+        private string GemConfirmSummary() => gemFlow?.Pending == null ? "" : (gemConfirmBanner == null ? "" : gemConfirmBanner + " ") + gemFlow.Pending.Summary;
 
         private void Fact(VisualElement parent, ClinicGlyph glyph, string label, string value)
         {

@@ -232,11 +232,24 @@ namespace IdleClinic.App
         private void Run(Func<ClinicCommandResult> action,bool closeAfterSuccess=false)
         {
             if(saves.HasPendingOfflineProgress){Notify("Saving your return first…");return;}
+            var before=ClinicStats.Of(State);
             var result=action();
             if(!result.Success){Notify(result.Message);return;}
             HandleEvents(simulation.DrainEvents());
             SaveNow();
             if(closeAfterSuccess)CloseContext();else UpdateReadouts();
+            if(result.Cost>0&&State.Tutorial==ClinicTutorialStep.Complete)AnnounceImprovement(before,result);
+        }
+
+        /// <summary>After a coin purchase: what it changed, before and after, then one readable next step and its price.</summary>
+        private void AnnounceImprovement(ClinicStats before,ClinicCommandResult result)
+        {
+            var changes=ClinicStats.Changes(before,ClinicStats.Of(State));
+            var what=changes.Count>0?string.Join(" · ",changes.Take(2)):result.Message;
+            var next=ClinicPurchases.Suggest(simulation);
+            var step=next==null?"":" Next: "+ClinicPurchases.Describe(State,next)+" · "+Money(next.Cost)+" coins"
+                +(next.WaitsForBuilder?" when the builder is free":State.Wallet<next.Cost?" (need "+Money(next.Cost-State.Wallet)+" more)":"");
+            Notify(what+"."+step,6);
         }
 
         private void Collect(int desk)
@@ -336,6 +349,14 @@ namespace IdleClinic.App
             var skipHeight=guideSkip==null||guideSkip.style.display==DisplayStyle.None?0:52;
             cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32+skipHeight:20);
             LayoutWelcome(safe,top);
+            if(gemConfirm!=null)
+            {
+                // The confirmation keeps clear of the notch, home indicator and Duo hinge-side insets.
+                gemConfirm.style.paddingTop=top+16;gemConfirm.style.paddingBottom=bottom+16;
+                gemConfirm.style.paddingLeft=safe.xMin+16;gemConfirm.style.paddingRight=w-safe.xMax+16;
+                gemConfirmMaxHeight=h-top-bottom-32;
+                LimitGemConfirm();
+            }
             // Sheet notifications sit at the foot, leaving the heading and navigation readable.
             toast.style.top=sheet?new StyleLength(StyleKeyword.Auto):new StyleLength(top+132);
             toast.style.bottom=sheet?new StyleLength(bottom+20):new StyleLength(StyleKeyword.Auto);
@@ -393,6 +414,7 @@ namespace IdleClinic.App
         private void PublishLocation()
         {
             CancelWorldGesture();
+            WithdrawGemConfirm();
             profile = saves.Profile;
             BindSimulations();
             world.ConfigureLocation(profile.activeLocation);
@@ -439,13 +461,14 @@ namespace IdleClinic.App
         private void OnApplicationPause(bool paused)
         {
             CancelWorldGesture();
+            if(paused)WithdrawGemConfirm();
             if(!ready)return;
             if(paused&&!inactive)SaveNow();
             var wasInactive=inactive;inactive=paused;
             clinicAudio.SetPaused(paused);
             if(!paused&&wasInactive)ResumeClinic();
         }
-        private void OnApplicationFocus(bool focus){if(!focus)CancelWorldGesture();}
+        private void OnApplicationFocus(bool focus){if(!focus){CancelWorldGesture();WithdrawGemConfirm();}}
         private void OnApplicationQuit(){if(ready&&!inactive)SaveNow();}
         private void OnDestroy()
         {
@@ -508,8 +531,10 @@ namespace IdleClinic.App
         }
         private Button IconButton(VisualElement parent,ClinicGlyph glyph,string label,Action action,string classes,Func<string> value=null)
         {
-            Action feedbackAction=()=>{ clinicAudio.PlayTap(); action(); };
-            var button=new Button(feedbackAction){tooltip=label,name=label.ToLowerInvariant().Replace(' ','-')};
+            Button button=null;
+            // Behind an open gem confirmation no control acts, however it is reached (pointer, keyboard or assistive tap).
+            Action feedbackAction=()=>{ if(ModalBlocks(button))return; clinicAudio.PlayTap(); action(); };
+            button=new Button(feedbackAction){tooltip=label,name=label.ToLowerInvariant().Replace(' ','-')};
             foreach(var name in classes.Split(' '))button.AddToClassList(name);
             button.Add(new ClinicIcon(glyph));parent.Add(button);RegisterAccessibleButton(button,label,feedbackAction,value);return button;
         }

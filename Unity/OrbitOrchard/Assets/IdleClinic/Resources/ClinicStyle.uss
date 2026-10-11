@@ -470,7 +470,10 @@ Button:active { scale: .96 .96; }
 
 /* 4.3 (23): every gem spend is confirmed in this sheet */
 .gem-confirm { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(30,38,32,0.45); justify-content: flex-end; align-items: center; padding: 16px 16px 28px 16px; }
-.gem-confirm-card { width: 100%; max-width: 480px; padding: 18px; border-radius: 26px; background-color: rgb(251,250,240); border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
+.gem-confirm-card { width: 100%; max-width: 480px; flex-shrink: 1; padding: 18px; border-radius: 26px; background-color: rgb(251,250,240); border-bottom-width: 4px; border-bottom-color: rgb(200,211,188); }
+.gem-confirm-heading { flex-shrink: 0; }
+.gem-confirm-body { flex-grow: 0; flex-shrink: 1; min-height: 0; margin-top: 4px; }
+.gem-confirm-actions { flex-shrink: 0; }
 .gem-confirm-heading { flex-direction: row; align-items: center; }
 .gem-confirm-tile { width: 48px; height: 48px; border-radius: 16px; background-color: rgb(250,233,238); justify-content: center; align-items: center; flex-shrink: 0; }
 .gem-confirm-titles { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 12px; margin-right: 8px; }

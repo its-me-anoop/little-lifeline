@@ -5,16 +5,18 @@
 #
 #   Tools/qa/simulator_preview.sh [output-directory]
 #
-# Options (environment): LIFELINE_QA_BUNDLE (default com.flutterly.gravitile.qa), LIFELINE_QA_DEVICE (default
-# "Little Lifeline QA 4.3 (23)"), LIFELINE_QA_DEVICE_TYPE (simctl device type id), LIFELINE_QA_KEEP_SAVE=1 to keep the
-# QA save from a previous run, LIFELINE_QA_SKIP_EXPORT=1 with LIFELINE_QA_APP=<path.app> to reuse a built app,
+# Options (environment): LIFELINE_QA_BUNDLE (default com.flutterly.gravitile.qa), LIFELINE_QA_UDID (an owned QA
+# simulator, for example the reviewer's C5FFBFF1-F652-4F82-A3B8-FA453B16610A), LIFELINE_QA_DEVICE (name used when no UDID
+# is given; default "Little Lifeline QA 4.3 (23) Review"), LIFELINE_QA_DEVICE_TYPE (simctl device type id, only for a
+# new device), LIFELINE_QA_FRESH=1 to start this QA app's save from scratch (needed for the opening checkpoints; the QA
+# save is kept otherwise), LIFELINE_QA_SKIP_EXPORT=1 with LIFELINE_QA_APP=<path.app> to reuse a built app,
 # LIFELINE_QA_PERF_SECONDS (default 95).
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PROJECT="$ROOT/Unity/OrbitOrchard"
 UNITY="${LIFELINE_EDITOR:-/Applications/Unity/Hub/Editor/6000.3.24f1/Unity.app/Contents/MacOS/Unity}"
 BUNDLE="${LIFELINE_QA_BUNDLE:-com.flutterly.gravitile.qa}"
-DEVICE_NAME="${LIFELINE_QA_DEVICE:-Little Lifeline QA 4.3 (23)}"
+DEVICE_NAME="${LIFELINE_QA_DEVICE:-Little Lifeline QA 4.3 (23) Review}"
 COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 if [ -d "$ROOT/../claude-work" ]; then BASE="$(cd "$ROOT/../claude-work" && pwd)/runs"; else BASE="$ROOT/build/qa-runs"; fi
@@ -50,12 +52,23 @@ fi
 [ "$(head -1 "$OUT/app-identity.txt")" = "$BUNDLE" ] || fail "Built app identity $(head -1 "$OUT/app-identity.txt") is not $BUNDLE"
 log "App $(tr '\n' ' ' < "$OUT/app-identity.txt")"
 
-# 2. The dedicated QA simulator: found by name or created. No other device is booted, shut down or changed.
+# 2. The dedicated QA simulator: the given UDID, else found by name, else created. Its name must say QA. No other device
+#    is booted, shut down or changed.
+UDID="${LIFELINE_QA_UDID:-}"
+if [ -n "$UDID" ]; then
+  NAME_OF_UDID="$(xcrun simctl list devices -j | /usr/bin/python3 -c 'import json,sys
+u=sys.argv[1]
+for runtime in json.load(sys.stdin)["devices"].values():
+    for d in runtime:
+        if d["udid"]==u: print(d["name"]); sys.exit()' "$UDID")"
+  case "$NAME_OF_UDID" in *QA*) log "Using owned QA simulator $UDID ($NAME_OF_UDID)";; *) fail "Simulator $UDID is not a QA device (${NAME_OF_UDID:-not found})";; esac
+else
 UDID="$(xcrun simctl list devices -j | /usr/bin/python3 -c 'import json,sys
 name=sys.argv[1]
 for runtime in json.load(sys.stdin)["devices"].values():
     for d in runtime:
         if d["name"]==name and d.get("isAvailable",True): print(d["udid"]); sys.exit()' "$DEVICE_NAME")"
+fi
 if [ -z "$UDID" ]; then
   RUNTIME="$(xcrun simctl list runtimes -j | /usr/bin/python3 -c 'import json,sys
 rs=[r for r in json.load(sys.stdin)["runtimes"] if r.get("platform")=="iOS" and r.get("isAvailable")]
@@ -69,7 +82,8 @@ fi
 echo "$UDID" > "$OUT/device-udid.txt"
 xcrun simctl boot "$UDID" >/dev/null 2>&1
 xcrun simctl bootstatus "$UDID" -b > "$OUT/bootstatus.txt" 2>&1 || fail "QA simulator did not boot"
-if [ "${LIFELINE_QA_KEEP_SAVE:-0}" != 1 ]; then xcrun simctl uninstall "$UDID" "$BUNDLE" >/dev/null 2>&1; log "Fresh QA install (QA app and QA device only)"; fi
+if [ "${LIFELINE_QA_FRESH:-0}" = 1 ]; then xcrun simctl uninstall "$UDID" "$BUNDLE" >/dev/null 2>&1; log "Fresh QA save: removed only $BUNDLE from this QA device"
+else log "Keeping the existing $BUNDLE save on this QA device (LIFELINE_QA_FRESH=1 starts from the opening)"; fi
 xcrun simctl install "$UDID" "$APP" || fail "Install failed"
 CRASH_MARK="$OUT/.started"; touch "$CRASH_MARK"
 

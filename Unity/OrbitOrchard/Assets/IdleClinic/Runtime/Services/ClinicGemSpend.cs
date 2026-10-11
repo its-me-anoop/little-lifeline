@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using IdleClinic.Core;
 
 namespace IdleClinic.Services
 {
@@ -20,11 +22,23 @@ namespace IdleClinic.Services
         public string Detail;
         public long Gems;
         public long Balance;
+        /// <summary>The clinic the quote was made in. A confirmation never spends in a different clinic.</summary>
+        public ClinicLocation Location;
         public bool Available;
         public string Unavailable;
         public long Shortfall => Math.Max(0, Gems - Balance);
         /// <summary>Spending nothing (a free last-minute finish) needs no confirmation.</summary>
         public bool NeedsConfirmation => Gems > 0;
+
+        /// <summary>Everything the sheet shows, in reading order, for screen readers.</summary>
+        public string Summary => Title + ". You get: " + Benefit + ". Lasts: " + Duration + "." + (string.IsNullOrEmpty(Detail) ? "" : " " + Detail)
+            + " Costs " + Count(Gems) + "." + (Shortfall > 0 ? " You have " + Count(Balance) + " and need " + Count(Shortfall) + " more."
+                : " You have " + Count(Balance) + ", leaving " + Count(Balance - Gems) + ".");
+
+        /// <summary>The text the sheet displays; when it changes, the sheet is redrawn.</summary>
+        public string Display => Title + "|" + Benefit + "|" + Duration + "|" + Detail + "|" + Gems + "|" + Balance + "|" + Available + "|" + Unavailable;
+
+        private static string Count(long gems) => gems.ToString("N0", CultureInfo.InvariantCulture) + (gems == 1 ? " gem" : " gems");
     }
 
     public enum ClinicGemSpendOutcome
@@ -40,7 +54,12 @@ namespace IdleClinic.Services
         NotSaved
     }
 
-    public enum ClinicGemSpendRefresh { Unchanged, PriceFell, PriceRose, NoLongerAvailable, NothingOpen }
+    public enum ClinicGemSpendRefresh
+    {
+        Unchanged, PriceFell, PriceRose, NoLongerAvailable, NothingOpen,
+        /// <summary>Same price, but something shown changed (time left on a boost, the balance after a delivered purchase).</summary>
+        DetailsChanged
+    }
 
     /// <summary>One open gem confirmation at a time. Opening a different offer replaces it; each confirmation is a token that can
     /// spend at most once, never above the price the player saw. Engine-free, so its rules are tested without UI.</summary>
@@ -72,11 +91,12 @@ namespace IdleClinic.Services
         {
             if (Pending == null || Busy) return ClinicGemSpendRefresh.NothingOpen;
             var current = quote(Pending.Kind, Pending.Key);
-            if (!current.Available) { Pending = null; Token++; return ClinicGemSpendRefresh.NoLongerAvailable; }
+            if (!current.Available || current.Location != Pending.Location) { Pending = null; Token++; return ClinicGemSpendRefresh.NoLongerAvailable; }
             if (current.Gems > Pending.Gems) { Pending = current; Token++; return ClinicGemSpendRefresh.PriceRose; }
             var fell = current.Gems < Pending.Gems;
+            var changed = current.Display != Pending.Display;
             Pending = current;
-            return fell ? ClinicGemSpendRefresh.PriceFell : ClinicGemSpendRefresh.Unchanged;
+            return fell ? ClinicGemSpendRefresh.PriceFell : changed ? ClinicGemSpendRefresh.DetailsChanged : ClinicGemSpendRefresh.Unchanged;
         }
 
         public ClinicGemSpendOutcome Confirm(int token, out ClinicGemQuote current)
@@ -85,6 +105,8 @@ namespace IdleClinic.Services
             if (Busy || Pending == null || token != Token) return ClinicGemSpendOutcome.Stale;
             var seen = Pending;
             current = quote(seen.Kind, seen.Key);
+            if (current.Available && current.Location != seen.Location)
+            { current.Available = false; current.Unavailable = "You moved to another clinic. Nothing was spent."; }
             if (!current.Available) { Pending = null; Token++; return ClinicGemSpendOutcome.Unavailable; }
             if (current.Gems > seen.Gems) { Pending = current; Token++; return ClinicGemSpendOutcome.PriceChanged; }
             Pending = current;
