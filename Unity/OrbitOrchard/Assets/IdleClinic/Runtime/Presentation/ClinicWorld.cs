@@ -112,6 +112,15 @@ namespace IdleClinic.Presentation
 
         // ---- The conversation camera: while Maya and the boss talk, a close view of the two of them -------------------------
         private bool storyFollow,storyTrack,storyQueue;
+        private ClinicStoryCutaway cutaway;
+        /// <summary>While the conversation view holds the two of them, nothing built stands between the camera and either of
+        /// them (see <see cref="ClinicStoryCutaway"/>); the moment the player looks around or the view ends, it is all back.</summary>
+        private void UpdateCutaway(float deltaTime)
+        {
+            if(cutaway==null)return;
+            if(storyFollow&&!userCamera&&actors!=null&&actors.TryGetStoryPair(out var a,out var b))cutaway.Update(SceneCamera,a,b,deltaTime);
+            else cutaway.Clear();
+        }
         private float storyTightest=2.2f,storyFocusY=.62f,storyBand=.45f;
         public bool FollowingStory=>storyFollow;
         /// <summary>Frame the boss and Maya together, as close as fits them both (never wider than needed, never closer than
@@ -170,7 +179,7 @@ namespace IdleClinic.Presentation
                 refreshmentDoor=null;
                 BuildRoomStyles();opening=new ClinicOpeningPresentation(art,scene);
             }
-            actors=new ClinicActors(art,scene,this);Home(true);
+            actors=new ClinicActors(art,scene,this);cutaway=new ClinicStoryCutaway(scene,actors.IsPerson);Home(true);
         }
 
         public void Initialize()
@@ -182,7 +191,7 @@ namespace IdleClinic.Presentation
             SceneCamera.cullingMask=1<<ClinicArt.Layer;SceneCamera.nearClipPlane=.1f;SceneCamera.farClipPlane=100;
             SceneCamera.allowHDR=false;SceneCamera.allowMSAA=true;
             BuildArchitecture();BuildFurniture();BuildAnchors();BuildLighting();BuildPrivacy();ClinicSurroundings.Build(art,scene);ClinicFurnishings.Build(art,scene);
-            actors=new ClinicActors(art,scene,this);upgrades=new ClinicUpgrades(art,scene);effects=new ClinicUpgradeEffects(art,scene);
+            actors=new ClinicActors(art,scene,this);cutaway=new ClinicStoryCutaway(scene,actors.IsPerson);upgrades=new ClinicUpgrades(art,scene);effects=new ClinicUpgradeEffects(art,scene);
             amenities=new ClinicAmenities(art,scene);streetLife=new ClinicStreetLife(art,scene);construction=new ClinicConstruction(art,scene);careDoor=new ClinicDoor(art,scene,position:new Vector3(-4.20f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 1 doorway");entranceDoor=new ClinicDoor(art,scene,true,position:new Vector3(.675f,Floor,-5.43f));
             waitingDoor=new ClinicDoor(art,scene,position:new Vector3(-1.50f,Floor,1.50f),openingWidth:1.35f,name:"Nursing room 2 doorway");
             refreshmentDoor=null;
@@ -240,7 +249,7 @@ namespace IdleClinic.Presentation
             actors.Cast=storyCast;actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor?.Render(actors,deltaTime,reducedMotion);
             opening?.Render(state);
             effects.Armed=true;effects.Update(deltaTime);
-            UpdateHome(deltaTime,reducedMotion);
+            UpdateHome(deltaTime,reducedMotion);UpdateCutaway(deltaTime);
         }
         private ClinicUpgradeEffects effects;
         /// <summary>A ring of sparkles on the floor around an improved room or object.</summary>

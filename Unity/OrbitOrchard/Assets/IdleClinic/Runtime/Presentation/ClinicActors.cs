@@ -212,9 +212,20 @@ namespace IdleClinic.Presentation
         // ---- The opening story: Maya walks up the pavement, taps on the glass, steps inside to meet the boss, then keeps a
         // step behind the boss through the opening until she is hired ------------------------------------------------------
         private const float MayaSpeed=1.25f,MayaChase=2.9f,MayaKnockSeconds=2.4f,MayaLag=1.0f;
-        private static readonly Vector3 MayaDoor=new Vector3(.67f,.14f,-6.02f),MayaInside=new Vector3(.62f,.14f,-4.80f);
+        // She meets the boss in the open lobby, well clear of the shop front so its sign never hides the two of them.
+        private static readonly Vector3 MayaDoor=new Vector3(.67f,.14f,-6.02f),MayaInside=new Vector3(.45f,.14f,-3.15f);
         private static readonly Vector3[] MayaArrival={new Vector3(-3.40f,.14f,-6.45f),new Vector3(.30f,.14f,-6.45f),MayaDoor};
-        private static readonly Vector3[] MayaEntry={MayaDoor,MayaInside};
+        private static readonly Vector3[] MayaEntry={MayaDoor,new Vector3(.67f,.14f,-4.20f),MayaInside};
+        /// <summary>Where she stands once the boss has stopped in a room the routes enter from the camera's side (the office
+        /// and the nursing room): beside the boss, so the two of them are seen side by side rather than one behind the other
+        /// in the doorway. Elsewhere a step behind on the route is already beside the boss.</summary>
+        internal static bool TryMayaBeside(int zone,out Vector3 spot)
+        {
+            // Office: west of the boss and in front of the visitor chair (walking out never crosses it). Nursing room: by her
+            // future station, inside the room.
+            spot=zone==3?new Vector3(-5.12f,.14f,6.75f):zone==1?new Vector3(-3.30f,.14f,2.30f):default;
+            return zone==3||zone==1;
+        }
         private enum MayaStage{Arriving,Knocking,Entering,Greeting,Following}
         private Actor maya;
         private Vector3[] mayaPath;
@@ -260,8 +271,9 @@ namespace IdleClinic.Presentation
                     if(mayaKnock<=0){mayaStage=MayaStage.Entering;SetMayaPath(MayaEntry);}
                     break;
                 case MayaStage.Following:
-                    var target=FollowTarget(state,false);var gap=target-maya.Root.position;gap.y=0;
-                    maya.Root.position=gap.magnitude>3.5f?target:Vector3.MoveTowards(maya.Root.position,target,MayaChase*elapsed);
+                    var target=FollowTarget(state,false,out bool beside);var gap=target-maya.Root.position;gap.y=0;
+                    // Catching up with the boss is brisk; the last few steps to stand beside the boss are an easy walk.
+                    maya.Root.position=gap.magnitude>3.5f?target:Vector3.MoveTowards(maya.Root.position,target,(beside?MayaSpeed*1.4f:MayaChase)*elapsed);
                     break;
             }
             var moved=maya.Root.position-before;moved.y=0;
@@ -273,9 +285,12 @@ namespace IdleClinic.Presentation
             maya.Moving=walking;
             maya.Sample(walking?1:pose,tick*.1+.31,reducedMotion);maya.Appearance.AfterPose(false);
         }
-        /// <summary>A step behind the boss on the route the boss last walked. Until the boss has gone a step, she stays put.</summary>
-        private Vector3 FollowTarget(ClinicState state,bool place)
+        /// <summary>A step behind the boss on the route the boss last walked; once the boss has stopped in the office or the
+        /// nursing room, beside the boss (<see cref="TryMayaBeside"/>). Until the boss has gone a step, she stays put.</summary>
+        private Vector3 FollowTarget(ClinicState state,bool place)=>FollowTarget(state,place,out _);
+        private Vector3 FollowTarget(ClinicState state,bool place,out bool beside)
         {
+            beside=false;
             if(bossLastRoute==null||bossLastRoute.Count<2)
             {
                 // After a relaunch: as if the boss had just walked in from the corridor.
@@ -283,6 +298,8 @@ namespace IdleClinic.Presentation
                 int origin=state.BossFromZone!=zone?state.BossFromZone:zone==0?2:0;
                 bossLastRoute=ClinicOpeningPresentation.BossRoute(origin,zone);bossLastDistance=PathLength(bossLastRoute);
             }
+            bool stopped=boss!=null&&!boss.Moving&&bossLastDistance>=PathLength(bossLastRoute)-.01f;
+            if(stopped&&TryMayaBeside(bossAt,out var spot)){beside=true;return spot;}
             if(bossLastDistance<MayaLag&&!place)return maya.Root.position;
             return SamplePath(bossLastRoute,Mathf.Max(0,bossLastDistance-MayaLag),out _);
         }
@@ -476,9 +493,17 @@ namespace IdleClinic.Presentation
             if(!actor.Moving||!actor.Root.gameObject.activeSelf)return false;
             var delta=actor.Root.position-point;return Mathf.Abs(delta.x)<=halfWidth&&Mathf.Abs(delta.z)<=distance;
         }
+        // Every person's root (patients, staff, the boss, Maya), so scenery code can tell people from the building.
+        private readonly HashSet<Transform> people=new HashSet<Transform>();
+        /// <summary>True for any part of a person: their body, clothes, hair, emoji or the boss's tie and broom.</summary>
+        internal bool IsPerson(Transform part)
+        {
+            for(var node=part;node!=null&&node!=parent;node=node.parent)if(people.Contains(node))return true;
+            return false;
+        }
         private Actor Create(string model,ClinicStaffRole role=ClinicStaffRole.Nurse)
         {
-            var root=art.Model(model,parent,Vector3.zero).transform;
+            var root=art.Model(model,parent,Vector3.zero).transform;people.Add(root);
             var animation=root.GetComponentInChildren<Animation>();
             if(animation==null)animation=(root.childCount>0?root.GetChild(0):root).gameObject.AddComponent<Animation>();
             animation.playAutomatically=false;animation.Stop();

@@ -167,7 +167,10 @@ namespace IdleClinic.Tests
             Assert.That(sim.State.OfficeCleaned, Is.True);
             Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True, "A save between tasks keeps the door as where the boss came from.");
             Assert.That(ClinicSimulation.CreateOpening().ContinueOpening(ClinicOpeningStep.CleanOffice).Success, Is.True, "Without the story nothing changes.");
-            Assert.That(ClinicBossRoute.Points(ClinicBossRoute.Entrance, 3).Skip(1).First(), Is.EqualTo((.675, -3.95)), "Out through the corridor, clear of the entry mat.");
+            Assert.That(ClinicBossRoute.Points(ClinicBossRoute.Entrance, 3).Skip(1).First(), Is.EqualTo((.675, -2.80)), "Out through the corridor.");
+            // The shop front stands at z -5.43 with its name sign above the door; from the high camera anything closer than
+            // about 2.3 m behind it is hidden, so the two of them meet well inside.
+            Assert.That(ClinicBossRoute.Point(ClinicBossRoute.Entrance).Z - -5.43, Is.GreaterThan(2.5), "Met well inside the door.");
         }
 
         [Test] public void HelpingNeverShortensTheWalkSoTheBossCannotJumpAhead()

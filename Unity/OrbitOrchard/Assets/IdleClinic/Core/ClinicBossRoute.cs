@@ -11,14 +11,15 @@ namespace IdleClinic.Core
         /// <summary>A brisk walk: quicker than visitors (1.35 m/s) and staff (1.7 m/s), because the boss is hurrying to open.</summary>
         public const double MetresPerSecond = 2.4;
 
-        /// <summary>Just inside the front door, beside the entry mat: where the boss greets Maya in the opening story.</summary>
+        /// <summary>Inside the front door, in the open lobby: where the boss greets Maya in the opening story. Far enough in
+        /// (about 2.6 m) that the shop front and its name sign never stand between the camera and the two of them.</summary>
         public const int Entrance = 4;
-        /// <summary>The corridor point the entrance joins, clear of the entry mat where Maya stands.</summary>
-        private static readonly (double X, double Z) EntranceCorridor = (.675, -3.95);
+        /// <summary>The corridor point the entrance joins, level with the meeting place.</summary>
+        private static readonly (double X, double Z) EntranceCorridor = (.675, -2.80);
 
         /// <summary>Where the boss stands to work in a zone.</summary>
         public static (double X, double Z) Point(int zone)
-            => zone == Entrance ? (-.10, -4.30) : zone == 3 ? (-4.08, 7.15) : zone == 2 ? (3.15, .4) : zone == 1 ? (-4.20, 2.05) : (-3.85, .15);
+            => zone == Entrance ? (-.35, -2.80) : zone == 3 ? (-4.08, 7.15) : zone == 2 ? (3.15, .4) : zone == 1 ? (-4.20, 2.05) : (-3.85, .15);
 
         /// <summary>The corridor route between two zones: out of the office or nursing room, through the hub by the care
         /// doorway, and in again. Starts and ends at the zones' work points.</summary>

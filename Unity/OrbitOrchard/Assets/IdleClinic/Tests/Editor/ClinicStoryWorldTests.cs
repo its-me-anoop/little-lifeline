@@ -3,16 +3,18 @@ using IdleClinic.Core;
 using IdleClinic.Presentation;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace IdleClinic.Tests
 {
-    /// <summary>Maya and the boss in the clinic: she walks up to the door, taps on the glass and meets the boss just inside;
-    /// after the prologue she keeps a step behind the boss through the opening, is hired where she stands, and the boss stays
-    /// with her until the clinic opens. While they talk the camera holds a close view of the two of them. Games without the
-    /// story keep the first nurse exactly as before, and the boss never jumps between places.</summary>
+    /// <summary>Maya and the boss in the clinic: she walks up to the door, taps on the glass and meets the boss inside the
+    /// lobby; after the prologue she keeps a step behind the boss through the opening and stands beside the boss in each
+    /// room, is hired where she stands, and the boss stays with her until the clinic opens. While they talk the camera holds a
+    /// close view of the two of them with nothing built in the way. Games without the story keep the first nurse exactly as
+    /// before, and the boss never jumps between places.</summary>
     public sealed class ClinicStoryWorldTests
     {
-        private static readonly Vector3 Inside = new Vector3(.62f, .14f, -4.80f);
+        private static readonly Vector3 Inside = new Vector3(.45f, .14f, -3.15f);
         private static ClinicStoryCast Cast(bool arrived = false, bool greeting = true, bool together = true) => new ClinicStoryCast
         {
             Enabled = true, Arrived = arrived, Greeting = greeting, KeepTogether = together,
@@ -53,7 +55,7 @@ namespace IdleClinic.Tests
                 Assert.That(maya.position.z, Is.LessThan(-6.3f), "She starts on the pavement.");
                 Assert.That(Flat(boss.position, BossPoint(ClinicBossRoute.Entrance)), Is.LessThan(.05f), "The boss waits just inside the door.");
                 var doors = world.DoorOpeningCount;
-                Play(sim, world, 80);
+                Play(sim, world, 110);
                 Assert.That(world.DoorOpeningCount, Is.GreaterThan(doors), "The door opens for her.");
                 Assert.That(Flat(maya.position, Inside), Is.LessThan(.05f), "She comes in to the boss.");
                 Assert.That(Flat(maya.position, boss.position), Is.LessThan(1.2f), "Together while they talk.");
@@ -74,7 +76,9 @@ namespace IdleClinic.Tests
                 Assert.That(widest, Is.LessThan(2.2f), "Never far apart on the way.");
                 Assert.That(fastest, Is.LessThanOrEqualTo((float)ClinicBossRoute.MetresPerSecond + .05f), "The boss walks; nobody jumps.");
                 Assert.That(Flat(boss.position, BossPoint(3)), Is.LessThan(.05f), "In the office.");
-                Assert.That(Flat(maya.position, boss.position), Is.InRange(.6f, 1.3f), "A step behind the boss.");
+                Assert.That(Flat(maya.position, boss.position), Is.InRange(.6f, 1.3f), "Beside the boss.");
+                Assert.That(Mathf.Abs(Vector3.Dot(world.SceneCamera.transform.right, maya.position - boss.position)), Is.GreaterThan(.7f),
+                    "Side by side on screen, not one behind the other in the doorway.");
             }
             finally { Object.DestroyImmediate(host); }
         }
@@ -183,6 +187,96 @@ namespace IdleClinic.Tests
                 Assert.That(world.FollowingStory, Is.False);
             }
             finally { Object.DestroyImmediate(host); }
+        }
+
+        /// <summary>The bug the first close-ups had: from the high camera the shop front's sign hid both of them at the door, and
+        /// the office's front wall hid Maya. Being inside the picture is not enough; every point of each body, from the shins
+        /// to the face and both sides, must have nothing built between it and the camera.</summary>
+        [Test]
+        public void NothingBuiltStandsBetweenTheCameraAndEitherOfThemWhileTheyTalk()
+        {
+            // At the door, for the first lines and the name question: they meet well inside, so the shop front stays whole.
+            var sim = ClinicSimulation.CreateOpening();
+            Look(sim, Cast(arrived: true), false, host =>
+                Assert.That(Cut(host), Is.Empty, "At the door nothing needs cutting away: the name sign stays up."));
+            // In the office the front wall is cut away while they talk there.
+            sim = ClinicSimulation.CreateOpening(); PlayOpeningTo(sim, ClinicOpeningStep.SetUpOffice);
+            Look(sim, Cast(true, greeting: false), false, host => Assert.That(Cut(host), Does.Contain("Office front left")));
+            // The first check-in, the job offer in the nursing room and the first queue.
+            foreach (var step in new[] { ClinicOpeningStep.FirstCheckIn, ClinicOpeningStep.HireNurse, ClinicOpeningStep.QueueArrivals })
+            {
+                sim = ClinicSimulation.CreateOpening(); PlayOpeningTo(sim, step);
+                Look(sim, Cast(true, greeting: false), step == ClinicOpeningStep.QueueArrivals, null);
+            }
+        }
+
+        /// <summary>A fresh clinic at this point of the story with the conversation view on: both in the picture with nothing
+        /// in the way, then everything back as soon as the player looks around and when the conversation ends.</summary>
+        private static void Look(ClinicSimulation sim, ClinicStoryCast cast, bool queue, System.Action<GameObject> also)
+        {
+            var host = new GameObject("Story view test");
+            try
+            {
+                var moment = sim.State.OpeningStep + (cast.Greeting ? " (prologue)" : "");
+                var world = host.AddComponent<ClinicWorld>();
+                world.SetRenderSize(393, 852);
+                world.SetStoryCast(cast);
+                world.Render(sim.State, 0, false);
+                world.FollowStory(2.4f, queue ? .60f : .63f, queue ? .56f : .46f, true, queue);
+                Play(sim, world, 25);
+                var boss = Find(host, "Clinic boss");
+                var nurse = Find(host, "Maya") ?? Find(host, "Staff " + ClinicStory.FirstNurseStaffId);
+                Assert.That(nurse, Is.Not.Null, moment);
+                foreach (var person in new[] { boss, nurse })
+                {
+                    foreach (var height in new[] { 0f, 1.8f })
+                    {
+                        var seen = world.WorldToViewport(person.position + Vector3.up * height);
+                        Assert.That(seen.x, Is.InRange(0f, 1f), moment + ": " + person.name + " in the picture.");
+                        Assert.That(seen.y, Is.InRange(0f, 1f), moment + ": " + person.name + " in the picture.");
+                    }
+                    Assert.That(InTheWay(host, world, person), Is.Empty, moment + ": nothing in front of " + person.name + ".");
+                }
+                also?.Invoke(host);
+                world.Pan(new Vector2(.5f, .5f), new Vector2(.55f, .45f));
+                Play(sim, world, 1);
+                Assert.That(Cut(host), Is.Empty, moment + ": looking around puts every wall back.");
+                world.ResumeStoryFollow();
+                Play(sim, world, 3);
+                world.StopStoryFollow();
+                Play(sim, world, 1);
+                Assert.That(Cut(host), Is.Empty, moment + ": the end of the conversation puts every wall back.");
+            }
+            finally { Object.DestroyImmediate(host); }
+        }
+
+        private static bool IsPerson(Transform part)
+        {
+            for (var node = part; node != null; node = node.parent)
+                if (node.name == "Maya" || node.name == "Clinic boss" || node.name.StartsWith("Staff ") || node.name.StartsWith("Patient ") || node.name.StartsWith("Turned-away patient"))
+                    return true;
+            return false;
+        }
+
+        /// <summary>Pieces drawn only as shadow for the conversation (cut away).</summary>
+        private static string[] Cut(GameObject host) =>
+            host.GetComponentsInChildren<MeshRenderer>().Where(r => r.shadowCastingMode == ShadowCastingMode.ShadowsOnly).Select(r => r.name).ToArray();
+
+        /// <summary>Everything drawn (opaque, not a person, not cut away) that stands between the camera and this person's
+        /// shins, knees, hips, chest or face, or either side of the body.</summary>
+        private static string[] InTheWay(GameObject host, ClinicWorld world, Transform person)
+        {
+            var toCamera = -world.SceneCamera.transform.forward; var right = world.SceneCamera.transform.right;
+            var points = new[] { .35f, .7f, 1.05f, 1.4f, 1.7f }.Select(h => person.position + Vector3.up * h)
+                .Concat(new[] { 1f, 1.4f }.SelectMany(h => new[] { -.14f, .14f }.Select(side => person.position + Vector3.up * h + right * side)))
+                .ToArray();
+            return host.GetComponentsInChildren<MeshRenderer>()
+                .Where(r => r.enabled && (r.shadowCastingMode == ShadowCastingMode.On || r.shadowCastingMode == ShadowCastingMode.TwoSided))
+                .Where(r => r.sharedMaterial == null || r.sharedMaterial.renderQueue <= (int)RenderQueue.GeometryLast)
+                .Where(r => !IsPerson(r.transform))
+                .Where(r => points.Any(point => r.bounds.IntersectRay(new Ray(point, toCamera))))
+                .Select(r => r.name + " " + r.bounds.center.ToString("F2"))
+                .ToArray();
         }
 
         [Test]

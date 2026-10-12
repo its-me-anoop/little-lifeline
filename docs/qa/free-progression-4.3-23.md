@@ -43,7 +43,7 @@ answers are the actions and remarks are bubbles, so there is no extra tap.
 | Clinic open | 115.0 s | about 94 s | about 115 to 118 s |
 
 The estimate is the measured 34.2 s and 93.0 s minus the scripted player's first 1.5 s answer, plus 13 to 16 s of
-reading, about 3 s for the name and the 7 s walk from the door. It is arithmetic on word counts, not a play-test; the reading speeds are
+reading, about 3 s for the name and the 6.6 s walk from the lobby to the office. It is arithmetic on word counts, not a play-test; the reading speeds are
 assumptions. A reader who enjoys the lines sees the first patient later than in 4.3 (22); a player in a hurry can skip
 from the first line.
 

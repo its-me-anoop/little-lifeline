@@ -44,8 +44,9 @@ chestnut hair in a bun (and a tin of biscuits), knocks on the door, asks for the
 the clinic and becomes the first nurse. The script is data, `Resources/ClinicStory.json`, read by the engine-free rules
 in `Core/ClinicStory.cs`; the approved lines are used word for word.
 
-- **Prologue at the door.** The boss waits just inside the front door. Maya walks up the pavement (3.4 s), taps on the
-  glass (2.4 s) and comes in to the boss while her first two lines show; they turn to face each other. Tap the card to
+- **Prologue at the door.** The boss waits inside the lobby, about 2.6 m in from the front door. Maya walks up the
+  pavement (3.4 s), taps on the glass (2.4 s) and comes in to the boss (2.3 s) while her first two lines show; they turn
+  to face each other. Tap the card to
   continue. *Sorry, I didn't catch your name?* opens the panel with a name field, **That's me** and **Just call me boss**.
   *Nice to meet you, {name}! Where do we start?* has two answers; either one sends them off together to clean the office,
   so an answer is also the action.
@@ -57,6 +58,24 @@ in `Core/ClinicStory.cs`; the approved lines are used word for word.
   next line; the home button returns to it; once the clinic is open the camera eases back to the whole clinic. With Less
   motion the view is set for each line instead of following. The first task now starts with the walk from the door to the
   office (7 s, the same steady pace), so the story adds that walk; skipping keeps the old start in the office.
+  motion the view is set for each line instead of following. The first task now starts with the walk from the lobby to the
+  office (6.6 s, the same steady pace), so the story adds that walk; skipping keeps the old start in the office.
+- **Nothing in the way (after the second review).** The `973e9cc` simulator pictures showed the problem the projection
+  tests missed: from the high camera the shop front's name sign hid both of them at the door and during the name
+  question, and the office's front wall hid Maya. Three changes:
+  - They meet well inside the lobby (boss at x -0.35, z -2.80; Maya at x 0.45, z -3.15), far enough from the shop front
+    (z -5.43) that the sign cannot reach them. At the door nothing is cut away and the sign stays up.
+  - In the office and the nursing room, where the routes come in from the camera's side, Maya no longer stops a step
+    behind the boss in the doorway: once the boss stops she walks to a spot beside him (office x -5.12, z 6.75, in front of
+    the visitor chair; nursing room x -3.30, z 2.30, by her station), so the two are seen side by side.
+  - A conversation cutaway (`Runtime/Presentation/ClinicStoryCutaway.cs`). While the conversation view holds the two of
+    them and the player has not moved the camera, any wall, partition, door leaf or frame, post or overhead sign that
+    stands between the camera and either of them (checked about twelve times a second at the knees, hips, chest, face and
+    both sides) is drawn as shadow only, so the room's light does not change, together with its cap, skirting and lining.
+    It comes back once it has hidden nobody for 0.45 s, the moment the player pans or zooms, and when the conversation
+    view ends. Nothing is deleted or moved, so the layout, routes and taps are untouched; furniture, people and glass are
+    never cut. In the office this lifts the office's front wall (and the open door leaf) while they talk there; in the
+    nursing room the front wall and door frame.
 - **One line per step.** The guide card shows Maya (eyebrow *MAYA · 3 OF 12*, her line, then the task: *Clean reception ·
   tap to start*, or *You're cleaning · ready in 4s · tap to pitch in*). The opening panel repeats her line above the task,
   so the conversation stays visible with the card hidden. Hiring Maya is answered **You're hired, Maya.** or **Welcome
@@ -189,8 +208,10 @@ opening story). Audio code is unchanged.
 | Unity EditMode | `6da17d3` (7 fixes), reviewer run | 681 passed, 0 failed; native Xcode build succeeded |
 | Unity EditMode | the character checkpoint `cfabfb6` | **pending** |
 | Unity EditMode | the story checkpoint `656ec5b`, reviewer run | 735 passed, 0 failed, 0 skipped (416 s); simulator export and native Xcode build succeeded; 10 staged runtime screenshots |
-| Unity EditMode | the staging pass (together, close-up) | **pending** (updated `ClinicStoryWorldTests`, `ClinicStoryHUDTests`, new Core entrance test; not run here) |
-| Core and profile harness (.NET 8, NUnit shim; Linux) | the staging pass | 265 passed, 0 failed (subset; not a substitute for Unity) |
+| Unity EditMode | the staging pass `973e9cc` (together, close-up), reviewer run | 738 passed, 0 failed, 0 skipped; simulator export and native build succeeded. **Visual defect in the real pictures**: the sign hid both of them at the door and the office wall hid Maya |
+| Unity EditMode | the visibility fix (this checkpoint) | **pending** (new `NothingBuiltStandsBetweenTheCameraAndEitherOfThemWhileTheyTalk` at the door, office, first check-in, hire and first queue; updated positions; Core entrance test) |
+| Core and profile harness (.NET 8, NUnit shim; Linux) | the visibility fix | 265 passed, 0 failed (subset; not a substitute for Unity) |
+| Cutaway logic check (.NET 8, minimal Unity stand-ins; Linux) | the visibility fix | 20 of 20: the wall in front is cut with its cap and skirting; desk, glass, people and walls that hide nobody stay; held 0.45 s, then back; cleared at once; the story world tests compile against the stand-ins. Not a Unity run |
 | Story UI checks | the staging pass | story presentation and opening panel compile against minimal API stand-ins; every changed C# file parses (Roslyn, Linux); not a Unity build |
 | Simulator performance (not device evidence) | game `0ad88d8`, reviewer | 90 s sample: median 16.67 ms, p95 17.25 ms, max 48.66 ms; Unity 128 MB, managed 10 MB; startup 1532.73 ms |
 | Simulator performance (not device evidence) | game `6da17d3` (run `d7e9727`), reviewer | median 16.67 ms, p95 17.25 ms, max 49.19 ms; first 30 s max 213.38 ms; Unity 127 MB, managed 10 MB |
@@ -242,8 +263,8 @@ Store status line instead).
 6. Free progression is measured with scripted players, not people. Late starter play is dominated by 2-hour builds with
    one builder; this is reported, not changed.
 7. **The opening story is only partly runtime-verified.** `656ec5b` was seen in staged simulator screenshots (Maya's
-   first line, the name question, where to start, the first lesson). The staging pass (the boss and Maya together, the
-   close-up camera, the boss's speech bubble, walking instead of jumping) is not yet seen running. Also not yet seen: the name field with the iOS keyboard
+   first line, the name question, where to start, the first lesson). `973e9cc` (together, close-up) was seen running and
+   showed the sign and office wall in the way; the visibility fix is not yet seen running. Also not yet seen: the name field with the iOS keyboard
    (Unity shows its own input line above the keyboard), the card and panel with long lines on a compact phone, the
    speech bubble, Maya's walk through the entrance and her waiting spot (chosen clear of the corridor lanes and the
    queue, not checked against every prop), and VoiceOver on the name field. Names in scripts the bundled fonts lack
