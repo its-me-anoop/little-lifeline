@@ -43,7 +43,7 @@ if [ "${LIFELINE_QA_SKIP_EXPORT:-0}" != 1 ]; then
     -destination "generic/platform=iOS Simulator" -derivedDataPath "$OUT/DerivedData" \
     CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -jobs 4 build > "$OUT/xcodebuild.log" 2>&1
   CODE=$?; echo "$CODE" > "$OUT/xcodebuild.exit"; [ "$CODE" = 0 ] || fail "xcodebuild exit $CODE (see xcodebuild.log)"
-  APP="$(ls -d "$OUT"/DerivedData/Build/Products/Debug-iphonesimulator/*.app 2>/dev/null | head -1)"
+  APP=""; for candidate in "$OUT"/DerivedData/Build/Products/Debug-iphonesimulator/*.app; do [ -d "$candidate" ] && { APP="$candidate"; break; }; done
 else
   APP="${LIFELINE_QA_APP:-}"
 fi
@@ -95,7 +95,10 @@ shot() {
   # macOS bash 3.2 treats an empty array as unbound under set -u, hence the ${envs[@]+...} form.
   env ${envs[@]+"${envs[@]}"} xcrun simctl launch --stdout="$OUT/console/$name.out" --stderr="$OUT/console/$name.err" "$UDID" "$BUNDLE" > "$OUT/console/$name.launch" 2>&1
   sleep "$wait"
-  if xcrun simctl spawn "$UDID" launchctl list 2>/dev/null | grep -q "UIKitApplication:$BUNDLE"; then
+  # Capture the whole list first: with pipefail, grep -q closing the pipe early made launchctl exit 141 (SIGPIPE) and a
+  # running app was reported as not running.
+  local services; services="$(xcrun simctl spawn "$UDID" launchctl list 2>/dev/null)"
+  if [[ "$services" == *"UIKitApplication:$BUNDLE"* ]]; then
     xcrun simctl io "$UDID" screenshot --type=png "$OUT/shots/$name.png" >/dev/null 2>&1 && log "shot $name ($*)"
   else
     log "NOT RUNNING after ${wait}s: $name ($*); see console/$name.err and crashes/"
