@@ -145,6 +145,7 @@ namespace IdleClinic.App
             dock=Box(root,"context-dock");dock.style.display=DisplayStyle.None;
             dock.RegisterCallback<GeometryChangedEvent>(_=>ApplySafeArea());
             BuildGuide();
+            BuildStory();
             BuildWelcome();
             BuildGemConfirm();
             toast=Text(root,"","toast");toast.style.display=DisplayStyle.None;toast.pickingMode=PickingMode.Ignore;
@@ -167,12 +168,13 @@ namespace IdleClinic.App
             saveClock+=delta;readoutClock+=delta;
             if(saveClock>=5){saveClock=0;if(saves.HasPendingOfflineProgress)ResumeClinic();else{SaveNow();ProcessGemTransactions();}}
             if(readoutClock>=.15){readoutClock=0;UpdateReadouts();}
-            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateGemConfirm();UpdateAccessibilityFrames();
+            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateStoryBubble();UpdateGemConfirm();UpdateAccessibilityFrames();
             if(toast.style.display==DisplayStyle.Flex && Time.unscaledTimeAsDouble>toastUntil)toast.style.display=DisplayStyle.None;
         }
 
         private void UpdateReadouts()
         {
+            UpdateStory();
             UpdateLocationReadouts();
             walletLabel.text=WalletText();
             UpdateGemReadout();
@@ -331,12 +333,16 @@ namespace IdleClinic.App
             }
             var guideWidth=Math.Min(520,safe.width-32);
             if(guideCard!=null){guideCard.style.bottom=bottom+16;guideCard.style.left=safe.xMin+(safe.width-guideWidth)/2;guideCard.style.width=guideWidth;}
-            if(guideSkip!=null&&guideCard!=null)
+            if(guideCard!=null)
             {
-                // The skip control sits just above the lesson card's right edge, clear of the reward.
+                // The skip controls (an optional lesson, or the story) sit just above the card's right edge, clear of the reward.
                 var cardHeight=float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
-                guideSkip.style.bottom=bottom+16+cardHeight+8;
-                guideSkip.style.right=w-(safe.xMin+(safe.width-guideWidth)/2+guideWidth);
+                foreach(var skip in new[]{guideSkip,storySkip})
+                {
+                    if(skip==null)continue;
+                    skip.style.bottom=bottom+16+cardHeight+8;
+                    skip.style.right=w-(safe.xMin+(safe.width-guideWidth)/2+guideWidth);
+                }
             }
             // The camera tools hide while a panel is open, so a panel may rise to just below the balances.
             LimitDockContent(sheet?h-(top+76)-bottom-20:h-bottom-12-(top+76));
@@ -346,7 +352,7 @@ namespace IdleClinic.App
             cameraTools.style.display=dockOpen?DisplayStyle.None:DisplayStyle.Flex;
             var guideHeight=guideCard==null||guideCard.style.display==DisplayStyle.None?0:
                 float.IsNaN(guideCard.resolvedStyle.height)||guideCard.resolvedStyle.height<1?84:guideCard.resolvedStyle.height;
-            var skipHeight=guideSkip==null||guideSkip.style.display==DisplayStyle.None?0:52;
+            var skipHeight=(guideSkip!=null&&guideSkip.style.display!=DisplayStyle.None)||(storySkip!=null&&storySkip.style.display!=DisplayStyle.None)?52:0;
             cameraTools.style.bottom=bottom+(guideHeight>0?guideHeight+32+skipHeight:20);
             LayoutWelcome(safe,top);
             if(gemConfirm!=null)
@@ -416,7 +422,7 @@ namespace IdleClinic.App
             CancelWorldGesture();
             WithdrawGemConfirm();
             // Each clinic earns at its own rate: start the next-goal estimate afresh.
-            earnSampleTotal=-1;nextGoal=null;
+            earnSampleTotal=-1;nextGoal=null;ForgetStoryMoment();
             profile = saves.Profile;
             BindSimulations();
             world.ConfigureLocation(profile.activeLocation);
@@ -435,7 +441,7 @@ namespace IdleClinic.App
 
         private void ResumeClinic()
         {
-            var report=saves.ApplyOffline(DateTimeOffset.UtcNow);profile=saves.Profile;BindSimulations();
+            var report=saves.ApplyOffline(DateTimeOffset.UtcNow);profile=saves.Profile;BindSimulations();ForgetStoryMoment();
             world.ConfigureLocation(profile.activeLocation);world.ResetActorPlacement();RefreshAudioPreferences();
             skipNextDelta=true;
             if(report.applied && report.tillEarned>0)ShowWelcome(report);

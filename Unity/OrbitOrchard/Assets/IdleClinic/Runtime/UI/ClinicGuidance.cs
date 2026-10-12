@@ -58,6 +58,8 @@ namespace IdleClinic.App
         private string GuideAccessibleValue()
         {
             var step = CurrentGuide();
+            var story = StoryAccessibleValue();
+            if (story != null) return story;
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete) return "Opening step "+((int)State.OpeningStep+1)+" of "+(int)ClinicOpeningStep.Complete+". "+OpeningTitles[(int)State.OpeningStep]+". "+OpeningReasons[(int)State.OpeningStep];
             if (nextGoal != null && ShowsNextGoal(step)) return guideEyebrow.text + ": " + guideTitle.text + ". " + guideWhy.text;
             if (step == null) return "";
@@ -70,6 +72,7 @@ namespace IdleClinic.App
         {
             if (guideCard == null) return;
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){ShowGuideSkip(false);UpdateOpeningGuide();return;}
+            ResetStoryCard();
             var step = CurrentGuide();
             var dockOpen = dock.style.display == DisplayStyle.Flex;
             if (ShowsNextGoal(step) && UpdateNextGoal())
@@ -91,7 +94,9 @@ namespace IdleClinic.App
                 var position = ClinicGuide.Position(step);
                 guideEyebrow.text = (done ? "DONE" : "NEXT STEP") + (position.Total > 0 ? " · " + position.Number + " OF " + position.Total : "");
                 guideTitle.text = step.Title;
-                guideWhy.text = done ? "Tap to collect your reward." : step.Why;
+                // In games that told the story, Maya introduces the first lesson.
+                var maya = done ? null : ClinicStory.LessonLine(StoryScript, Story, step.Id);
+                guideWhy.text = done ? "Tap to collect your reward." : maya != null ? StoryScript.speaker + ": \u201C" + maya + "\u201D" : step.Why;
                 guideReward.text = "+" + step.GemReward;
                 if (guideCard.ClassListContains("guide-ready") != done)
                 {
@@ -201,7 +206,7 @@ namespace IdleClinic.App
 
         private void OnGuideTap()
         {
-            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){OpenOpeningTask();return;}
+            if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){if(!TryContinueStory())OpenOpeningTask();return;}
             var step = CurrentGuide();
             if (nextGoal != null && ShowsNextGoal(step)) { GoToNextGoal(); return; }
             if (step == null) return;

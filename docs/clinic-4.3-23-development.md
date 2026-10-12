@@ -32,10 +32,43 @@ build, raise the build number before any upload.
   reminder to collect counters). Tapping it opens that room, amenity or the office.
 - **Quicker opening, with the boss walking at a steady pace.** The office's clean and set-up take 6 s and 8 s. Each later
   room starts with the boss's walk there at one brisk pace (2.4 m/s; 4.3 (22) varied from 1.3 to 2.9 m/s), then 2.5 s of
-  cleaning or 5 s of setting up (were 10 s). An optional **Help clear up / Help set up** button takes 1.5 s off the work per
+  cleaning or 5 s of setting up (were 10 s). An optional **Pitch in** button takes 1.5 s off the work per
   tap, never off the walk, and never skips the task. A save made mid-task keeps its old timer. Measured with a scripted
   player: first patient 42.0 s → 34.2 s (21.0 s when helping), clinic open 115.0 s → 93.0 s (70.1 s). Details in
   [free progression](qa/free-progression-4.3-23.md).
+
+### Opening story (separate checkpoint)
+
+New games open with a short, lightly funny story. The player is the boss; **Maya**, a nurse in teal scrubs with her
+chestnut hair in a bun (and a tin of biscuits), knocks on the door, asks for the boss's name, talks them through opening
+the clinic and becomes the first nurse. The script is data, `Resources/ClinicStory.json`, read by the engine-free rules
+in `Core/ClinicStory.cs`; the approved lines are used word for word.
+
+- **Prologue at the door.** Maya walks up the pavement (3.4 s) and taps on the glass while her first two lines show.
+  Tap the card to continue. *Sorry, I didn't catch your name?* opens the panel with a name field, **That's me** and
+  **Just call me boss**. *Nice to meet you, {name}! Where do we start?* has two answers; either one starts cleaning the
+  office, so an answer is also the action. Maya then steps inside and waits by the entrance, clear of both corridor lanes.
+- **One line per step.** The guide card shows Maya (eyebrow *MAYA · 3 OF 12*, her line, then the task: *Clean reception ·
+  tap to start*, or *You're cleaning · ready in 4s · tap to pitch in*). The opening panel repeats her line above the task,
+  so the conversation stays visible with the card hidden. Hiring Maya is answered **You're hired, Maya.** or **Welcome
+  aboard, Maya.**; recruiting the receptionist is answered **Hire a receptionist**. Step titles now speak to the player
+  (*Clean your office*, *Check in your first patient*, *Recruit a receptionist*) in every game.
+- **Remarks.** A speech bubble over Maya shows "…" while she has a line and her remarks for a few seconds as things
+  happen: the reception bell, the first coins, being hired, the first **Pitch in** (once), the receptionist and the
+  opening. They never need a tap and are not replayed for steps that finished while the app was closed.
+- **Maya is the first nurse.** She is hired where she stands and walks to nursing station 1 as the same figure, keeping
+  her look. Her station panel says *Maya · 4s per patient* and her training *Maya's training*. The first guide lesson
+  after the opening is introduced by her: *Better kit means quicker care. Let's upgrade my equipment.*
+- **Name.** Letters in any language with their accents, single spaces, hyphens and apostrophes, up to 14 characters,
+  trimmed; empty or skipped means "boss". Characters the game's fonts cannot draw are left out (the fonts are Latin with
+  accents), with a live preview: *Maya will call you Sam.* The name is saved only in the local save and can be changed
+  in **Settings › Story**, which also shows the story so far as a chat log using the current name.
+- **Skip story** sits above the card from the first line. Skipping keeps the plain opening (titles and reasons), the
+  player stays "boss" and Maya is still the first nurse; the log keeps what was read.
+- **Relaunch mid-story** resumes at the same line: the prologue position, name and answers are saved; step lines follow
+  the saved opening step.
+- **Only new games.** Saves from before the story have no story data and keep the plain opening and their first nurse's
+  look. No timer, price, reward or economy rule changed.
 
 ### Feedback and progression
 
@@ -94,8 +127,8 @@ build, raise the build number before any upload.
 
 Scene layout: separate nursing stations, the open L-shaped reception and waiting area, the five-patient check-in
 queue, chairs facing the nursing rooms, the glass front wall and angry departures are as inherited (the scene and room
-presentation are untouched; presentation changes are limited to the characters and the boss's walk timing). Audio code
-is unchanged.
+presentation are untouched; presentation changes are limited to the characters, the boss's walk timing and Maya in the
+opening story). Audio code is unchanged.
 
 ### Saves and migration
 
@@ -104,6 +137,10 @@ is unchanged.
   rejected rather than trusted.
 - Older saves migrate on load: claims, baselines and today's progress are kept; a day already paid its bonus is never
   paid again.
+- The opening story adds `story` to the profile (new games only: whether it is told, skipped and where, prologue line,
+  the boss's name, answers as `lineId=reply`, when the player first pitched in). It is repaired on load (out-of-range
+  values clamped, the name re-checked, malformed answers dropped) and never decides whether a save loads; older saves get
+  an empty, switched-off story.
 - Profile schema version is unchanged (4). An older build opening a 4.3 (23) save ignores and drops the new fields; on
   returning to 4.3 (23) the guide and today's goals are rebuilt from the claims, so a tester switching builds back and
   forth could see the finish-early lesson credited again once.
@@ -113,14 +150,17 @@ is unchanged.
 - `Tools/qa/run_editmode_tests.sh`: official Unity EditMode run with result XML, log, command, source commit, duration and
   exit code kept together.
 - `Tools/qa/simulator_preview.sh`: fresh export, unsigned Debug simulator build under the QA identity
-  `com.flutterly.gravitile.qa`, install on an owned QA simulator only, 20 runtime screenshots, console output, crash
+  `com.flutterly.gravitile.qa`, install on an owned QA simulator only, 24 runtime screenshots (including the story's name question, where to start,
+  hiring Maya and the story so far), console output, crash
   reports, the simulator performance report with a summary (median, p95 and maximum frame time and memory per 30-second
   window; simulator only) and the QA saves.
 - The QA identity applies only to the simulator export and is validated; release exports always use
   `com.flutterly.gravitile`, and the original identity is restored after export.
 - Development-only launch switches (compiled out of release builds): `CLINIC_QA_OPENING`, `CLINIC_QA_PLAY`,
   `CLINIC_QA_GEMS`, `CLINIC_QA_AWAY`, `CLINIC_QA_CONFIRM` (for example `Boost:boost.1h`, `Decoration:Reception`,
-  `FinishWork:first`), plus the inherited ones.
+  `FinishWork:first`), `CLINIC_QA_STORY` (`name`, `reply` or `skip`), `CLINIC_QA_STORY_NAME`, `CLINIC_QA_OPEN=opening`
+  and `CLINIC_QA_OPEN=settings:story`, plus the inherited ones. `CLINIC_QA_OPENING` answers the prologue first, as taps
+  would.
 - `CLINIC_QA_DOCTORS` works again. It wrote a doctors clinic that validation rejected; it now completes the starter
   clinic through its real purchase rules (QA coins, building time skipped as time away skips it) and opens the doctors
   clinic through the same path as the entrance, so the save reloads and the shared wallet is consistent.
@@ -134,17 +174,24 @@ is unchanged.
 | Unity EditMode | `8c9d3fa`, reviewer run with `run_editmode_tests.sh` | 657 passed, 0 failed, exit 0 (399.8 s) |
 | Unity EditMode | `0ad88d8`, reviewer run | 678 total: 671 passed, **7 failed** (6 HUD accessibility fixtures: null gem-confirmation node; boss nursing door), exit 2 |
 | Unity EditMode | `6da17d3` (7 fixes), reviewer run | 681 passed, 0 failed; native Xcode build succeeded |
-| Unity EditMode | the character checkpoint | **pending** |
-| Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 228 passed, 0 failed (subset; not a substitute for Unity) |
+| Unity EditMode | the character checkpoint `cfabfb6` | **pending** |
+| Unity EditMode | the story checkpoint | **pending** (new: `ClinicStoryHUDTests`, `ClinicStoryWorldTests`; not run here) |
+| Core and profile harness (.NET 8, NUnit shim; Linux) | the story checkpoint | 264 passed, 0 failed (subset; not a substitute for Unity) |
+| Story UI compile check | the story checkpoint | the story presentation and opening panel compile against minimal API stand-ins (Linux; not a Unity build) |
+| Simulator performance (not device evidence) | game `0ad88d8`, reviewer | 90 s sample: median 16.67 ms, p95 17.25 ms, max 48.66 ms; Unity 128 MB, managed 10 MB; startup 1532.73 ms |
+| Simulator performance (not device evidence) | game `6da17d3` (run `d7e9727`), reviewer | median 16.67 ms, p95 17.25 ms, max 49.19 ms; first 30 s max 213.38 ms; Unity 127 MB, managed 10 MB |
 | Release tooling `Tools/tests` | unchanged by this work | host baseline 105 passed (Blender Python 3.11); Linux Python 3.13: 92 passed, 1 skipped, 1 macOS-only `xcrun` error |
 | Simulator export and Xcode build | `d84ac3e`, reviewer | succeeded; launch on the QA review simulator logged no FMOD or CoreAudio errors |
 | Runtime screenshots, play-test, performance | current checkpoint | **pending** (`simulator_preview.sh`, reviewer) |
 
 New tests: `ClinicGuideTests`, `ClinicDailyTests`, `ClinicOpeningPacingTests`, `ClinicProgressionPacingTests`,
 `ClinicImprovementTests` (Core); `ClinicGuideSkipTests`, `ClinicDailyGoalTests`, `ClinicGemSpendTests`,
-`ClinicQaDoctorsTests` (profile); `ClinicModalPolicyTests`, `ClinicCharacterTests` (editor). They cover skipping and resuming lessons, legacy
+`ClinicQaDoctorsTests`, `ClinicStoryProfileTests` (profile); `ClinicModalPolicyTests`, `ClinicCharacterTests`,
+`ClinicStoryHUDTests`, `ClinicStoryWorldTests` (editor); `ClinicStoryTests` (Core). They cover skipping and resuming lessons, legacy
 claims, failed saves, frozen and achievable goals, midnight, the once-only bonus, every gem confirmation case above,
-the QA identity rule, measured pacing and the QA doctors clinic.
+the QA identity rule, measured pacing, the QA doctors clinic, and the story: prologue, naming rules, answers starting
+their task, skipping, relaunching mid-story, older saves, damaged story data, Maya's walk and hire, her name at her
+station, the first lesson and the Settings log.
 
 ## Running it
 
@@ -180,7 +227,14 @@ Store status line instead).
    not device evidence.
 6. Free progression is measured with scripted players, not people. Late starter play is dominated by 2-hour builds with
    one builder; this is reported, not changed.
-7. While the *open the doctors clinic* lesson is open, the card shows the next starter goal, marked *DOCTORS CLINIC ·*,
+7. **The opening story is not runtime-verified.** Not yet seen on the simulator: the name field with the iOS keyboard
+   (Unity shows its own input line above the keyboard), the card and panel with long lines on a compact phone, the
+   speech bubble, Maya's walk through the entrance and her waiting spot (chosen clear of the corridor lanes and the
+   queue, not checked against every prop), and VoiceOver on the name field. Names in scripts the bundled fonts lack
+   (for example Cyrillic or Japanese) are reduced to their Latin letters or to "boss"; a fallback font would lift this.
+   Reading the prologue adds about 13 to 16 s before the first task (54 words at 200 to 250 words a minute) plus typing
+   a name; see [free progression](qa/free-progression-4.3-23.md). Skip story removes it.
+8. While the *open the doctors clinic* lesson is open, the card shows the next starter goal, marked *DOCTORS CLINIC ·*,
    instead of the lesson text (the lesson reward still appears when it is done). Worth a design check in play.
-8. Switching a save between 4.3 (22) and 4.3 (23) can re-credit the finish-early lesson once (see migration).
-9. Inherited: the default macOS Python 3.9 fails the release tooling tests on syntax; use Python 3.11 or later.
+9. Switching a save between 4.3 (22) and 4.3 (23) can re-credit the finish-early lesson once (see migration).
+10. Inherited: the default macOS Python 3.9 fails the release tooling tests on syntax; use Python 3.11 or later.

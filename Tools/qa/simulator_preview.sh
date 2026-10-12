@@ -104,10 +104,15 @@ shot() {
     log "NOT RUNNING after ${wait}s: $name ($*); see console/$name.err and crashes/"
   fi
 }
+# A fresh save opens with Maya's story: her first line, the name question, then where to start (named "Sam" here).
 shot 01-opening-fresh 14
+shot 01a-story-name 10 CLINIC_QA_STORY=name
+shot 01b-story-where-to-start 10 CLINIC_QA_STORY_NAME=Sam CLINIC_QA_STORY=reply
 shot 02-opening-first-check-in 10 CLINIC_QA_OPENING=FirstCheckIn
 shot 03-opening-hire-nurse 10 CLINIC_QA_OPENING=HireNurse
+shot 03a-story-hire-maya 10 CLINIC_QA_OPEN=opening
 shot 04-clinic-open 12 CLINIC_QA_OPENING=Complete CLINIC_QA_ADVANCE=45
+shot 04a-story-so-far 8 CLINIC_QA_OPEN=settings:story
 shot 05-first-upgrade-panel 10 CLINIC_QA_OPEN=FirstAid
 shot 07-free-rewards-today 8 CLINIC_QA_OPEN=gems:today
 shot 08-shop 8 CLINIC_QA_OPEN=gems:shop

@@ -501,3 +501,43 @@ Button:active { scale: .96 .96; }
 .compact .gem-confirm-card { padding: 14px; }
 .shop-free-row { flex-direction: row; align-items: center; min-height: 56px; padding: 10px 12px; margin-bottom: 12px; border-radius: 16px; background-color: rgb(238,241,224); }
 .shop-free-row .offer-detail { white-space: normal; }
+
+/* 4.3 (23): the opening story. Maya talks in the guide card and the opening panel; answers are the actions. */
+.story-card .guide-tile { background-color: rgb(214,234,231); }
+.story-card .eyebrow { color: rgb(33,96,98); }
+.story-card .guide-title { font-size: 16px; }
+.story-quote { flex-direction: row; align-items: flex-start; flex-shrink: 0; padding: 10px 12px; margin-bottom: 10px; border-radius: 18px; background-color: rgb(229,241,238); }
+.story-tile { width: 40px; height: 40px; min-width: 40px; border-radius: 12px; background-color: rgb(251,250,240); }
+.story-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 10px; }
+.story-speaker { color: rgb(33,96,98); }
+.story-line { font-size: 16px; color: rgb(31,52,42); white-space: normal; margin-top: 2px; }
+.track-action.story-reply { justify-content: space-between; height: auto; min-height: 48px; padding: 8px 14px; }
+.story-reply-label { flex-shrink: 1; white-space: normal; -unity-text-align: middle-left; margin-right: 8px; }
+.story-reply > ClinicIcon { width: 16px; height: 16px; flex-shrink: 0; }
+.story-reply-soft { background-color: rgb(238,241,224); border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.story-reply-soft .action-label { color: rgb(36,58,49); }
+.story-field-label { font-size: 14px; color: rgb(48,74,61); margin: 2px 2px 6px 2px; }
+.story-name-field { margin: 0; }
+.story-name-field .unity-base-text-field__input { height: 48px; font-size: 18px; padding: 0 12px; border-radius: 14px; border-width: 2px; border-color: rgb(186,205,168); background-color: rgb(255,255,250); color: rgb(31,52,42); }
+.story-name-field:focus .unity-base-text-field__input { border-color: rgb(47,107,79); }
+.story-name-preview { font-size: 13px; color: rgb(78,97,82); margin: 6px 2px 0 2px; white-space: normal; }
+.story-bubble { position: absolute; max-width: 220px; padding: 6px 12px; border-radius: 16px; background-color: rgb(251,250,240); border-bottom-width: 3px; border-bottom-color: rgb(200,211,188); }
+.story-bubble-text { font-size: 14px; color: rgb(31,52,42); white-space: normal; -unity-text-align: middle-center; }
+.story-bubble-waiting .story-bubble-text { font-size: 18px; color: rgb(33,96,98); }
+.story-bubble-tail { position: absolute; bottom: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; rotate: 45deg; background-color: rgb(251,250,240); }
+.settings-link-value { font-size: 14px; color: rgb(78,97,82); margin-right: 8px; }
+.story-back { margin-bottom: 8px; }
+.story-naming { padding: 12px; border-radius: 18px; background-color: rgb(238,241,224); margin-bottom: 14px; }
+.story-name-row { flex-direction: row; align-items: center; }
+.story-name-row > .story-name-field { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.story-save { flex-direction: row; align-items: center; height: 48px; margin-left: 8px; padding: 0 14px; border-radius: 14px; background-color: rgb(47,107,79); border-bottom-width: 3px; border-bottom-color: rgb(31,74,54); }
+.story-save > ClinicIcon { width: 16px; height: 16px; margin-right: 6px; }
+.story-save:disabled { opacity: .45; }
+.story-log-heading { margin: 0 2px 8px 2px; }
+.story-log { margin-bottom: 8px; }
+.story-entry { align-self: flex-start; max-width: 86%; padding: 8px 12px; margin-bottom: 8px; border-radius: 16px; border-top-left-radius: 4px; background-color: rgb(229,241,238); }
+.story-entry-boss { align-self: flex-end; border-top-left-radius: 16px; border-top-right-radius: 4px; background-color: rgb(238,241,224); }
+.story-entry-speaker { font-size: 12px; color: rgb(33,96,98); }
+.story-entry-boss .story-entry-speaker { color: rgb(48,74,61); -unity-text-align: upper-right; }
+.story-entry-text { font-size: 15px; color: rgb(31,52,42); white-space: normal; }
+.story-log-note { margin: 0 2px 8px 2px; }

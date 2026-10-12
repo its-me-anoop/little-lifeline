@@ -6,7 +6,7 @@ play is not a device play-test; it shows what the rules allow, not how it feels 
 
 ## Opening (boss tutorial)
 
-A scripted player answers each prompt after 1.5 seconds and taps nothing else. "Helps" also taps *Help the boss* every
+A scripted player answers each prompt after 1.5 seconds and taps nothing else. "Helps" also taps *Pitch in* every
 0.6 seconds while the boss works.
 
 | | 4.3 (22) | 4.3 (23), waits | 4.3 (23), helps |
@@ -22,11 +22,29 @@ steady brisk pace (2.4 m/s), then cleans for 2.5 s (about what 4.3 (22) left aft
 4.3 (22) fitted every walk into 70% of a fixed 8 s, so the boss's speed changed from room to room (1.3 to 2.9 m/s).
 Checkpoints up to `0ad88d8` used fixed 4 s cleans, which made the boss sprint (up to 5.7 m/s) and miss the nursing
 doorway in the official world test; the steady pace costs about 5 to 9 seconds against those numbers and fixes both.
-*Help the boss* is optional: each tap takes 1.5 s off the work, never off the walk, and never skips the task. Order, boss,
+*Pitch in* is optional: each tap takes 1.5 s off the work, never off the walk, and never skips the task. Order, boss,
 rooms and the check-in moment are unchanged. A save made mid-task with the old timers loads and finishes as saved.
 
 Remaining passive time is mostly the boss's first check-in (about 17 s) and the first queue forming (about 11 s); both
 are left as they are, because they are the opening's "watch it work" moments.
+
+### With the opening story (new games)
+
+The story changes no timer: the Core numbers above are unchanged and the scripted players skip the story. What it adds
+is reading before the first task. Maya's prologue is 54 words in five lines: about 16 s at an unhurried 200 words a
+minute, 13 s at 250, plus typing a name (or one tap on *Just call me boss*). The first two lines (25 words, 7.5 s at 200)
+show while she walks to the door (3.4 s) and knocks (2.4 s). After that each step's line shares the card with its task,
+answers are the actions and remarks are bubbles, so there is no extra tap.
+
+| | 4.3 (22) | 4.3 (23), story skipped | 4.3 (23), story read (estimate) |
+|---|---|---|---|
+| First patient arrives | 42.0 s | about 35 s | about 49 to 52 s |
+| Clinic open | 115.0 s | about 94 s | about 108 to 111 s |
+
+The estimate is the measured 34.2 s and 93.0 s minus the scripted player's first 1.5 s answer, plus 13 to 16 s of
+reading and about 3 s for the name. It is arithmetic on word counts, not a play-test; the reading speeds are
+assumptions. A reader who enjoys the lines sees the first patient later than in 4.3 (22); a player in a hurry can skip
+from the first line.
 
 ## Starter clinic, free player
 

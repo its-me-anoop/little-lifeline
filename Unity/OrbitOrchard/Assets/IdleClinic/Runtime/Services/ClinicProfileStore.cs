@@ -85,6 +85,8 @@ namespace IdleClinic.Services
                     Profile = new ClinicProfile
                     {
                         state = ClinicSimulation.CreateOpening().State,
+                        // A brand-new clinic opens with Maya's story; older saves never gain it part way through.
+                        story = ClinicStoryState.NewGame(),
                         preferences = ReadLegacyPreferences(),
                         lastAccountedUtcTicks = now.UtcDateTime.Ticks
                     };

@@ -14,6 +14,19 @@ namespace IdleClinic.Presentation
         public ClinicHit(ClinicHitKind kind,int id=0) { Kind=kind;Id=id; }
     }
 
+    /// <summary>Who the opening story puts in the starter clinic: Maya walks up to the door, steps inside once the prologue is
+    /// over and becomes the first nurse (<see cref="StaffId"/>) with her own look.</summary>
+    public struct ClinicStoryCast
+    {
+        public bool Enabled;
+        /// <summary>She is already at the door (the first line has been read), so a relaunch does not replay her arrival.</summary>
+        public bool Arrived;
+        /// <summary>The prologue is over: she waits just inside the entrance until she is hired.</summary>
+        public bool Inside;
+        public int StaffId;
+        public int Appearance;
+    }
+
     /// <summary>Persistent miniature hospital scene. Gesture ownership and financial effects live in the UI/core.</summary>
     public sealed class ClinicWorld : MonoBehaviour
     {
@@ -86,6 +99,11 @@ namespace IdleClinic.Presentation
         public void Initialize(ClinicLocation location) { Initialize();ConfigureLocation(location); }
         public void ShowTurnedAway(ClinicEvent arrival) { Initialize();actors.TurnAway(arrival); }
         public void ResetActorPlacement() => actors?.ResetPlacement();
+        private ClinicStoryCast storyCast;
+        /// <summary>The opening story's cast for the starter clinic; applied on the next render.</summary>
+        public void SetStoryCast(ClinicStoryCast cast) => storyCast = cast;
+        /// <summary>Just above Maya's head, wherever she is (at the door, inside, or at her station once hired).</summary>
+        public bool TryGetStoryNursePoint(out Vector3 point) { point = default; return doctors == null && actors != null && actors.TryGetStoryNursePoint(out point); }
         public void ConfigureLocation(ClinicLocation location)
         {
             Initialize();if(Location==location)return;
@@ -169,7 +187,7 @@ namespace IdleClinic.Presentation
                 bool building=false;for(int j=0;j<state.Construction.Count;j++)if((int)state.Construction[j].Room==i)building=true;
                 renovations[i].SetActive(building);
             }
-            actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor?.Render(actors,deltaTime,reducedMotion);
+            actors.Cast=storyCast;actors.Render(state,reducedMotion);upgrades.Render(state);amenities.Render(state,reducedMotion);streetLife.Render(state,reducedMotion);construction.Render(state,reducedMotion);careDoor.Render(actors,deltaTime,reducedMotion);entranceDoor.Render(actors,deltaTime,reducedMotion);waitingDoor.Render(actors,deltaTime,reducedMotion);refreshmentDoor?.Render(actors,deltaTime,reducedMotion);
             opening?.Render(state);
             effects.Armed=true;effects.Update(deltaTime);
             UpdateHome(deltaTime,reducedMotion);

@@ -35,14 +35,16 @@ namespace IdleClinic.Presentation
             foreach(var actor in staff.Values)actor.ResetPlacement(actor.WalkCycles);
         }
 
-        internal int MovingCount { get {int count=0;foreach(var a in patients.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;foreach(var a in staff.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;return count;} }
+        internal int MovingCount { get {int count=0;foreach(var a in patients.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;foreach(var a in staff.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;if(maya!=null&&maya.Moving&&maya.Root.gameObject.activeSelf)count++;return count;} }
         private Actor boss;
         private Transform bossBroom;
+        internal ClinicStoryCast Cast;
         internal void Render(ClinicState state,bool reducedMotion)
         {
             double tick=state.Tick+state.SubTick;
             RenderBoss(state,tick,reducedMotion);
             float elapsed=lastRenderTick<0?0:(float)Math.Max(0,(tick-lastRenderTick)*.1);lastRenderTick=tick;
+            RenderStoryNurse(state,elapsed,tick,reducedMotion);
             retired.Clear();
             foreach(var entry in patients)
             {
@@ -99,9 +101,14 @@ namespace IdleClinic.Presentation
             {
                 var member=state.Staff[i];
                 if(!staff.TryGetValue(member.Id,out var actor))
-                { actor=Create(member.Role==ClinicStaffRole.Receptionist?"Receptionist":"Nurse",member.Role);staff.Add(member.Id,actor);actor.Root.name="Staff "+member.Id; }
+                {
+                    // Maya is hired where she stands: the same figure walks on to her station instead of a new one at the door.
+                    if(IsMaya(state,member.Id)&&maya!=null&&maya.Root.gameObject.activeSelf){actor=maya;maya=null;actor.From=null;actor.Moving=false;actor.HasPosition=true;actor.LastTick=tick;}
+                    else actor=Create(member.Role==ClinicStaffRole.Receptionist?"Receptionist":"Nurse",member.Role);
+                    staff.Add(member.Id,actor);actor.Root.name="Staff "+member.Id;
+                }
                 if(!actor.Root.gameObject.activeSelf)actor.Root.gameObject.SetActive(true);
-                actor.Appearance.Apply(member.Id%12,member.TrainingLevel);
+                actor.Appearance.Apply(IsMaya(state,member.Id)?Cast.Appearance:member.Id%12,member.TrainingLevel);
                 bool walking=tick<member.MoveEndsTick;
                 int pose=walking?1:member.PatientId<0?0:member.Role==ClinicStaffRole.Receptionist?2:3;
                 if(!walking&&member.Role==ClinicStaffRole.Nurse&&member.PatientId>=0)
@@ -109,6 +116,9 @@ namespace IdleClinic.Presentation
                 Place(actor,member.FromAnchor,member.ToAnchor,Progress(tick,member.MoveStartedTick,member.MoveEndsTick),walking,true,tick,false);
                 actor.Sample(pose,tick*.1+member.Id*.13,reducedMotion);actor.Appearance.AfterPose(false);
             }
+            // Hired in a way that could not take her over (a different location, a reloaded clinic): no second Maya.
+            if(maya!=null&&!Cast.Enabled)HideMaya();
+            else if(maya!=null&&staff.ContainsKey(Cast.StaffId))HideMaya();
         }
         private void RenderBoss(ClinicState state,double tick,bool reducedMotion)
         {
@@ -152,6 +162,72 @@ namespace IdleClinic.Presentation
             bossBroom.gameObject.SetActive(cleaning);
             if(cleaning)bossBroom.localRotation=Quaternion.Euler(0,0,reducedMotion?0:Mathf.Sin((float)tick*.5f)*15);
             boss.Sample(walking?1:task||state.OpeningStep==ClinicOpeningStep.FirstCheckIn?2:0,tick*.1,reducedMotion);
+        }
+        // ---- The opening story: Maya walks up the pavement, waits at the door, steps inside, then is hired -------------
+        private const float MayaSpeed=1.25f,MayaKnockSeconds=2.4f;
+        private static readonly Vector3[] MayaArrival={new Vector3(-3.40f,.14f,-6.45f),new Vector3(.30f,.14f,-6.45f),new Vector3(.67f,.14f,-6.02f)};
+        private static readonly Vector3[] MayaEntry={new Vector3(.67f,.14f,-6.02f),new Vector3(.67f,.14f,-4.95f),new Vector3(-.30f,.14f,-4.70f)};
+        // Facing the room and the camera, clear of both corridor lanes (x .30 and 1.02) and the queue at x -3.85.
+        private static readonly Vector3 MayaInsideFacing=new Vector3(.30f,0,-1f);
+        private Actor maya;
+        private Vector3[] mayaPath;
+        private float mayaDistance,mayaPathLength,mayaKnock;
+        private bool mayaInside;
+        private bool IsMaya(ClinicState state,int staffId)=>Cast.Enabled&&state.Location==ClinicLocation.StarterClinic&&staffId==Cast.StaffId;
+        private void RenderStoryNurse(ClinicState state,float elapsed,double tick,bool reducedMotion)
+        {
+            bool hired=false;for(int i=0;i<state.Staff.Count;i++)if(state.Staff[i].Id==Cast.StaffId)hired=true;
+            bool show=Cast.Enabled&&state.Location==ClinicLocation.StarterClinic&&state.OpeningEnabled&&!hired&&state.OpeningStep<=ClinicOpeningStep.HireNurse;
+            // Once hired she stays put for this frame: the staff pass below takes her over where she stands.
+            if(!show){if(!hired)HideMaya();return;}
+            if(maya==null)
+            {
+                maya=Create("Nurse",ClinicStaffRole.Nurse);maya.Root.name="Maya";maya.ResetPlacement(.31);
+                mayaInside=Cast.Inside;mayaKnock=MayaKnockSeconds;
+                // A fresh game watches her arrive; a relaunch finds her where the story left her.
+                if(Cast.Inside)SetMayaPath(MayaEntry,true);else SetMayaPath(MayaArrival,Cast.Arrived);
+            }
+            if(!maya.Root.gameObject.activeSelf)maya.Root.gameObject.SetActive(true);
+            maya.Appearance.Apply(Cast.Appearance,1);
+            if(Cast.Inside&&!mayaInside){mayaInside=true;SetMayaPath(MayaEntry,false);}
+            // A long jump (offline return, a QA jump) ends a walk rather than replaying it.
+            if(elapsed>5)mayaDistance=mayaPathLength;
+            var before=maya.Root.position;
+            mayaDistance=Mathf.Min(mayaPathLength,mayaDistance+elapsed*MayaSpeed);
+            maya.Root.position=SamplePath(mayaPath,mayaDistance,out var direction);
+            bool walking=mayaDistance<mayaPathLength;
+            if(walking){if(direction.sqrMagnitude>.0001f)maya.Root.rotation=Quaternion.LookRotation(direction);}
+            else maya.Root.rotation=Quaternion.LookRotation(mayaInside?MayaInsideFacing:Vector3.forward);
+            var moved=maya.Root.position-before;moved.y=0;maya.WalkCycles+=moved.magnitude/WalkCycleLength;
+            maya.Moving=walking;
+            // At the door she taps on the glass for a moment, then waits.
+            if(!walking&&!mayaInside&&mayaKnock>0)mayaKnock-=elapsed;
+            int pose=walking?1:!mayaInside&&mayaKnock>0?5:0;
+            maya.Sample(pose,tick*.1+.31,reducedMotion);maya.Appearance.AfterPose(false);
+        }
+        private void HideMaya(){if(maya!=null&&maya.Root.gameObject.activeSelf){maya.Root.gameObject.SetActive(false);maya.Moving=false;}}
+        private void SetMayaPath(Vector3[] path,bool atEnd)
+        {
+            mayaPath=path;mayaPathLength=0;for(int i=1;i<path.Length;i++)mayaPathLength+=Vector3.Distance(path[i-1],path[i]);
+            mayaDistance=atEnd?mayaPathLength:0;maya.Root.position=atEnd?path[path.Length-1]:path[0];
+        }
+        private static Vector3 SamplePath(Vector3[] path,float distance,out Vector3 direction)
+        {
+            direction=Vector3.forward;
+            for(int i=1;i<path.Length;i++)
+            {
+                float segment=Vector3.Distance(path[i-1],path[i]);direction=path[i]-path[i-1];
+                if(distance<=segment||i==path.Length-1)return Vector3.Lerp(path[i-1],path[i],segment<=.0001f?1:Mathf.Clamp01(distance/segment));
+                distance-=segment;
+            }
+            return path[0];
+        }
+        internal bool TryGetStoryNursePoint(out Vector3 point)
+        {
+            point=default;Actor actor=maya!=null&&maya.Root.gameObject.activeSelf?maya:null;
+            if(actor==null&&Cast.Enabled&&staff.TryGetValue(Cast.StaffId,out var hired)&&hired.Root.gameObject.activeSelf)actor=hired;
+            if(actor==null)return false;
+            point=actor.Root.position+Vector3.up*1.95f;return true;
         }
         internal void TurnAway(ClinicEvent arrival)
         {
@@ -295,6 +371,7 @@ namespace IdleClinic.Presentation
         {
             foreach(var entry in patients)if(Near(entry.Value,point,halfWidth,distance))return true;
             foreach(var entry in staff)if(Near(entry.Value,point,halfWidth,distance))return true;
+            if(maya!=null&&Near(maya,point,halfWidth,distance))return true;
             return boss!=null&&Near(boss,point,halfWidth,distance);
         }
         private static bool Near(Actor actor,Vector3 point,float halfWidth,float distance)

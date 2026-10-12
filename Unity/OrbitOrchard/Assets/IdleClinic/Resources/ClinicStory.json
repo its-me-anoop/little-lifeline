@@ -1,0 +1,39 @@
+{
+  "speaker": "Maya",
+  "prologue": [
+    { "id": "prologue.hello", "text": "Hello? Oh! You must be the new owner. I’m Maya." },
+    { "id": "prologue.surgery", "text": "The high street surgery closed. Half the town has a cough and nowhere to go." },
+    { "id": "prologue.biscuits", "text": "I’m a nurse. Open this place and I’ll work here. I’ve even brought biscuits." },
+    { "id": "prologue.name", "text": "Sorry, I didn’t catch your name?", "askName": true,
+      "replies": [ "That’s me", "Just call me boss" ], "said": [ "I’m {name}.", "Just call me boss." ] },
+    { "id": "prologue.start", "text": "Nice to meet you, {name}! Where do we start?",
+      "replies": [ "My office. Every boss needs a desk.", "Biscuits first. Then my office." ] }
+  ],
+  "steps": [
+    { "id": "step.clean-office", "step": "CleanOffice", "text": "Is that a box of… more boxes?" },
+    { "id": "step.office", "step": "SetUpOffice", "text": "A desk, a computer and a chair that spins. Very bossy." },
+    { "id": "step.clean-reception", "step": "CleanReception", "text": "Reception next. People need somewhere to say ‘it’s my knee’." },
+    { "id": "step.reception", "step": "SetUpReception", "text": "And a bell. Everyone loves a bell." },
+    { "id": "step.first-patient", "step": "FirstCheckIn", "text": "Our first patient! Don’t panic. I’m panicking a bit." },
+    { "id": "step.clean-waiting", "step": "CleanWaiting", "text": "They’ll need somewhere to sit. Apparently the floor doesn’t count." },
+    { "id": "step.waiting", "step": "SetUpWaiting", "text": "Chairs facing the nursing rooms, so nobody feels forgotten." },
+    { "id": "step.clean-nursing", "step": "CleanNursing", "text": "Now my room. I can see the floor! Mostly." },
+    { "id": "step.nursing", "step": "SetUpNursing", "text": "Bed, lamp, cabinet. That’s a nursing room. That’s <i>my</i> nursing room." },
+    { "id": "step.hire-maya", "step": "HireNurse", "text": "So… about that job?",
+      "replies": [ "You’re hired, Maya.", "Welcome aboard, Maya." ] },
+    { "id": "step.queue", "step": "QueueArrivals", "text": "Word travels fast. That’s… a queue." },
+    { "id": "step.receptionist", "step": "HireReceptionist", "text": "I can’t treat them and check them in. We need someone on the desk!",
+      "replies": [ "Hire a receptionist" ] }
+  ],
+  "reactions": [
+    { "id": "reaction.bell", "step": "FirstCheckIn", "text": "Ding! Sorry. Had to." },
+    { "id": "reaction.coins", "step": "CleanWaiting", "text": "Our first coins! Let’s not spend them all on biscuits." },
+    { "id": "reaction.hired", "step": "QueueArrivals", "text": "Thanks, {name}. Let’s get to work." },
+    { "id": "reaction.desk", "step": "Complete", "text": "Before they start a queue for the queue." },
+    { "id": "reaction.open", "step": "Complete", "text": "We’re open, {name}. Welcome to Little Lifeline." },
+    { "id": "reaction.pitch-in", "on": "PitchIn", "text": "Look at you, sleeves rolled up!" }
+  ],
+  "lessons": [
+    { "id": "guide.equipment", "text": "Better kit means quicker care. Let’s upgrade my equipment." }
+  ]
+}

@@ -80,6 +80,11 @@ namespace IdleClinic.App
                     { ClinicSimulation.TryGrantReward(State, 10000000); simulation.UpgradeAmenity(kind); }
                 }
             if (double.TryParse(Value("CLINIC_QA_ADVANCE", "-qaAdvance"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)) simulation.Advance(seconds, false);
+            // The opening story: "name" (the name question, panel open), "reply" (where to start, panel open) or "skip".
+            // CLINIC_QA_STORY_NAME answers the name question with that name.
+            var story = Value("CLINIC_QA_STORY", "-qaStory");
+            var storyName = Value("CLINIC_QA_STORY_NAME", "-qaStoryName");
+            if (story != null || storyName != null) PlayStoryTo(story, storyName);
             // 4.3 (23) captures. Opening: play the boss opening up to a step ("FirstCheckIn", "HireNurse", "Complete") as taps would.
             var opening = Value("CLINIC_QA_OPENING", "-qaOpening");
             if (opening != null && Enum.TryParse<ClinicOpeningStep>(opening, true, out var openingTarget)) PlayOpeningTo(openingTarget);
@@ -130,6 +135,8 @@ namespace IdleClinic.App
                 ToggleGems();
             }
             else if (open == "settings") ToggleSettings();
+            else if (open == "settings:story") { ToggleSettings(); OpenStoryPage(); }
+            else if (open == "opening") StartCoroutine(OpenOpeningAfterFirstFrames());
             else if (open == "BossOffice" || open == "CleaningUtilities")
                 StartCoroutine(SelectSupportRoomAfterFirstFrames(open == "BossOffice"));
             else if (Enum.TryParse<ClinicRoom>(open, out var selected)) StartCoroutine(SelectAfterFirstFrames(selected));
@@ -140,6 +147,7 @@ namespace IdleClinic.App
         private void PlayOpeningTo(ClinicOpeningStep target)
         {
             if (!State.OpeningEnabled) return;
+            FinishStoryPrologue();
             for (var guard = 0; guard < 400 && State.OpeningStep < target && State.OpeningStep != ClinicOpeningStep.Complete; guard++)
             {
                 var step = State.OpeningStep;
@@ -151,6 +159,46 @@ namespace IdleClinic.App
             simulation.DrainEvents();
             SaveNow();
             dockKey = ""; UpdateReadouts();
+        }
+
+        /// <summary>Read Maya's prologue as a player would, stopping at the name question ("name"), at where to start
+        /// ("reply"), or skipping the story ("skip").</summary>
+        private void PlayStoryTo(string target, string name)
+        {
+            var script = StoryScript; var told = Story;
+            if (told == null || !told.enabled) return;
+            for (var guard = 0; guard < 16; guard++)
+            {
+                var beat = ClinicStory.Current(script, told, State);
+                if (beat == null || beat.Kind != ClinicStoryBeatKind.Prologue) break;
+                if (beat.AsksName) { if (target == "name") break; ClinicStory.Answer(script, told, State, name != null ? 0 : 1, name); continue; }
+                if (beat.Replies.Count > 0 || !ClinicStory.Continue(script, told, State)) break;
+            }
+            if (target == "skip") ClinicStory.Skip(told, State);
+            SaveNow(); UpdateStory(); dockKey = ""; UpdateReadouts();
+            if (target == "name" || target == "reply") StartCoroutine(OpenOpeningAfterFirstFrames());
+        }
+
+        /// <summary>Answer the rest of the prologue with the first answers (keeping any name already chosen), as taps would.</summary>
+        private void FinishStoryPrologue()
+        {
+            var script = StoryScript; var told = Story;
+            if (told == null || !told.enabled) return;
+            for (var guard = 0; guard < 16; guard++)
+            {
+                var beat = ClinicStory.Current(script, told, State);
+                if (beat == null || beat.Kind != ClinicStoryBeatKind.Prologue) break;
+                var moved = beat.AsksName ? ClinicStory.Answer(script, told, State, told.bossName.Length > 0 ? 0 : 1, told.bossName)
+                    : beat.Replies.Count > 0 ? ClinicStory.Answer(script, told, State, 0) : ClinicStory.Continue(script, told, State);
+                if (!moved) break;
+            }
+            UpdateStory();
+        }
+
+        private System.Collections.IEnumerator OpenOpeningAfterFirstFrames()
+        {
+            yield return new WaitForSeconds(1.5f);
+            if (State.OpeningEnabled && State.OpeningStep != ClinicOpeningStep.Complete) OpenOpeningTask();
         }
 
         private void PlayFor(double hours)

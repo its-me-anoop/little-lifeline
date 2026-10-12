@@ -29,7 +29,8 @@ namespace IdleClinic.App
             Box(dock,"dock-handle").pickingMode=PickingMode.Ignore;
             var heading=Box(dock,"dock-heading");
             var titles=Box(heading,"dock-titles");titles.pickingMode=PickingMode.Ignore;
-            var title=Text(titles,gemsOpen?(gemTab==GemTab.Shop?"Clinic shop":"Gems & goals"):locationsOpen?"Your clinics":settingsOpen?"Settings":selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title",true);
+            var title=Text(titles,gemsOpen?(gemTab==GemTab.Shop?"Clinic shop":"Gems & goals"):locationsOpen?"Your clinics":settingsOpen?(storyPageOpen?"Story":"Settings")
+                :storyBeat!=null&&storyBeat.Kind==ClinicStoryBeatKind.Prologue?"Meet "+storyBeat.Speaker:selectedObject.HasValue?ObjectName(selectedObject.Value):RoomName(selectedRoom.Value),"dock-title",true);
             Display(title);
             var roomPanel=!gemsOpen&&!locationsOpen&&!settingsOpen&&!selectedObject.HasValue;
             if(roomPanel&&State.Tutorial==ClinicTutorialStep.Complete&&State.Room(selectedRoom.Value).Built)BuildRoomMeta(titles,State.Room(selectedRoom.Value));
@@ -432,12 +433,13 @@ namespace IdleClinic.App
             BuildSkipButton(card,job);
         }
 
-        private void ToggleSettings(){locationsOpen=false;gemsOpen=false;settingsOpen=!settingsOpen;selectedRoom=null;selectedObject=null;dockKey="";UpdateReadouts();}
+        private void ToggleSettings(){locationsOpen=false;gemsOpen=false;settingsOpen=!settingsOpen;storyPageOpen=false;selectedRoom=null;selectedObject=null;dockKey="";UpdateReadouts();}
         private void BuildSettings()
         {
             var content=new ScrollView(ScrollViewMode.Vertical){name="clinic-settings-content",horizontalScrollerVisibility=ScrollerVisibility.Hidden,verticalScrollerVisibility=ScrollerVisibility.Hidden};
             content.AddToClassList("bounded-dock-content");dock.Add(content);
             BindTouchCaptureLifecycle(content.contentContainer);BindTouchCaptureLifecycle(content.contentViewport);
+            if(storyPageOpen&&Story!=null&&Story.enabled){BuildStoryPage(content);return;}
             var row=Box(content,"settings-list");
             Preference(row,ClinicGlyph.Sound,"Effects",null,()=>profile.preferences.sound,v=>{profile.preferences.sound=v;RefreshAudioPreferences();});
             Preference(row,ClinicGlyph.Music,"Music",null,()=>profile.preferences.music,v=>{profile.preferences.music=v;RefreshAudioPreferences();});
@@ -452,6 +454,7 @@ namespace IdleClinic.App
             var help=Box(content,"help-row");
             Text(help,"Drag to explore · Pinch to zoom\nTap a room to improve it. Tap cash to collect.","help-text");
             var links=Box(content,"settings-links");
+            BuildStorySettingsLink(links);
             if(apple!=null)
             {
                 var restore=IconButton(links,ClinicGlyph.Restore,"Restore existing purchases",RequestRestore,"settings-link restore-button");

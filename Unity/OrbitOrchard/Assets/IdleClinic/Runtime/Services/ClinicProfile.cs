@@ -162,9 +162,13 @@ namespace IdleClinic.Services
         public ClinicDailyState daily = new ClinicDailyState();
         public long lastAccountedUtcTicks;
         public ClinicGuideState guide = new ClinicGuideState();
+        // The opening story (4.3 build 23): new games only. Absent in older saves, which keep the plain opening.
+        public ClinicStoryState story = new ClinicStoryState();
 
         internal void Normalize()
         {
+            if (story == null) story = new ClinicStoryState();
+            story.Repair();
             if (preferences == null) preferences = new ClinicPreferences();
             if (premium == null) premium = new ClinicPremiumState();
             if (daily == null) daily = new ClinicDailyState();

@@ -168,12 +168,14 @@ namespace IdleClinic.App
             var role=RoleForHit(hit.Kind);
             var room=State.Room(ClinicRules.RoomForRole(role));
             var view=ClinicWorkstationReadout.Create(State,role,hit.Id);
-            Text(dock,ServiceTime(view.ServiceTicks)+" per patient · Room "+room.Tier,"room-detail");
+            // Maya keeps her name at her station in games that told the story.
+            var named=view.StaffId>=0?StaffName(view.StaffId):null;
+            Text(dock,(named!=null?named+" · ":"")+ServiceTime(view.ServiceTicks)+" per patient · Room "+room.Tier,"room-detail");
             var upgrades=Box(dock,"upgrades");
             WorkstationUpgrade(upgrades,ClinicGlyph.Equipment,"Equipment",view.EquipmentLevel,view.EquipmentPrice,view.EquipmentCapped,view.EquipmentAtTop,view.EquipmentUnlockTier,
                 view.NextEquipmentTicks,room,()=>simulation.UpgradeStation(role,hit.Id),"station-equipment-"+role+"-"+hit.Id);
             if(view.StaffId>=0)
-                WorkstationUpgrade(upgrades,ClinicGlyph.Training,"Staff training",view.TrainingLevel,view.TrainingPrice,view.TrainingCapped,view.TrainingAtTop,view.TrainingUnlockTier,
+                WorkstationUpgrade(upgrades,ClinicGlyph.Training,named!=null?named+"’s training":"Staff training",view.TrainingLevel,view.TrainingPrice,view.TrainingCapped,view.TrainingAtTop,view.TrainingUnlockTier,
                     view.NextTrainingTicks,room,()=>simulation.TrainStaff(view.StaffId),"staff-training-"+view.StaffId);
             else
                 Purchase(upgrades,RoleGlyph(role),"Hire "+RoleName(role),ClinicRules.HireCost(State,role),
