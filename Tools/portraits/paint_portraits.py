@@ -3,7 +3,7 @@
 Painted from scratch as layered vector shapes with soft shading (no photographs, no stock or generated images), then
 rasterised with the pre-installed Chromium and downsampled. Run:
 
-    python3 Tools/portraits/paint_portraits.py            # writes Resources/Portraits/{Maya,Boss}.png
+    python3 Tools/portraits/paint_portraits.py            # writes Resources/Portraits/{Maya,Boss}.png and Shop/BuilderBadge.png
     python3 Tools/portraits/paint_portraits.py --out DIR  # review copies elsewhere
 
 The colours follow the 3D characters: Maya has light skin (SkinLight), chestnut hair in a high bun (HairChestnut) and
@@ -394,6 +394,49 @@ def boss():
     return p
 
 
+def builder_badge():
+    """The second builder's badge for the gem confirmation sheet: the Store's builder in a yellow hard hat, as a small
+    original icon (head and shoulders), drawn in the same soft style."""
+    return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="s2"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="s5" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
+    <radialGradient id="bskin" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#ffe1c7"/><stop offset=".6" stop-color="#f4c39d"/><stop offset="1" stop-color="#d99b72"/></radialGradient>
+    <linearGradient id="hat" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#ffdf6e"/><stop offset=".55" stop-color="#f5bd2e"/><stop offset="1" stop-color="#d89614"/></linearGradient>
+    <linearGradient id="brim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd556"/><stop offset="1" stop-color="#c98a12"/></linearGradient>
+    <linearGradient id="overall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3f9a6d"/><stop offset="1" stop-color="#22694a"/></linearGradient>
+    <clipPath id="bface"><circle cx="128" cy="150" r="62"/></clipPath>
+  </defs>
+  <path d="M40,256 C44,222 78,204 128,204 C178,204 212,222 216,256 Z" fill="#b8d9a8"/>
+  <path d="M72,256 L80,222 L100,216 L104,256 Z M184,256 L176,222 L156,216 L152,256 Z" fill="url(#overall)"/>
+  <circle cx="92" cy="232" r="5" fill="#e3b33d"/><circle cx="164" cy="232" r="5" fill="#e3b33d"/>
+  <rect x="112" y="188" width="32" height="24" rx="10" fill="#e3ab84"/>
+  <circle cx="66" cy="156" r="14" fill="#efb990"/><circle cx="190" cy="156" r="14" fill="#e8ad84"/>
+  <circle cx="128" cy="150" r="62" fill="url(#bskin)"/>
+  <g clip-path="url(#bface)">
+    <ellipse cx="176" cy="160" rx="30" ry="64" fill="#c98a62" opacity=".35" filter="url(#s5)"/>
+    <path d="M62,130 C80,112 110,106 128,108 C150,106 178,112 196,130 L196,96 L62,96 Z" fill="#5a3a26"/>
+    <ellipse cx="128" cy="124" rx="70" ry="10" fill="#5a3a26" opacity=".35" filter="url(#s2)"/>
+  </g>
+  <ellipse cx="98" cy="178" rx="13" ry="8" fill="#f29a8a" opacity=".55" filter="url(#s2)"/>
+  <ellipse cx="160" cy="178" rx="13" ry="8" fill="#f29a8a" opacity=".5" filter="url(#s2)"/>
+  <path d="M96,142 C102,137 112,137 118,141" stroke="#4a2f20" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M138,141 C144,137 154,137 160,142" stroke="#4a2f20" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="108" cy="157" rx="7.5" ry="9.5" fill="#2c1d15"/><ellipse cx="149" cy="157" rx="7.5" ry="9.5" fill="#2c1d15"/>
+  <circle cx="105.5" cy="153.5" r="2.8" fill="#fff"/><circle cx="146.5" cy="153.5" r="2.8" fill="#fff"/>
+  <ellipse cx="129" cy="172" rx="7" ry="5.5" fill="#e59d79"/>
+  <path d="M112,186 C120,196 138,196 146,186" stroke="#7b3b2c" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M60,118 C60,74 90,46 128,46 C166,46 196,74 196,118 Z" fill="url(#hat)"/>
+  <path d="M116,48 C114,70 114,96 116,118 L140,118 C142,96 142,70 140,48 C132,46 124,46 116,48 Z" fill="#ffd94f"/>
+  <path d="M116,48 C114,70 114,96 116,118" stroke="#d99a18" stroke-width="2.5" fill="none"/>
+  <path d="M140,48 C142,70 142,96 140,118" stroke="#d99a18" stroke-width="2.5" fill="none"/>
+  <ellipse cx="96" cy="74" rx="18" ry="10" fill="#fff6c8" opacity=".6" filter="url(#s2)" transform="rotate(-28 96 74)"/>
+  <ellipse cx="128" cy="120" rx="86" ry="15" fill="url(#brim)"/>
+  <ellipse cx="128" cy="116" rx="80" ry="9" fill="#ffd556" opacity=".7"/>
+  <ellipse cx="128" cy="130" rx="70" ry="7" fill="#7a4a20" opacity=".25" filter="url(#s2)"/>
+</svg>"""
+
+
 async def render(svgs, out):
     from playwright.async_api import async_playwright
     from PIL import Image
@@ -401,12 +444,12 @@ async def render(svgs, out):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch()
         page = await browser.new_page(viewport={"width": SIZE, "height": SIZE}, device_scale_factor=2)
-        for name, text in svgs.items():
+        for name, (text, size, folder) in svgs.items():
             await page.set_content(f'<html><body style="margin:0;background:transparent">{text}</body></html>')
-            png = await page.screenshot(omit_background=True, clip={"x": 0, "y": 0, "width": SIZE, "height": SIZE})
-            image = Image.open(io.BytesIO(png)).convert("RGBA").resize((SIZE, SIZE), Image.LANCZOS)
-            image.save(out / f"{name}.png", optimize=True)
-            (out / f"{name}.svg").write_text(text) if out != OUT else None
+            png = await page.screenshot(omit_background=True, clip={"x": 0, "y": 0, "width": size, "height": size})
+            image = Image.open(io.BytesIO(png)).convert("RGBA").resize((size, size), Image.LANCZOS)
+            (folder or out).mkdir(parents=True, exist_ok=True)
+            image.save((folder or out) / f"{name}.png", optimize=True)
         await browser.close()
 
 
@@ -414,8 +457,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=OUT)
     args = parser.parse_args()
-    asyncio.run(render({"Maya": svg(maya()), "Boss": svg(boss())}, args.out))
-    print("wrote", ", ".join(str(args.out / f"{n}.png") for n in ("Maya", "Boss")))
+    review = args.out != OUT
+    shop = None if review else OUT.parent / "Shop"
+    asyncio.run(render({"Maya": (svg(maya()), SIZE, None), "Boss": (svg(boss()), SIZE, None), "BuilderBadge": (builder_badge(), 256, shop)}, args.out))
+    print("wrote Maya, Boss and BuilderBadge to", args.out, "" if review else "and " + str(shop))
 
 
 if __name__ == "__main__":

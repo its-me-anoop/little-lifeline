@@ -151,6 +151,25 @@ in `Core/ClinicStory.cs`; the approved lines are used word for word.
   400-gem or cash second builder, localized prices, restore and the pending, cancelled, refunded and exactly-once grant
   handling are unchanged. No discounts, timers, scarcity or best-value claims were added.
 - The shop shows today's free gems and where they come from.
+- **Today and Goals in the Store's style (the user's request after `973e9cc`).** The user likes the Store, so both tabs
+  now follow it: a green hero card like the builder card (two short headline lines, a dark tag, a detail line and one of
+  the Store's own gem pictures), then one card per goal with a single clear state. Rewards and rules are unchanged; only
+  the presentation moved (`ClinicPremium.cs`, new `ClinicGemsTabsTests`).
+  - **Today:** the hero says *Daily reward is ready.* (or *Collected. Back tomorrow.*), the tag *Day 3 of 7*, what
+    today pays and what day 7 pays, the week as seven chips inside the card (done, today, the gold seventh day), and the one
+    collect button; once collected, *Collected today · next reward in 7h 12m* instead of a button. The streak strip now
+    shows where today sits in the weekly cycle, so a streak past day 7 no longer shows every day as done.
+  - **Today's goals:** the heading counts what is done and when new goals arrive. Each goal card has a symbol for what it
+    counts, the goal, *12 of 40 · 28 to go* (coins shortened as elsewhere), a thicker progress bar and its reward. A done
+    goal turns pink with one *+3* collect button and says what it pays; a collected one is muted with a check. The bonus
+    card shows *+10*, one segment per goal, and that it is added with the last goal collected.
+  - **Goals:** the hero says how many rewards are ready (or *Keep going. More gems ahead.*), *4 of 34 complete* with a
+    progress bar, and either the gems waiting or the next goal. *Ready to collect* cards come first, each with one collect
+    button; *Up next* singles out the next goal, then the following ones with their rewards. Optional lessons are as before.
+- **The second builder's badge (the user's marked screenshot).** In the gem confirmation for *Second builder*, the
+  upward arrow beside the title is now a small builder in a yellow hard hat (`Resources/Shop/BuilderBadge.png`, 256 x 256,
+  32 KB), an original icon in the style of the Store's builder card, painted by the same tool as the portraits. Other
+  confirmations keep their symbols; the Store's large builder picture is unchanged.
 
 ### Characters (separate visual checkpoint)
 

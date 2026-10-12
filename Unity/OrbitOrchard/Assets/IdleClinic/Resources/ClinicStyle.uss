@@ -572,3 +572,64 @@ Button:active { scale: .96 .96; }
 .story-entry-boss .story-entry-head { flex-direction: row-reverse; }
 .story-entry-avatar { width: 22px; height: 22px; border-radius: 11px; margin-right: 6px; }
 .story-entry-boss .story-entry-avatar { margin-right: 0; margin-left: 6px; }
+/* 4.3 (23), Today and Goals in the Store's style: a hero card like the builder card, then one card per goal with a single
+   clear state (to do with progress, ready with one collect button, collected with a check). */
+.gem-hero { position: relative; padding: 16px; margin: 2px 0 10px 0; border-radius: 20px; background-color: rgb(221,231,204); overflow: hidden; flex-shrink: 0; }
+.gem-hero-art { position: absolute; right: -4px; top: 6px; width: 36%; height: 120px; }
+.gem-hero-copy { width: 64%; min-height: 112px; }
+.gem-hero-headline { font-size: 28px; color: rgb(25,58,46); white-space: normal; -unity-text-align: middle-left; }
+.gem-hero-tag { align-self: flex-start; padding: 4px 9px; margin-top: 8px; margin-bottom: 6px; border-radius: 8px; background-color: rgb(36,58,49); color: rgb(251,250,240); font-size: 14px; }
+.gem-hero-detail { font-size: 14px; color: rgb(36,58,49); white-space: normal; }
+.gem-hero-meter { margin-top: 12px; background-color: rgb(198,214,182); }
+.gem-hero .collect-wide { margin: 12px 0 0 0; }
+.compact .gem-hero-headline { font-size: 24px; }
+.compact .gem-hero-art { height: 104px; }
+.today-strip { flex-direction: row; margin-top: 12px; }
+.today-chip { flex-grow: 1; flex-basis: 0; min-width: 0; height: 56px; margin: 0 2px; border-radius: 12px; align-items: center; justify-content: center; background-color: rgb(251,250,240); border-bottom-width: 2px; border-bottom-color: rgb(213,221,196); }
+.today-chip-done { background-color: rgb(205,224,196); border-bottom-color: rgb(180,204,170); }
+.today-chip-next { background-color: rgb(253,241,244); border-width: 2px; border-color: rgb(158,52,90); }
+.today-chip-week { background-color: rgb(246,227,176); border-bottom-color: rgb(226,206,150); }
+.today-chip-gems { font-size: 15px; color: rgb(116,38,66); }
+.today-chip-day { font-size: 11px; margin-top: 1px; color: rgb(78,97,82); }
+.today-chip-done .today-chip-day { color: rgb(47,94,71); }
+.compact .today-chip { height: 50px; margin: 0 1px; }
+.compact .today-chip-day { font-size: 10px; }
+.today-status { flex-direction: row; align-items: center; justify-content: center; min-height: 48px; padding: 6px 12px; margin-top: 12px; border-radius: 14px; background-color: rgb(251,250,240); }
+.today-status-label { font-size: 15px; margin-left: 8px; color: rgb(36,58,49); white-space: normal; flex-shrink: 1; }
+.daily-goal { flex-direction: row; align-items: center; min-height: 72px; padding: 12px; margin-bottom: 8px; border-radius: 18px; background-color: rgb(238,241,224); border-bottom-width: 3px; border-bottom-color: rgb(213,221,196); }
+.daily-goal-tile { background-color: rgb(251,250,240); }
+.daily-goal .goal-words { margin-left: 12px; margin-right: 8px; }
+.daily-goal .gem-goal-title, .goal-card .gem-goal-title, .bonus-card .gem-goal-title { font-size: 16px; color: rgb(25,58,46); }
+.daily-goal-status { font-size: 13px; color: rgb(78,97,82); margin-top: 2px; white-space: normal; }
+.daily-goal-meter { margin-top: 8px; }
+.daily-goal-ready { background-color: rgb(253,241,244); border-bottom-color: rgb(232,196,208); }
+.daily-goal-ready .daily-goal-tile { background-color: rgb(246,214,224); }
+.daily-goal-ready .daily-goal-status { color: rgb(116,38,66); }
+.daily-goal-claimed { background-color: rgb(244,246,236); border-bottom-color: rgb(226,232,214); }
+.daily-goal-claimed .gem-goal-title { color: rgb(78,97,82); }
+.daily-goal-claimed .meter-fill { background-color: rgb(120,165,130); }
+.daily-goal-check { width: 36px; height: 36px; border-radius: 18px; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 6px; background-color: rgb(221,231,204); }
+.bonus-card { padding: 12px; margin-bottom: 8px; border-radius: 18px; background-color: rgb(251,243,214); border-bottom-width: 3px; border-bottom-color: rgb(230,214,162); }
+.bonus-top { flex-direction: row; align-items: center; }
+.bonus-card .goal-words { margin-right: 8px; }
+.bonus-chip { flex-direction: row; align-items: center; flex-shrink: 0; height: 36px; padding: 0 12px 0 10px; border-radius: 12px; background-color: rgb(255,254,249); }
+.bonus-chip-value { font-size: 17px; margin-left: 4px; color: rgb(116,38,66); }
+.bonus-segments { flex-direction: row; margin-top: 10px; }
+.bonus-segment { flex-grow: 1; flex-basis: 0; height: 8px; margin: 0 2px; border-radius: 4px; background-color: rgb(236,222,178); }
+.bonus-segment-done { background-color: rgb(158,52,90); }
+.bonus-card-paid { background-color: rgb(238,241,224); border-bottom-color: rgb(213,221,196); }
+.bonus-card-paid .bonus-segment-done { background-color: rgb(63,122,90); }
+.bonus-card-paid .bonus-chip-value { color: rgb(47,94,71); }
+.goal-card { flex-direction: row; align-items: center; min-height: 64px; padding: 10px 12px; margin-bottom: 8px; border-radius: 18px; background-color: rgb(238,241,224); border-bottom-width: 3px; border-bottom-color: rgb(213,221,196); }
+.goal-card-tile { width: 40px; height: 40px; min-width: 40px; border-radius: 12px; background-color: rgb(251,250,240); }
+.goal-card .goal-words { margin-left: 12px; margin-right: 8px; }
+.goal-claim { background-color: rgb(253,241,244); border-bottom-color: rgb(232,196,208); }
+.goal-claim .goal-card-tile { background-color: rgb(246,214,224); }
+.goal-claim .daily-goal-status { color: rgb(116,38,66); }
+.goal-next { background-color: rgb(255,254,249); border-width: 2px; border-color: rgb(186,205,168); }
+.goal-upcoming { min-height: 54px; }
+.goal-upcoming .gem-goal-title { font-size: 15px; color: rgb(36,58,49); }
+.goal-reward-chip { margin-left: 6px; }
+/* 4.3 (23): the second builder's own badge in the gem confirmation (was an upward arrow). */
+.gem-confirm-builder { width: 56px; height: 56px; min-width: 56px; padding: 0; overflow: hidden; background-color: rgb(246,227,176); border-bottom-width: 2px; border-bottom-color: rgb(226,206,150); }
+.gem-confirm-builder-art { width: 100%; height: 100%; }

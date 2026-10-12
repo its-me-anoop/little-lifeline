@@ -103,8 +103,16 @@ namespace IdleClinic.App
             gemConfirmBanner = banner;
 
             var heading = Box(gemConfirmCard, "gem-confirm-heading");
-            var tile = Box(heading, "icon-tile gem-confirm-tile"); tile.pickingMode = PickingMode.Ignore;
-            tile.Add(new ClinicIcon(GlyphFor(quote.Kind), 26, GemInk));
+            var tile = Box(heading, "icon-tile gem-confirm-tile"); tile.pickingMode = PickingMode.Ignore; tile.name = "gem-confirm-badge";
+            // The second builder shows the builder himself (a small original icon matching the Store's builder card).
+            var builder = quote.Kind == ClinicGemSpendKind.ExtraBuilder ? Resources.Load<Texture2D>("Shop/BuilderBadge") : null;
+            if (builder != null)
+            {
+                tile.AddToClassList("gem-confirm-builder");
+                var art = new Image { image = builder, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+                art.AddToClassList("gem-confirm-builder-art"); tile.Add(art);
+            }
+            else tile.Add(new ClinicIcon(GlyphFor(quote.Kind), 26, GemInk));
             var titles = Box(heading, "gem-confirm-titles"); titles.pickingMode = PickingMode.Ignore;
             Text(titles, "CONFIRM GEM SPEND", "eyebrow", true);
             Display(Text(titles, quote.Title, "gem-confirm-title", true));

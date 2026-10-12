@@ -112,13 +112,16 @@ shot 01c-story-office-together 10 CLINIC_QA_OPENING=SetUpOffice
 shot 02-opening-first-check-in 10 CLINIC_QA_OPENING=FirstCheckIn
 shot 03-opening-hire-nurse 10 CLINIC_QA_OPENING=HireNurse
 shot 03a-story-hire-maya 10 CLINIC_QA_OPEN=opening
+shot 03b-story-first-queue 12 CLINIC_QA_OPENING=QueueArrivals
 shot 04-clinic-open 12 CLINIC_QA_OPENING=Complete CLINIC_QA_ADVANCE=45
 shot 04a-story-so-far 8 CLINIC_QA_OPEN=settings:story
 shot 05-first-upgrade-panel 10 CLINIC_QA_OPEN=FirstAid
 shot 07-free-rewards-today 8 CLINIC_QA_OPEN=gems:today
+shot 07a-today-collected 10 CLINIC_QA_CLAIM_ALL=1 CLINIC_QA_OPEN=gems:today
 shot 08-shop 8 CLINIC_QA_OPEN=gems:shop
 shot 09-shop-extras 8 CLINIC_QA_OPEN=gems:extras
 shot 10-confirm-short-of-gems 8 CLINIC_QA_CONFIRM=Boost:boost.4h
+shot 10a-confirm-second-builder 8 CLINIC_QA_CONFIRM=ExtraBuilder:builder.extra
 shot 11-confirm-boost 8 CLINIC_QA_GEMS=120 CLINIC_QA_CONFIRM=Boost:boost.1h
 shot 12-confirm-decor 8 CLINIC_QA_CONFIRM=Decoration:Reception
 shot 13-goals-tab 8 CLINIC_QA_OPEN=gems:goals

@@ -90,58 +90,127 @@ namespace IdleClinic.App
             return head;
         }
 
+        // ---- Today and Goals, in the Store's style: a hero card that says what is ready and what comes next, then cards with
+        // one clear state each (to do with its progress, ready with one collect button, collected with a check). The rewards
+        // and their rules live in the profile store; nothing here changes what is paid or when.
+
+        /// <summary>A hero card like the Store's builder card: two short headline lines, a dark tag, a line or two of detail
+        /// and a picture on the right.</summary>
+        private VisualElement GemHero(VisualElement content, string name, string art, string first, string second, string tag, string tagName, params string[] details)
+        {
+            var hero = Box(content, "gem-hero"); hero.name = name;
+            if (art != null) ShopArt(hero, art, "gem-hero-art");
+            var copy = Box(hero, "gem-hero-copy"); copy.pickingMode = PickingMode.Ignore;
+            Text(copy, first, "gem-hero-headline", true);
+            Text(copy, second, "gem-hero-headline", true);
+            Text(copy, tag, "gem-hero-tag", true).name = tagName;
+            foreach (var detail in details) if (!string.IsNullOrEmpty(detail)) Text(copy, detail, "gem-hero-detail");
+            return hero;
+        }
+
+        private static string UntilMidnightUtc(DateTimeOffset now) => TimeLabel((now.UtcDateTime.Date.AddDays(1) - now.UtcDateTime).TotalSeconds);
+
         private void BuildTodayTab(VisualElement content)
         {
             var now = DateTimeOffset.UtcNow;
             var streak = saves.NextStreakDay(now); var ready = saves.LoginRewardReady(now);
-            Section(content, "Daily streak", ready ? "Day " + streak + " is ready" : "Come back tomorrow to keep it going");
-            var row = Box(content, "streak-row");
+            // Rewards cycle weekly; the strip shows where today sits in the week.
+            var week = (Math.Max(1, streak) - 1) % 7 + 1;
+            var resetIn = UntilMidnightUtc(now);
+            var gems = ClinicDaily.StreakReward(streak); var coins = ClinicDaily.StreakCoins(streak, State);
+            var hero = GemHero(content, "today-hero", week == 7 && ready ? "GemsLarge" : "GemsMedium",
+                ready ? "Daily reward" : "Collected.", ready ? "is ready." : "Back tomorrow.",
+                "Day " + week + " of 7", "today-streak",
+                ready ? "+" + gems + " gems and " + Money(coins) + " coins." : "Tomorrow, day " + (week % 7 + 1) + ": +" + ClinicDaily.StreakReward(streak + 1) + " gems.",
+                week < 7 || !ready ? "Day 7 pays " + ClinicDaily.StreakReward(7) + " gems." : "The best day of the week.");
+            var strip = Box(hero, "today-strip"); strip.pickingMode = PickingMode.Ignore;
             for (var day = 1; day <= 7; day++)
             {
-                var done = day < streak || day == streak && !ready;
-                var tile = Box(row, "streak-day"); tile.EnableInClassList("streak-done", done); tile.EnableInClassList("streak-next", day == streak && ready);
-                tile.EnableInClassList("streak-week", day == 7 && !done);
-                if (done) tile.Add(new ClinicIcon(ClinicGlyph.Check, 18, LeafInk));
-                else Display(Text(tile, ClinicDaily.StreakReward(day).ToString(), "streak-gems", true));
-                Text(tile, "Day " + day, "streak-number", true);
+                var done = ready ? day < week : day <= week;
+                var chip = Box(strip, "today-chip"); chip.pickingMode = PickingMode.Ignore;
+                chip.EnableInClassList("today-chip-done", done); chip.EnableInClassList("today-chip-next", ready && day == week);
+                chip.EnableInClassList("today-chip-week", day == 7 && !done);
+                if (done) chip.Add(new ClinicIcon(ClinicGlyph.Check, 16, LeafInk) { pickingMode = PickingMode.Ignore });
+                else Display(Text(chip, ClinicDaily.StreakReward(day).ToString(), "today-chip-gems", true));
+                Text(chip, "Day " + day, "today-chip-day", true);
             }
             if (ready)
             {
-                var claim = IconButton(content, ClinicGlyph.Gem, "Collect day " + streak + " reward", ClaimLogin, "collect-wide");
-                var icon = claim.Q<ClinicIcon>(); icon.RemoveFromHierarchy();
-                Text(claim, "Collect day " + streak, "collect-label", true);
-                RewardPair(claim, ClinicDaily.StreakReward(streak), ClinicDaily.StreakCoins(streak, State), true);
+                var claim = IconButton(hero, ClinicGlyph.Gem, "Collect day " + week + " reward: " + gems + " gems and " + Money(coins) + " coins", ClaimLogin, "collect-wide today-collect");
+                claim.name = "today-collect";
+                claim.Q<ClinicIcon>().RemoveFromHierarchy();
+                Text(claim, "Collect day " + week, "collect-label", true);
+                RewardPair(claim, gems, coins, true);
+            }
+            else
+            {
+                var status = Box(hero, "today-status"); status.pickingMode = PickingMode.Ignore;
+                status.Add(new ClinicIcon(ClinicGlyph.Check, 18, LeafInk) { pickingMode = PickingMode.Ignore });
+                Text(status, "Collected today · next reward in " + resetIn, "today-status-label", true).name = "today-collected";
             }
 
             var goals = saves.DailyGoals(now);
             var goalDay = profile.daily.day;
             var finished = goals.Count(g => saves.IsDailyDone(g));
-            Section(content, "Today's goals", finished + " of " + goals.Count + " done");
-            foreach (var goal in goals)
+            Section(content, "Today's goals", finished + " of " + goals.Count + " done · new in " + resetIn);
+            foreach (var goal in goals) DailyGoalCard(content, goal, goalDay);
+            DailyBonusCard(content, goals.Count, finished, resetIn);
+        }
+
+        private static ClinicGlyph DailyGlyph(ClinicDailyMeasure measure)
+            => measure == ClinicDailyMeasure.Treatments ? ClinicGlyph.Nurse : measure == ClinicDailyMeasure.Collected ? ClinicGlyph.Coin
+                : measure == ClinicDailyMeasure.Spent ? ClinicGlyph.Upgrade : measure == ClinicDailyMeasure.ParkingFees ? ClinicGlyph.Parking
+                : measure == ClinicDailyMeasure.Tips ? ClinicGlyph.Vending : ClinicGlyph.Reception;
+
+        /// <summary>One of today's goals: what to do, how far there is to go, and its reward; once done, one collect button;
+        /// once collected, a check.</summary>
+        private void DailyGoalCard(VisualElement content, ClinicDailyGoal goal, int goalDay)
+        {
+            var id = goal.Id; var claimed = saves.IsDailyClaimed(id); var done = saves.IsDailyDone(goal);
+            var progress = Math.Min(goal.Target, saves.DailyProgress(goal));
+            var card = Box(content, "daily-goal"); card.name = "daily-goal-" + id;
+            card.EnableInClassList("daily-goal-ready", done && !claimed); card.EnableInClassList("daily-goal-claimed", claimed);
+            var tile = Box(card, "icon-tile daily-goal-tile"); tile.pickingMode = PickingMode.Ignore;
+            tile.Add(new ClinicIcon(DailyGlyph(goal.Measure), 22, done && !claimed ? GemInk : LeafInk) { pickingMode = PickingMode.Ignore });
+            var words = Box(card, "goal-words"); words.pickingMode = PickingMode.Ignore;
+            Text(words, ClinicDaily.Describe(goal), "gem-goal-title", true);
+            var counted = goal.Measure == ClinicDailyMeasure.Treatments || goal.Measure == ClinicDailyMeasure.CheckIns;
+            string Amount(long value) => counted ? value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : Money(value);
+            Text(words, claimed ? "Collected · reward added" : done ? "Done · collect +" + goal.GemReward + " gems and " + Money(goal.CoinReward) + " coins"
+                : Amount(progress) + " of " + Amount(goal.Target) + " · " + Amount(goal.Target - progress) + " to go", "daily-goal-status");
+            var bar = Box(words, "meter meter-thick daily-goal-meter"); bar.pickingMode = PickingMode.Ignore;
+            bar.EnableInClassList("meter-gem", done && !claimed);
+            Box(bar, "meter-fill").style.width = Length.Percent(100f * progress / Math.Max(1, goal.Target));
+            if (done && !claimed)
             {
-                var id = goal.Id; var claimed = saves.IsDailyClaimed(id); var done = saves.IsDailyDone(goal);
-                var progress = Math.Min(goal.Target, saves.DailyProgress(goal));
-                var row2 = Box(content, "goal-row"); row2.EnableInClassList("goal-ready", done && !claimed);
-                var words = Box(row2, "goal-words"); words.pickingMode = PickingMode.Ignore;
-                var top = Box(words, "goal-top"); top.pickingMode = PickingMode.Ignore;
-                Text(top, ClinicDaily.Describe(goal), "gem-goal-title", true);
-                Text(top, claimed ? "Collected" : progress.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " / " + goal.Target.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), "goal-count", true);
-                var bar = Box(words, "meter meter-leaf"); bar.EnableInClassList("meter-gem", done && !claimed);
-                Box(bar, "meter-fill").style.width = Length.Percent(100f * progress / Math.Max(1, goal.Target));
-                if (done && !claimed)
-                {
-                    var collect = IconButton(row2, ClinicGlyph.Gem, "Collect " + ClinicDaily.Describe(goal) + ": " + goal.GemReward + " gems and " + Money(goal.CoinReward) + " coins", () => ClaimDaily(id, goalDay), "collect-small");
-                    collect.Q<ClinicIcon>().RemoveFromHierarchy();
-                    Text(collect, "Collect", "collect-label", true);
-                }
-                else if (claimed) { var check = new ClinicIcon(ClinicGlyph.Check, 22, LeafInk); check.style.marginLeft = 10; row2.Add(check); }
-                else RewardPair(row2, goal.GemReward, goal.CoinReward, false);
+                var collect = IconButton(card, ClinicGlyph.Gem, "Collect " + ClinicDaily.Describe(goal) + ": " + goal.GemReward + " gems and " + Money(goal.CoinReward) + " coins", () => ClaimDaily(id, goalDay), "collect-small daily-collect");
+                collect.name = "daily-collect-" + id;
+                collect.Q<ClinicIcon>().Tint = GemOnInk;
+                Display(Text(collect, "+" + goal.GemReward, "collect-label", true));
             }
-            var bonus = Box(content, "bonus-row"); bonus.pickingMode = PickingMode.Ignore;
-            Text(bonus, saves.DailyBonusPaid ? "Today's bonus of " + ClinicDaily.AllGoalsGemBonus + " gems is collected. New goals tomorrow."
-                : "Finish all " + goals.Count + " for " + ClinicDaily.AllGoalsGemBonus + " bonus gems. Goals stay fixed until midnight (UTC).", "bonus-text");
-            var dots = Box(bonus, "bonus-dots"); dots.pickingMode = PickingMode.Ignore;
-            for (var i = 0; i < goals.Count; i++) Box(dots, "bonus-dot" + (i < finished ? " bonus-dot-done" : ""));
+            else if (claimed)
+            {
+                var check = Box(card, "daily-goal-check"); check.pickingMode = PickingMode.Ignore;
+                check.Add(new ClinicIcon(ClinicGlyph.Check, 20, LeafInk) { pickingMode = PickingMode.Ignore });
+            }
+            else RewardPair(card, goal.GemReward, goal.CoinReward, false);
+        }
+
+        /// <summary>The bonus for finishing all of today's goals: one segment per goal, paid with the last one collected.</summary>
+        private void DailyBonusCard(VisualElement content, int count, int finished, string resetIn)
+        {
+            var paid = saves.DailyBonusPaid;
+            var card = Box(content, "bonus-card"); card.name = "daily-bonus"; card.pickingMode = PickingMode.Ignore;
+            card.EnableInClassList("bonus-card-paid", paid);
+            var top = Box(card, "bonus-top"); top.pickingMode = PickingMode.Ignore;
+            var words = Box(top, "goal-words"); words.pickingMode = PickingMode.Ignore;
+            Text(words, paid ? "Bonus collected" : "All " + count + " goals bonus", "gem-goal-title", true);
+            Text(words, paid ? "New goals in " + resetIn + "." : "Added with the last goal you collect. Goals stay fixed until midnight (UTC).", "daily-goal-status");
+            var chip = Box(top, "bonus-chip"); chip.pickingMode = PickingMode.Ignore;
+            chip.Add(new ClinicIcon(paid ? ClinicGlyph.Check : ClinicGlyph.Gem, 16, paid ? LeafInk : GemInk) { pickingMode = PickingMode.Ignore });
+            Display(Text(chip, "+" + ClinicDaily.AllGoalsGemBonus, "bonus-chip-value", true));
+            var segments = Box(card, "bonus-segments"); segments.pickingMode = PickingMode.Ignore;
+            for (var i = 0; i < count; i++) Box(segments, "bonus-segment" + (i < finished ? " bonus-segment-done" : "")).pickingMode = PickingMode.Ignore;
         }
 
         /// <summary>Gems, then coins, stacked on the right of a goal or inline on a collect button.</summary>
@@ -159,34 +228,55 @@ namespace IdleClinic.App
         {
             var claimed = profile.premium.milestonesClaimed;
             var readyGoals = saves.ClaimableMilestones().ToList();
+            var total = ClinicMilestones.All.Count;
+            var complete = ClinicMilestones.All.Count(m => claimed.Contains(m.Id));
+            var upcoming = ClinicMilestones.All.Where(m => !claimed.Contains(m.Id) && !readyGoals.Contains(m)).Take(UpcomingGoals + 2).ToList();
+            var waiting = readyGoals.Sum(m => m.GemReward);
+            var hero = GemHero(content, "goals-hero", "GemsSmall",
+                readyGoals.Count > 0 ? readyGoals.Count + (readyGoals.Count == 1 ? " reward" : " rewards") : upcoming.Count > 0 ? "Keep going." : "All done.",
+                readyGoals.Count > 0 ? "to collect." : upcoming.Count > 0 ? "More gems ahead." : "Every goal met.",
+                complete + " of " + total + " complete", "goals-tag",
+                readyGoals.Count > 0 ? "+" + waiting + " gems waiting below." : upcoming.Count > 0 ? "Next: " + upcoming[0].Title + "." : null);
+            var meter = Box(hero, "meter meter-thick gem-hero-meter"); meter.pickingMode = PickingMode.Ignore;
+            Box(meter, "meter-fill").style.width = Length.Percent(100f * complete / Math.Max(1, total));
             // Ready first, so a reward is never below the fold.
-            if (readyGoals.Count > 0) Section(content, "Ready to collect");
+            if (readyGoals.Count > 0) Section(content, "Ready to collect", "+" + waiting + " gems");
             foreach (var goal in readyGoals)
             {
                 var id = goal.Id;
-                var row = Box(content, "goal-row goal-ready");
-                row.Add(new ClinicIcon(ClinicGlyph.Goal, 22, GemInk));
-                Text(row, goal.Title, "gem-goal-title goal-fill", true);
-                var button = IconButton(row, ClinicGlyph.Gem, "Collect " + goal.GemReward + " gems for " + goal.Title, () => ClaimGoal(id), "collect-small");
+                var card = Box(content, "goal-card goal-claim"); card.name = "goal-ready-" + id;
+                var tile = Box(card, "icon-tile goal-card-tile"); tile.pickingMode = PickingMode.Ignore;
+                tile.Add(new ClinicIcon(ClinicGlyph.Goal, 22, GemInk) { pickingMode = PickingMode.Ignore });
+                var words = Box(card, "goal-words"); words.pickingMode = PickingMode.Ignore;
+                Text(words, goal.Title, "gem-goal-title", true);
+                Text(words, "Done · collect " + goal.GemReward + " gems", "daily-goal-status");
+                var button = IconButton(card, ClinicGlyph.Gem, "Collect " + goal.GemReward + " gems for " + goal.Title, () => ClaimGoal(id), "collect-small");
+                button.name = "goal-collect-" + id;
                 button.Q<ClinicIcon>().Tint = GemOnInk;
                 Display(Text(button, "+" + goal.GemReward, "collect-label", true));
             }
-            var upcoming = ClinicMilestones.All.Where(m => !claimed.Contains(m.Id) && !readyGoals.Contains(m)).Take(UpcomingGoals + 2).ToList();
-            if (upcoming.Count > 0) Section(content, "Coming up");
-            foreach (var goal in upcoming)
+            if (upcoming.Count > 0) Section(content, "Up next", "Gems when done");
+            for (var i = 0; i < upcoming.Count; i++)
             {
-                var row = Box(content, "goal-row");
-                row.Add(new ClinicIcon(ClinicGlyph.Goal, 22, LeafInk));
-                Text(row, goal.Title, "gem-goal-title goal-fill", true);
-                RewardPair(row, goal.GemReward, 0, false);
+                var goal = upcoming[i];
+                var card = Box(content, i == 0 ? "goal-card goal-next" : "goal-card goal-upcoming"); card.pickingMode = PickingMode.Ignore;
+                if (i == 0) card.name = "goal-next";
+                var tile = Box(card, "icon-tile goal-card-tile"); tile.pickingMode = PickingMode.Ignore;
+                tile.Add(new ClinicIcon(ClinicGlyph.Goal, 20, LeafInk) { pickingMode = PickingMode.Ignore });
+                var words = Box(card, "goal-words"); words.pickingMode = PickingMode.Ignore;
+                Text(words, goal.Title, "gem-goal-title", true);
+                if (i == 0) Text(words, "Your next goal", "daily-goal-status");
+                var chip = Box(card, "price-chip goal-reward-chip"); chip.pickingMode = PickingMode.Ignore;
+                chip.Add(new ClinicIcon(ClinicGlyph.Gem, 14, GemInk) { pickingMode = PickingMode.Ignore });
+                Display(Text(chip, "+" + goal.GemReward, "price-chip-value", true));
             }
             BuildSkippedLessons(content);
             if (readyGoals.Count == 0 && upcoming.Count == 0) Text(content, "Every goal is complete.", "gem-note");
-            else if (claimed.Count > 0)
+            else if (complete > 0)
             {
                 var done = Box(content, "goals-done"); done.pickingMode = PickingMode.Ignore;
-                done.Add(new ClinicIcon(ClinicGlyph.Check, 18, LeafInk));
-                Text(done, claimed.Count + (claimed.Count == 1 ? " goal complete" : " goals complete"), "gem-note");
+                done.Add(new ClinicIcon(ClinicGlyph.Check, 18, LeafInk) { pickingMode = PickingMode.Ignore });
+                Text(done, complete + (complete == 1 ? " goal complete" : " goals complete"), "gem-note");
             }
         }
 
