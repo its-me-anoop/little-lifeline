@@ -76,6 +76,23 @@ in `Core/ClinicStory.cs`; the approved lines are used word for word.
     view ends. Nothing is deleted or moved, so the layout, routes and taps are untouched; furniture, people and glass are
     never cut. In the office this lifts the office's front wall (and the open door leaf) while they talk there; in the
     nursing room the front wall and door frame.
+- **Portraits in the conversation (the user's request after `973e9cc`).** The 3D close-ups were not good enough, so the
+  faces now live in the dialogue, painted as original 2D portraits: Maya (light skin, chestnut hair in a high bun, teal
+  scrubs, stethoscope, ID badge) and the boss (warm medium-brown skin, short very dark hair, dark green-grey suit, white
+  shirt, gold tie), in the same colours as their 3D figures. They are drawn from scratch as layered vector shapes with soft
+  shading by `Tools/portraits/paint_portraits.py` (rendered with the pre-installed Chromium, then downsampled): no
+  photographs, stock, purchased or generated images. Two 512 x 512 PNGs in `Resources/Portraits` (about 130 KB each on
+  disk; imported at 512 at most, no mipmaps), loaded once and shared.
+  - **Guide card:** Maya's portrait (76 x 84, 62 x 70 on a compact phone) replaces the flag tile while she talks, beside
+    her name, step and line.
+  - **Panel:** her portrait beside her question; above the answers, the boss's round portrait and *YOU* (then
+    *YOU · SAM* once named), so it is plain which words are the player's.
+  - **Speech bubbles:** a small round portrait of whoever is speaking (not on Maya's "…").
+  - **Settings › Story:** each line in the story so far carries its speaker's portrait.
+  - Portraits are decoration: taps pass through to the card, and screen readers keep reading the speaker's name, line and
+    answers as before. A missing picture shows the speaker's symbol instead.
+  - The conversation view is now a medium shot (orthographic size 2.6 for the prologue, 3.0 after, was 1.9 and 2.4) that
+    shows the two of them in the room; the 3D world is otherwise unchanged.
 - **One line per step.** The guide card shows Maya (eyebrow *MAYA · 3 OF 12*, her line, then the task: *Clean reception ·
   tap to start*, or *You're cleaning · ready in 4s · tap to pitch in*). The opening panel repeats her line above the task,
   so the conversation stays visible with the card hidden. Hiring Maya is answered **You're hired, Maya.** or **Welcome

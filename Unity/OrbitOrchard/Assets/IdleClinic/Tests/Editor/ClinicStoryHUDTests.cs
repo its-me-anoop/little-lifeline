@@ -28,6 +28,10 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Title, Is.EqualTo(Hello));
                 Assert.That(ui.Eyebrow, Is.EqualTo("MAYA"));
                 Assert.That(ui.Why, Is.EqualTo("Tap to continue"));
+                var portrait = ui.Get<VisualElement>("storyPortrait");
+                Assert.That(portrait.style.display.value, Is.EqualTo(DisplayStyle.Flex), "Maya's portrait in the card while she talks.");
+                Assert.That(ui.PortraitName(portrait), Is.EqualTo("Maya"));
+                Assert.That(ui.Get<ClinicIcon>("guideGlyph").parent.style.display.value, Is.EqualTo(DisplayStyle.None), "The flag tile makes way.");
                 Assert.That(ui.Get<Button>("storySkip").style.display.value, Is.EqualTo(DisplayStyle.Flex), "The story can be skipped from the first line.");
                 ui.Invoke("OnGuideTap");
                 Assert.That(ui.Title, Does.Contain("high street surgery"));
@@ -42,6 +46,9 @@ namespace IdleClinic.Tests
                 Assert.That(dock.style.display.value, Is.EqualTo(DisplayStyle.Flex), "The question opens the panel.");
                 Assert.That(dock.Q<Label>(className: "dock-title").text, Is.EqualTo("Meet Maya"));
                 Assert.That(dock.Q(className: "story-quote"), Is.Not.Null);
+                Assert.That(ui.PortraitName(dock.Q("story-quote-portrait")), Is.EqualTo("Maya"), "Her portrait beside her question.");
+                Assert.That(ui.PortraitName(dock.Q("story-you")), Is.EqualTo("Boss"), "The boss's portrait above the player's answers.");
+                Assert.That(dock.Q("story-you").Q<Label>().text, Is.EqualTo("YOU"));
                 var field = dock.Q<TextField>("story-name");
                 Assert.That(field, Is.Not.Null);
                 Assert.That(dock.Q<Button>("story-reply-0").enabledSelf, Is.False, "A name needs a letter first.");
@@ -53,6 +60,7 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Profile.story.bossName, Is.EqualTo("Sam"));
                 dock = ui.Dock;
                 Assert.That(dock.Q(className: "story-quote").Q<Label>(className: "story-line").text, Is.EqualTo("“Nice to meet you, Sam! Where do we start?”"));
+                Assert.That(dock.Q("story-you").Q<Label>().text, Is.EqualTo("YOU · SAM"), "Named once the boss has a name.");
                 var start = dock.Q<Button>("story-reply-1");
                 Assert.That(start.Q<Label>(className: "story-reply-label").text, Is.EqualTo("Biscuits first. Then my office."));
 
@@ -104,6 +112,8 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Title, Is.EqualTo("Clean your office"));
                 Assert.That(ui.Eyebrow, Is.EqualTo("OPEN YOUR CLINIC · 1 OF 12"));
                 Assert.That(ui.Get<Button>("storySkip").style.display.value, Is.EqualTo(DisplayStyle.None));
+                Assert.That(ui.Get<VisualElement>("storyPortrait").style.display.value, Is.EqualTo(DisplayStyle.None), "No portrait once the story is skipped.");
+                Assert.That(ui.Get<ClinicIcon>("guideGlyph").parent.style.display.value, Is.EqualTo(DisplayStyle.Flex));
                 var cast = (ClinicStoryCast)ui.Invoke("StoryCast");
                 Assert.That(cast.Enabled, Is.True, "Maya is still the first nurse.");
                 Assert.That(cast.Greeting, Is.False, "The boss leaves the door; she goes along.");
@@ -126,6 +136,7 @@ namespace IdleClinic.Tests
                 ui.Invoke("OnGuideTap");
                 var hire = ui.Dock.Q<Button>("opening-action");
                 Assert.That(hire.Q<Label>(className: "story-reply-label").text, Is.EqualTo("You’re hired, Maya."));
+                Assert.That(ui.PortraitName(ui.Dock.Q("story-you")), Is.EqualTo("Boss"), "The job offer is the boss's to make.");
                 Assert.That(ui.Dock.Q<Button>("story-reply-1").Q<Label>(className: "story-reply-label").text, Is.EqualTo("Welcome aboard, Maya."));
                 ui.Activate(hire);
                 Assert.That(ui.Simulation.State.Staff.Any(s => s.Id == ClinicStory.FirstNurseStaffId), Is.True);
@@ -168,6 +179,33 @@ namespace IdleClinic.Tests
             }
         }
 
+        /// <summary>The portraits are original pictures in Resources/Portraits, small enough for a phone, shared by every place
+        /// they appear, and a missing one shows the speaker's symbol instead of a hole. The speech bubbles carry them too.</summary>
+        [Test]
+        public void PortraitsAreSharedModestAndAlwaysHaveAFallback()
+        {
+            using (var ui = new StoryApp())
+            {
+                foreach (var speaker in new[] { "Maya", "Boss" })
+                {
+                    var texture = Resources.Load<Texture2D>("Portraits/" + speaker);
+                    Assert.That(texture, Is.Not.Null, speaker);
+                    Assert.That(Math.Max(texture.width, texture.height), Is.LessThanOrEqualTo(512), speaker + " stays small on a phone.");
+                    Assert.That(texture.width, Is.EqualTo(texture.height), speaker + " is square, so it never stretches.");
+                }
+                Assert.That(ui.PortraitName(ui.Get<VisualElement>("storyBubble")), Is.EqualTo("Maya"));
+                Assert.That(ui.PortraitName(ui.Get<VisualElement>("bossBubble")), Is.EqualTo("Boss"));
+                var card = ui.Get<VisualElement>("storyPortrait").Q<Image>().image;
+                Assert.That(ui.Get<VisualElement>("storyBubble").Q<Image>().image, Is.SameAs(card), "One texture, shared.");
+                var host = new VisualElement();
+                var missing = (VisualElement)ui.Invoke("StoryPortrait", host, "Nobody", "story-test", true);
+                Assert.That(missing.Q<Image>(), Is.Null);
+                Assert.That(missing.Q<ClinicIcon>(), Is.Not.Null, "A missing portrait shows a symbol.");
+                Assert.That(missing.ClassListContains("story-portrait-missing"), Is.True);
+                Assert.That(missing.pickingMode, Is.EqualTo(PickingMode.Ignore), "Portraits are decoration: taps go to the card.");
+            }
+        }
+
         [Test]
         public void OlderSavesKeepThePlainOpeningAndNoStorySettings()
         {
@@ -176,6 +214,7 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Title, Is.EqualTo("Clean your office"));
                 Assert.That(ui.Eyebrow, Is.EqualTo("OPEN YOUR CLINIC · 1 OF 12"));
                 Assert.That(ui.Get<Button>("storySkip").style.display.value, Is.EqualTo(DisplayStyle.None));
+                Assert.That(ui.Get<VisualElement>("storyPortrait").style.display.value, Is.EqualTo(DisplayStyle.None));
                 Assert.That(((ClinicStoryCast)ui.Invoke("StoryCast")).Enabled, Is.False);
                 ui.Set("settingsOpen", true);
                 ui.Invoke("UpdateReadouts");
@@ -234,6 +273,8 @@ namespace IdleClinic.Tests
             public string Eyebrow => Get<Label>("guideEyebrow").text;
             public string Why => Get<Label>("guideWhy").text;
             public List<string> Reactions => (List<string>)Invoke("QueuedStoryRemarks");
+            /// <summary>The name of the picture inside a portrait frame (or anything holding one).</summary>
+            public string PortraitName(VisualElement frame) { Assert.That(frame, Is.Not.Null); return frame.Q<Image>()?.image?.name; }
 
             public T Get<T>(string name) => (T)typeof(ClinicApp).GetField(name, Private).GetValue(app);
             public void Set(string name, object value) => typeof(ClinicApp).GetField(name, Private).SetValue(app, value);

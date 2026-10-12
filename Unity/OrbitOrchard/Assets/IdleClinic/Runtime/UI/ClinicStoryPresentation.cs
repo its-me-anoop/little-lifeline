@@ -17,7 +17,7 @@ namespace IdleClinic.App
         private ClinicStoryScript storyScript;
         private ClinicStoryBeat storyBeat;
         private Button storySkip;
-        private ClinicIcon storyGlyph;
+        private VisualElement storyPortrait;
         private VisualElement storyBubble, bossBubble;
         private Label storyBubbleText, bossBubbleText;
         /// <summary>Something said aloud in a speech bubble: Maya's remarks, and the boss's answers.</summary>
@@ -34,26 +34,70 @@ namespace IdleClinic.App
         private ClinicStoryState Story => profile?.story;
         private string BossName => ClinicStory.DisplayName(Story?.bossName);
 
+        // ---- Portraits: original painted head-and-shoulders pictures of each speaker (Resources/Portraits), shared by the
+        // card, the panel, the speech bubbles and the story log. Decorative: the speaker's name is always written next to them.
+        private static readonly Dictionary<string, Texture2D> storyPortraits = new Dictionary<string, Texture2D>();
+        /// <summary>The picture of the head and shoulders, and a tighter one of the face for small round avatars.</summary>
+        private static readonly Rect PortraitBust = new Rect(.16f, .12f, .68f, .74f), PortraitFace = new Rect(.27f, .22f, .46f, .51f);
+        internal const string BossPortrait = "Boss";
+
+        /// <summary>A speaker's portrait, loaded once and shared; null when it is missing.</summary>
+        private static Texture2D StoryPortraitTexture(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return null;
+            if (!storyPortraits.TryGetValue(speaker, out var texture)) { texture = Resources.Load<Texture2D>("Portraits/" + speaker); storyPortraits[speaker] = texture; }
+            return texture;
+        }
+
+        /// <summary>A framed portrait of <paramref name="speaker"/> (the boss for <see cref="BossPortrait"/>). Without a picture
+        /// the frame shows the speaker's symbol instead, so a missing file never leaves a hole.</summary>
+        private VisualElement StoryPortrait(VisualElement parent, string speaker, string classes, bool face)
+        {
+            var frame = Box(parent, "story-portrait " + classes); frame.pickingMode = PickingMode.Ignore;
+            SetStoryPortrait(frame, speaker, face);
+            return frame;
+        }
+
+        private void SetStoryPortrait(VisualElement frame, string speaker, bool face)
+        {
+            if (frame.userData as string == speaker) return;
+            frame.userData = speaker; frame.Clear();
+            var boss = speaker == BossPortrait;
+            frame.EnableInClassList("story-portrait-boss", boss);
+            var texture = StoryPortraitTexture(speaker);
+            frame.EnableInClassList("story-portrait-missing", texture == null);
+            if (texture != null)
+            {
+                var image = new Image { image = texture, scaleMode = ScaleMode.ScaleAndCrop, uv = face ? PortraitFace : PortraitBust, pickingMode = PickingMode.Ignore };
+                image.AddToClassList("story-portrait-image"); frame.Add(image);
+                return;
+            }
+            var glyph = new ClinicIcon(boss ? ClinicGlyph.Goal : ClinicGlyph.Nurse, 22, StoryInk) { pickingMode = PickingMode.Ignore };
+            glyph.AddToClassList("story-portrait-glyph"); frame.Add(glyph);
+        }
+
         private void BuildStory()
         {
-            // Maya's face replaces the flag while she is talking.
-            storyGlyph = new ClinicIcon(ClinicGlyph.Nurse, 22, StoryInk) { pickingMode = PickingMode.Ignore };
-            storyGlyph.style.width = 22; storyGlyph.style.height = 22; storyGlyph.style.display = DisplayStyle.None;
-            guideGlyph.parent.Add(storyGlyph);
+            // Maya's portrait replaces the flag while she is talking.
+            storyPortrait = StoryPortrait(guideCard, StoryScript.speaker, "story-card-portrait", false);
+            storyPortrait.name = "story-card-portrait";
+            storyPortrait.RemoveFromHierarchy(); guideCard.Insert(0, storyPortrait);
+            storyPortrait.style.display = DisplayStyle.None;
             storySkip = IconButton(root, ClinicGlyph.Close, "Skip the story. The opening carries on without it", OnStorySkip, "guide-skip story-skip");
             storySkip.name = "story-skip";
             storySkip.RemoveFromClassList(Button.ussClassName);
             var icon = storySkip.Q<ClinicIcon>(); icon.style.width = 16; icon.style.height = 16;
             Text(storySkip, "Skip story", "guide-skip-label", true);
             storySkip.style.display = DisplayStyle.None;
-            storyBubble = Bubble("story-bubble", out storyBubbleText);
-            bossBubble = Bubble("boss-bubble", out bossBubbleText);
+            storyBubble = Bubble("story-bubble", StoryScript.speaker, out storyBubbleText);
+            bossBubble = Bubble("boss-bubble", BossPortrait, out bossBubbleText);
             bossBubble.AddToClassList("story-bubble-boss");
         }
 
-        private VisualElement Bubble(string name, out Label text)
+        private VisualElement Bubble(string name, string speaker, out Label text)
         {
             var bubble = Box(overlay, "story-bubble"); bubble.name = name; bubble.pickingMode = PickingMode.Ignore;
+            StoryPortrait(bubble, speaker, "story-bubble-avatar", true);
             text = Text(bubble, "", "story-bubble-text", true);
             Box(bubble, "story-bubble-tail").pickingMode = PickingMode.Ignore;
             bubble.style.display = DisplayStyle.None;
@@ -154,7 +198,8 @@ namespace IdleClinic.App
             var prologue = beat.Kind == ClinicStoryBeatKind.Prologue;
             var queue = State.OpeningStep == ClinicOpeningStep.QueueArrivals || State.OpeningStep == ClinicOpeningStep.HireReceptionist;
             // While the first patients line up, a wider view that takes in the queue too.
-            world.FollowStory(prologue ? 1.9f : 2.4f, panel ? .70f : queue ? .60f : .63f, panel ? .36f : queue ? .56f : .46f, !ReducedMotion, queue);
+            // A medium view of the two of them in the room; their faces are in the portraits.
+            world.FollowStory(prologue ? 2.6f : 3.0f, panel ? .70f : queue ? .60f : .63f, panel ? .36f : queue ? .56f : .46f, !ReducedMotion, queue);
             var key = beat.Kind + ":" + beat.Index + ":" + beat.Line.id + ":" + panel;
             if (key != storyCameraKey) { storyCameraKey = key; world.ResumeStoryFollow(); }
         }
@@ -165,8 +210,12 @@ namespace IdleClinic.App
             var beat = storyBeat;
             var story = beat != null;
             guideCard.EnableInClassList("story-card", story);
-            guideGlyph.style.display = story ? DisplayStyle.None : DisplayStyle.Flex;
-            if (storyGlyph != null) storyGlyph.style.display = story ? DisplayStyle.Flex : DisplayStyle.None;
+            guideGlyph.parent.style.display = story ? DisplayStyle.None : DisplayStyle.Flex;
+            if (storyPortrait != null)
+            {
+                storyPortrait.style.display = story ? DisplayStyle.Flex : DisplayStyle.None;
+                if (story) SetStoryPortrait(storyPortrait, storyBeat.Speaker, false);
+            }
             ShowStorySkip(story && guideCard.style.display == DisplayStyle.Flex);
             if (!story) return false;
             var step = State.OpeningStep;
@@ -204,11 +253,19 @@ namespace IdleClinic.App
         private void BuildStoryQuote(VisualElement parent, ClinicStoryBeat beat)
         {
             var quote = Box(parent, "story-quote"); quote.name = "story-quote"; quote.pickingMode = PickingMode.Ignore;
-            var tile = Box(quote, "icon-tile story-tile"); tile.pickingMode = PickingMode.Ignore;
-            tile.Add(new ClinicIcon(ClinicGlyph.Nurse, 22, StoryInk) { pickingMode = PickingMode.Ignore });
+            StoryPortrait(quote, beat.Speaker, "story-quote-portrait", false).name = "story-quote-portrait";
             var words = Box(quote, "story-words"); words.pickingMode = PickingMode.Ignore;
             Text(words, beat.Speaker.ToUpperInvariant(), "eyebrow story-speaker", true);
             Text(words, "“" + beat.Text + "”", "story-line");
+        }
+
+        /// <summary>Above the answers: the boss's portrait and "You", so it is clear these are the player's words.</summary>
+        private void BuildStoryReplyHeader()
+        {
+            var row = Box(dock, "story-you"); row.name = "story-you"; row.pickingMode = PickingMode.Ignore;
+            StoryPortrait(row, BossPortrait, "story-you-portrait", true);
+            var name = Story != null && !string.IsNullOrEmpty(Story.bossName) ? " · " + BossName.ToUpperInvariant() : "";
+            Text(row, "YOU" + name, "eyebrow story-you-label", true);
         }
 
         /// <summary>The prologue in the opening panel: continue, the name question, or where to start.</summary>
@@ -221,6 +278,7 @@ namespace IdleClinic.App
                 next.name = "story-continue";
                 return;
             }
+            BuildStoryReplyHeader();
             for (var i = 0; i < beat.Replies.Count; i++)
             {
                 var reply = i;
@@ -230,6 +288,7 @@ namespace IdleClinic.App
 
         private void BuildNameQuestion(ClinicStoryBeat beat)
         {
+            BuildStoryReplyHeader();
             Text(dock, "Your name", "story-field-label", true);
             var field = new TextField { name = "story-name", maxLength = ClinicStory.MaximumNameLength, value = storyNameDraft ?? Story.bossName };
             field.AddToClassList("story-name-field");
@@ -254,6 +313,7 @@ namespace IdleClinic.App
         /// <summary>A step line with answers (hiring Maya, the receptionist): each answer starts the step's task.</summary>
         private void BuildStepAnswers(ClinicStoryBeat beat)
         {
+            BuildStoryReplyHeader();
             for (var i = 0; i < beat.Replies.Count; i++)
             {
                 var reply = i;
@@ -293,8 +353,8 @@ namespace IdleClinic.App
         {
             if (guideCard == null) return;
             guideCard.RemoveFromClassList("story-card");
-            guideGlyph.style.display = DisplayStyle.Flex;
-            if (storyGlyph != null) storyGlyph.style.display = DisplayStyle.None;
+            guideGlyph.parent.style.display = DisplayStyle.Flex;
+            if (storyPortrait != null) storyPortrait.style.display = DisplayStyle.None;
             ShowStorySkip(false);
         }
 
@@ -395,7 +455,9 @@ namespace IdleClinic.App
             foreach (var entry in entries)
             {
                 var bubble = Box(log, entry.Boss ? "story-entry story-entry-boss" : "story-entry"); bubble.pickingMode = PickingMode.Ignore;
-                Text(bubble, entry.Boss ? BossName : entry.Speaker, "story-entry-speaker", true);
+                var head = Box(bubble, "story-entry-head"); head.pickingMode = PickingMode.Ignore;
+                StoryPortrait(head, entry.Boss ? BossPortrait : entry.Speaker, "story-entry-avatar", true);
+                Text(head, entry.Boss ? BossName : entry.Speaker, "story-entry-speaker", true);
                 Text(bubble, entry.Text, "story-entry-text");
             }
             if (entries.Count == 0) Text(log, "The story starts when Maya knocks on your door.", "help-text");

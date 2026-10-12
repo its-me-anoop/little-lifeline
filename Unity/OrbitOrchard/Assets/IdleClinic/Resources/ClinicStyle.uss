@@ -543,3 +543,32 @@ Button:active { scale: .96 .96; }
 .story-log-note { margin: 0 2px 8px 2px; }
 .story-bubble-boss { background-color: rgb(253,243,214); border-bottom-color: rgb(226,206,150); }
 .story-bubble-boss .story-bubble-tail { background-color: rgb(253,243,214); }
+/* 4.3 (23), portraits: each speaker's painted portrait in the card, the panel, the bubbles and the story log. */
+.story-portrait { overflow: hidden; flex-shrink: 0; justify-content: center; align-items: stretch; border-radius: 16px; background-color: rgb(205,229,225); }
+.story-portrait-boss { background-color: rgb(244,228,190); }
+.story-portrait-image { flex-grow: 1; }
+.story-portrait-missing { align-items: center; }
+.story-portrait-glyph { width: 22px; height: 22px; }
+.story-card-portrait { width: 76px; height: 84px; margin: -6px 0 -6px -2px; border-radius: 18px; border-bottom-width: 3px; border-bottom-color: rgb(160,203,196); }
+.compact .story-card-portrait { width: 62px; height: 70px; }
+.story-card { min-height: 92px; }
+.story-card .guide-words { margin-left: 12px; }
+.story-card .guide-title { font-size: 17px; color: rgb(24,46,38); }
+.story-quote { align-items: center; padding: 10px 14px 10px 10px; }
+.story-quote-portrait { width: 68px; height: 76px; border-radius: 16px; border-bottom-width: 3px; border-bottom-color: rgb(160,203,196); }
+.compact .story-quote-portrait { width: 56px; height: 62px; }
+.story-quote .story-words { margin-left: 12px; }
+.story-quote .story-line { font-size: 17px; }
+.story-you { flex-direction: row; align-items: center; margin: 2px 2px 8px 2px; }
+.story-you-portrait { width: 36px; height: 36px; border-radius: 18px; border-width: 2px; border-color: rgb(226,196,120); }
+.story-you-label { margin-left: 8px; color: rgb(126,88,26); }
+.story-bubble { flex-direction: row; align-items: center; max-width: 248px; padding: 5px 12px 5px 5px; }
+.story-bubble-avatar { width: 28px; height: 28px; border-radius: 14px; margin-right: 8px; }
+.story-bubble-text { -unity-text-align: middle-left; flex-shrink: 1; }
+.story-bubble-waiting { padding: 6px 12px; }
+.story-bubble-waiting .story-bubble-avatar { display: none; }
+.story-bubble-waiting .story-bubble-text { -unity-text-align: middle-center; }
+.story-entry-head { flex-direction: row; align-items: center; margin-bottom: 2px; }
+.story-entry-boss .story-entry-head { flex-direction: row-reverse; }
+.story-entry-avatar { width: 22px; height: 22px; border-radius: 11px; margin-right: 6px; }
+.story-entry-boss .story-entry-avatar { margin-right: 0; margin-left: 6px; }
