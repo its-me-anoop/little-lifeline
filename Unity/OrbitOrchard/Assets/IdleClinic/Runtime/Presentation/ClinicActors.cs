@@ -330,11 +330,9 @@ namespace IdleClinic.Presentation
                     if(arm!=null&&states[5]!=null)
                     { departureWave=states[5];departureWave.AddMixingTransform(arm,true);departureWave.layer=1; }
                 }
+                // A forehead dressing and a relieved smile, laid on the face (shared style data, relative to the head bone).
                 relief=art.Group("Departure relief",root);
-                art.Box("Forehead dressing",relief,new Vector3(0,.075f,.164f),new Vector3(.135f,.065f,.027f),"Linen");
-                art.Box("Dressing pad",relief,new Vector3(.018f,.075f,.183f),new Vector3(.050f,.042f,.014f),"Apricot");
-                for(int i=-2;i<=2;i++)
-                    art.Box("Relieved smile",relief,new Vector3(i*.015f,-.074f+.006f*i*i,.163f),new Vector3(.019f,.011f,.011f),"Ink");
+                foreach(var shape in ClinicCharacterStyles.Current.relief.shapes)ClinicCharacterStyles.Build(art,relief,shape,"Hair");
                 relief.gameObject.SetActive(false);
             }
             return new Actor(root,animation,states,head,relief,departureWave,new ClinicAppearance(art,root,model=="Patient",role),model=="Patient"?new ClinicPatientEmoji(art,root,head):null);

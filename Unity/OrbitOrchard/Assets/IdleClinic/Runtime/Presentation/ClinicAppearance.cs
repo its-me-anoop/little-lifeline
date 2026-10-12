@@ -12,7 +12,7 @@ namespace IdleClinic.Presentation
         private static readonly float[] Heights={1,1.06f,.94f,1.03f,.97f,1.02f,.84f,1.10f,.92f,.96f,1.01f,.95f};
         private static readonly float[] Widths={1,1.05f,.94f,1.14f,.96f,1.07f,.87f,1.04f,1.05f,.98f,1.12f,.93f};
         private readonly Transform root,head,chest,headwear,bodywear;
-        private readonly GameObject[] variants=new GameObject[12];
+        private readonly GameObject[] variants=new GameObject[12],bodyVariants=new GameObject[12];
         private readonly Renderer skin;
         private readonly Material[][] materials=new Material[12][];
         // Training shows on the uniform: a dot for each level within a band of five, a star for each full band,
@@ -22,90 +22,70 @@ namespace IdleClinic.Presentation
         private static readonly string[] RankColours={"Chrome","Gold","SignBlue","Rose"};
         private readonly bool patient;
         private int current=-1;
-        private const float HeadScale=.66f;
         internal ClinicAppearance(ClinicArt art,Transform root,bool patient,ClinicStaffRole role=ClinicStaffRole.Nurse)
         {
             this.root=root;this.patient=patient;skin=root.GetComponentInChildren<SkinnedMeshRenderer>();
             var rig=skin as SkinnedMeshRenderer;if(rig!=null){head=Array.Find(rig.bones,b=>b.name=="head");chest=Array.Find(rig.bones,b=>b.name=="chest");}
             headwear=art.Group("Character head accessories",root);bodywear=art.Group("Character body accessories",root);
-            // Accessories were authored for the earlier, larger heads; adult-proportioned heads are two-thirds that size.
-            headwear.localScale=Vector3.one*HeadScale;
+            var styles=ClinicCharacterStyles.Current;
             var originals=skin==null?Array.Empty<Material>():skin.sharedMaterials;
+            // Staff trousers follow the role: matching scrubs for nurses, dark for everyone else.
+            string staffTrousers=role==ClinicStaffRole.Nurse?"Blue":role==ClinicStaffRole.Doctor?"Slate":"Ink";
             for(int appearance=0;appearance<12;appearance++)
             {
+                var hair=styles.Hair(appearance);
                 materials[appearance]=new Material[originals.Length];
                 for(int slot=0;slot<originals.Length;slot++)
                 {
                     string name=originals[slot]==null?"":originals[slot].name;
-                    materials[appearance][slot]=name=="Clinic Skin"?art.Material(Skins[appearance]):patient&&name=="Clinic Apricot"?art.Material(Clothes[appearance]):!patient&&(name=="Clinic Sage"||name=="Clinic Apricot"||name=="Clinic Blue")&&role==ClinicStaffRole.Doctor?art.Material("Linen"):!patient&&(name=="Clinic Sage"||name=="Clinic Apricot"||name=="Clinic Blue")&&role==ClinicStaffRole.Pharmacist?art.Material("SageDark"):originals[slot];
+                    bool uniform=name=="Clinic Sage"||name=="Clinic Apricot"||name=="Clinic Blue";
+                    materials[appearance][slot]=name=="Clinic Skin"?art.Material(Skins[appearance])
+                        :name=="Clinic Hair"?art.Material(hair)
+                        :name=="Clinic Trousers"?art.Material(patient?styles.Trousers(appearance):staffTrousers)
+                        :patient&&name=="Clinic Apricot"?art.Material(Clothes[appearance])
+                        :!patient&&uniform&&role==ClinicStaffRole.Doctor?art.Material("Linen")
+                        :!patient&&uniform&&role==ClinicStaffRole.Pharmacist?art.Material("SageDark"):originals[slot];
                 }
                 var variant=art.Group("Appearance silhouette "+appearance,headwear);variants[appearance]=variant.gameObject;
-                if(appearance==1||appearance==3||appearance==7)
+                foreach(var group in styles.headwear)
                 {
-                    for(int curl=0;curl<4;curl++)art.Orb("Textured hair curl",variant,new Vector3((curl%2-.5f)*.17f,.14f+(curl/2)*.045f,-.04f),new Vector3(.20f,.15f,.19f),appearance==3?"HairChestnut":"Ink");
-                }
-                if(appearance==2||appearance==4||appearance==10)
-                {
-                    art.Orb("Swept hair",variant,new Vector3(0,.12f,-.06f),new Vector3(.35f,.18f,.33f),appearance==4?"HairGold":"HairChestnut");
-                    art.Orb(appearance==4?"Long ponytail":"Hair bun",variant,new Vector3(.02f,appearance==4?-.06f:.13f,-.20f),new Vector3(.17f,appearance==4?.39f:.21f,.19f),appearance==4?"HairGold":"HairChestnut");
-                }
-                if(appearance==5||appearance==11)
-                {
-                    art.Orb("Head scarf",variant,new Vector3(0,.08f,-.045f),new Vector3(.37f,.33f,.33f),appearance==5?"Rose":"Mustard");
-                    art.Box("Scarf tail",variant,new Vector3(.10f,-.19f,-.12f),new Vector3(.17f,.32f,.13f),appearance==5?"Rose":"Mustard");
-                }
-                if(appearance==6)
-                {
-                    art.Orb("Visitor cap",variant,new Vector3(0,.14f,0),new Vector3(.37f,.17f,.35f),"Blue");
-                    art.Box("Visitor cap brim",variant,new Vector3(0,.105f,.19f),new Vector3(.31f,.045f,.19f),"Blue");
-                }
-                if(appearance==8||appearance==9)
-                {
-                    art.Orb("Silver hair",variant,new Vector3(0,.135f,-.015f),new Vector3(.34f,.18f,.31f),"HairSilver");
-                    if(appearance==9)art.Orb("Silver hair bun",variant,new Vector3(0,.12f,-.19f),new Vector3(.19f,.20f,.18f),"HairSilver");
-                    else art.Orb("Silver beard",variant,new Vector3(0,-.11f,.08f),new Vector3(.21f,.17f,.17f),"HairSilver");
-                }
-                if(appearance==1||appearance==8||appearance==9||appearance==10)
-                {
-                    for(int side=-1;side<=1;side+=2)
-                    {
-                        art.Box("Spectacle top",variant,new Vector3(side*.072f,.041f,.167f),new Vector3(.115f,.015f,.019f),"Wood");
-                        art.Box("Spectacle bottom",variant,new Vector3(side*.072f,-.019f,.167f),new Vector3(.115f,.012f,.019f),"Wood");
-                        for(int edge=-1;edge<=1;edge+=2)art.Box("Spectacle edge",variant,new Vector3(side*.072f+edge*.054f,.009f,.167f),new Vector3(.011f,.072f,.019f),"Wood");
-                    }
-                    art.Box("Spectacle bridge",variant,new Vector3(0,.018f,.172f),new Vector3(.04f,.014f,.02f),"Gold");
+                    if((group.patientsOnly&&!patient)||!ClinicCharacterStyles.Includes(group,appearance))continue;
+                    foreach(var shape in group.shapes)ClinicCharacterStyles.Build(art,variant,shape,hair);
                 }
                 variant.gameObject.SetActive(false);
+                if(patient)
+                {
+                    var outfit=art.Group("Appearance outfit "+appearance,bodywear);bodyVariants[appearance]=outfit.gameObject;
+                    foreach(var group in styles.bodywear)
+                        if(group.who=="Patient"&&group.appearances!=null&&Array.IndexOf(group.appearances,appearance)>=0)
+                            foreach(var shape in group.shapes)ClinicCharacterStyles.Build(art,outfit,shape,hair);
+                    outfit.gameObject.SetActive(false);
+                }
             }
-            if(patient)
+            if(!patient)
             {
-                art.Box("Visitor backpack",bodywear,new Vector3(0,.98f,-.165f),new Vector3(.27f,.34f,.14f),"Wood");
-                art.Box("Backpack pocket",bodywear,new Vector3(0,.91f,-.245f),new Vector3(.20f,.13f,.035f),"Gold");
-                for(int side=-1;side<=1;side+=2)art.Box("Backpack strap",bodywear,new Vector3(side*.085f,1.06f,.105f),new Vector3(.028f,.26f,.012f),"Wood");
-            }
-            else
-            {
-                for(int i=0;i<trainingDots.Length;i++)trainingDots[i]=art.Box("Staff training dot",bodywear,new Vector3(-.125f+i*.035f,1.165f,.112f),new Vector3(.024f,.024f,.014f),"Gold");
+                // Training marks lie on the uniform: their depth follows the torso surface they sit on.
+                for(int i=0;i<trainingDots.Length;i++)
+                {
+                    float x=-.100f+i*.025f,y=1.120f;
+                    trainingDots[i]=art.Box("Staff training dot",bodywear,new Vector3(x,y,styles.TorsoFront(x,y)+.008f),new Vector3(.020f,.020f,.014f),"Gold");
+                }
                 for(int i=0;i<trainingStars.Length;i++)
                 {
-                    var star=art.Box("Staff training star",bodywear,new Vector3(.02f+(i%5)*.032f,1.19f-(i/5)*.036f,.113f),new Vector3(.022f,.022f,.012f),"Gold");
+                    float x=.028f+(i%5)*.021f,y=1.135f-(i/5)*.030f;
+                    var star=art.Box("Staff training star",bodywear,new Vector3(x,y,styles.TorsoFront(x,y)+.007f),new Vector3(.018f,.018f,.012f),"Gold");
                     star.transform.localRotation=Quaternion.Euler(0,0,45);trainingStars[i]=star;
                 }
                 for(int rank=0;rank<shoulderRanks.Length;rank++)
                 {
                     var boards=art.Group("Shoulder boards rank "+(rank+1),bodywear);shoulderRanks[rank]=boards.gameObject;
-                    for(int side=-1;side<=1;side+=2)art.Box("Shoulder board",boards,new Vector3(side*.135f,1.235f,0),new Vector3(.07f,.018f,.12f),RankColours[rank]);
+                    for(int side=-1;side<=1;side+=2)art.Box("Shoulder board",boards,new Vector3(side*.150f,1.200f,-.004f),new Vector3(.070f,.016f,.110f),RankColours[rank]);
                     boards.gameObject.SetActive(false);
                 }
-                if(role==ClinicStaffRole.Doctor)
-                {
-                    for(int side=-1;side<=1;side+=2)art.Box("Doctor coat lapel",bodywear,new Vector3(side*.06f,1.10f,.112f),new Vector3(.05f,.22f,.014f),"Linen");
-                    art.Box("Doctor coat hem",bodywear,new Vector3(0,.76f,.005f),new Vector3(.31f,.14f,.21f),"Linen");
-                    art.Orb("Doctor stethoscope diaphragm",bodywear,new Vector3(.07f,.97f,.12f),new Vector3(.045f,.045f,.02f),"Gold");
-                    for(int side=-1;side<=1;side+=2)art.Box("Doctor stethoscope tube",bodywear,new Vector3(side*.045f,1.10f,.118f),new Vector3(.014f,.22f,.014f),"Ink");
-                }
-                if(role==ClinicStaffRole.Pharmacist)
-                {art.Box("Pharmacist name badge",bodywear,new Vector3(.09f,1.10f,.113f),new Vector3(.08f,.07f,.012f),"Linen");art.Box("Pharmacist badge cross",bodywear,new Vector3(.09f,1.10f,.121f),new Vector3(.05f,.016f,.008f),"Sage");art.Box("Pharmacist badge cross",bodywear,new Vector3(.09f,1.10f,.124f),new Vector3(.016f,.05f,.008f),"Sage");}
+                var who=role==ClinicStaffRole.Doctor?"Doctor":role==ClinicStaffRole.Pharmacist?"Pharmacist":null;
+                if(who!=null)
+                    foreach(var group in styles.bodywear)
+                        if(group.who==who)foreach(var shape in group.shapes)ClinicCharacterStyles.Build(art,bodywear,shape,"Hair");
             }
         }
         internal void Apply(int appearance,int trainingLevel=1)
@@ -116,7 +96,7 @@ namespace IdleClinic.Presentation
                 current=appearance;if(skin!=null)skin.sharedMaterials=materials[appearance];
                 for(int i=0;i<variants.Length;i++)variants[i].SetActive(i==appearance);
                 root.localScale=patient?new Vector3(Widths[appearance],Heights[appearance],Widths[appearance]):Vector3.one;
-                if(patient)bodywear.gameObject.SetActive(appearance==6||appearance==7);
+                if(patient)for(int i=0;i<bodyVariants.Length;i++)if(bodyVariants[i]!=null)bodyVariants[i].SetActive(i==appearance);
             }
             if(!patient)
             {

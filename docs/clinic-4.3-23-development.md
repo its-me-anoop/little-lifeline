@@ -70,11 +70,32 @@ build, raise the build number before any upload.
   handling are unchanged. No discounts, timers, scarcity or best-value claims were added.
 - The shop shows today's free gems and where they come from.
 
+### Characters (separate visual checkpoint)
+
+- **One continuous, smoothly skinned body per character** instead of separate rigid pieces: torso, neck, arms and legs
+  are lofted and bend at the joints (two bone influences per vertex), so there are no gaps at shoulders, hips or elbows.
+- **Faces that read**: eye whites with irises, brows, a smaller nose, lips and ears, on a head shaped with a jaw and chin.
+- **Hair and trousers per person**: new `Hair` and `Trousers` material slots, tinted by the game from
+  `Resources/ClinicCharacterStyles.json` (black, chestnut, gold or silver hair; denim, chinos, grey, black or green
+  trousers). Nurses' trousers now match their scrubs; doctors wear grey, everyone else dark trousers.
+- **Clothing**: patients wear a hoodie (hood, drawstrings, pocket, ribbed hem and cuffs) with sneakers; receptionists a
+  blazer with shirt, lapels, cuffs, belt and badge with leather shoes; nurses short-sleeved scrubs with a V-neck, pocket,
+  pen and badge with clogs.
+- **Headwear refitted to the new head** (curls, buns, ponytail, head scarves, visitor cap, silver hair, beard,
+  spectacles) and bodywear (backpack, doctor's coat, pharmacist badge, staff training marks) laid on the torso surface;
+  the visitor cap is for visitors only. The departure dressing and smile sit on the face.
+- **Animation**: the walk keeps its 1.08 m cycle but plants the stance foot, rolls heel to toe, bends the knee and elbow
+  (fixed limb lengths), bobs and sways the pelvis and counter-swings the arms; idle breathes and shifts weight; work
+  poses lean in. Bones, rest pose, clip names and lengths, sockets and seated heights are unchanged.
+- **Materials**: a soft sheen on skin, lips and hair; cloth stays matte. About 2,950 vertices and 7 to 10 flat-colour
+  materials per model (was about 3,100 and 5 to 8); no textures, no paid or downloaded assets.
+
 ### Not changed
 
-Scene layout and presentation code: separate nursing stations, the open L-shaped reception and waiting area, the
-five-patient check-in queue, chairs facing the nursing rooms, the glass front wall and angry departures are as inherited
-(no file under `Runtime/Presentation` or `Scenes` changed). Audio code is unchanged.
+Scene layout: separate nursing stations, the open L-shaped reception and waiting area, the five-patient check-in
+queue, chairs facing the nursing rooms, the glass front wall and angry departures are as inherited (the scene and room
+presentation are untouched; presentation changes are limited to the characters and the boss's walk timing). Audio code
+is unchanged.
 
 ### Saves and migration
 
@@ -112,7 +133,8 @@ five-patient check-in queue, chairs facing the nursing rooms, the glass front wa
 | Unity EditMode | `d84ac3e`, reviewer run | 638 passed, 0 failed, 0 skipped, exit 0 (276 s) |
 | Unity EditMode | `8c9d3fa`, reviewer run with `run_editmode_tests.sh` | 657 passed, 0 failed, exit 0 (399.8 s) |
 | Unity EditMode | `0ad88d8`, reviewer run | 678 total: 671 passed, **7 failed** (6 HUD accessibility fixtures: null gem-confirmation node; boss nursing door), exit 2 |
-| Unity EditMode | the correction after `0ad88d8` | **pending** |
+| Unity EditMode | `6da17d3` (7 fixes), reviewer run | 681 passed, 0 failed; native Xcode build succeeded |
+| Unity EditMode | the character checkpoint | **pending** |
 | Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 228 passed, 0 failed (subset; not a substitute for Unity) |
 | Release tooling `Tools/tests` | unchanged by this work | host baseline 105 passed (Blender Python 3.11); Linux Python 3.13: 92 passed, 1 skipped, 1 macOS-only `xcrun` error |
 | Simulator export and Xcode build | `d84ac3e`, reviewer | succeeded; launch on the QA review simulator logged no FMOD or CoreAudio errors |
@@ -120,7 +142,7 @@ five-patient check-in queue, chairs facing the nursing rooms, the glass front wa
 
 New tests: `ClinicGuideTests`, `ClinicDailyTests`, `ClinicOpeningPacingTests`, `ClinicProgressionPacingTests`,
 `ClinicImprovementTests` (Core); `ClinicGuideSkipTests`, `ClinicDailyGoalTests`, `ClinicGemSpendTests`,
-`ClinicQaDoctorsTests` (profile); `ClinicModalPolicyTests` (editor). They cover skipping and resuming lessons, legacy
+`ClinicQaDoctorsTests` (profile); `ClinicModalPolicyTests`, `ClinicCharacterTests` (editor). They cover skipping and resuming lessons, legacy
 claims, failed saves, frozen and achievable goals, midnight, the once-only bonus, every gem confirmation case above,
 the QA identity rule, measured pacing and the QA doctors clinic.
 
@@ -148,7 +170,9 @@ Store status line instead).
 1. **No runtime verification by me yet.** The confirmation sheet on compact and short viewports, safe areas, the skip,
    help and next-goal controls, VoiceOver isolation and the welcome-back flow are tested only in code. The reviewer's
    simulator runs and screenshots are the evidence still needed.
-2. Official Unity results for the correction after `0ad88d8` are pending; `0ad88d8` itself failed 7 Editor tests (fixed in code, not yet re-run in Unity).
+2. Official Unity results for the character checkpoint are pending. `6da17d3` (the fixes for `0ad88d8`'s 7 Editor
+   failures) passed 681 of 681 with a native build. The new characters are reviewed only in Blender previews so far
+   (`Tools/qa/render_characters.py`); how they look and perform in the game on a phone is not yet verified.
 3. Cash purchase flow not exercised: needs the Xcode run with the local StoreKit configuration (see above).
 4. The earlier simulator CoreAudio/FMOD startup crash was not reproduced in the reviewer's `d84ac3e` launch and was not
    changed or fixed; it remains open until a run shows otherwise.

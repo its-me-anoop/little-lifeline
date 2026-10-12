@@ -1,0 +1,1122 @@
+{
+  "note": "Shared by the game (ClinicAppearance) and the Blender tools (Tools/clinic_characters.py, Tools/qa/render_characters.py). Positions are metres in the Unity frame: headwear relative to the head bone, torso rings from the floor. Roles starting with @ take the person's hair colour.",
+  "torso": [
+    {
+      "y": 0.65,
+      "halfWidth": 0.07,
+      "halfDepth": 0.06,
+      "front": 0.0
+    },
+    {
+      "y": 0.68,
+      "halfWidth": 0.122,
+      "halfDepth": 0.084,
+      "front": 0.0
+    },
+    {
+      "y": 0.715,
+      "halfWidth": 0.15,
+      "halfDepth": 0.094,
+      "front": 0.0
+    },
+    {
+      "y": 0.76,
+      "halfWidth": 0.157,
+      "halfDepth": 0.098,
+      "front": 0.0
+    },
+    {
+      "y": 0.81,
+      "halfWidth": 0.15,
+      "halfDepth": 0.094,
+      "front": 0.002
+    },
+    {
+      "y": 0.86,
+      "halfWidth": 0.141,
+      "halfDepth": 0.091,
+      "front": 0.004
+    },
+    {
+      "y": 0.92,
+      "halfWidth": 0.14,
+      "halfDepth": 0.092,
+      "front": 0.006
+    },
+    {
+      "y": 0.99,
+      "halfWidth": 0.15,
+      "halfDepth": 0.098,
+      "front": 0.008
+    },
+    {
+      "y": 1.06,
+      "halfWidth": 0.163,
+      "halfDepth": 0.103,
+      "front": 0.009
+    },
+    {
+      "y": 1.11,
+      "halfWidth": 0.174,
+      "halfDepth": 0.103,
+      "front": 0.006
+    },
+    {
+      "y": 1.15,
+      "halfWidth": 0.184,
+      "halfDepth": 0.098,
+      "front": 0.0
+    },
+    {
+      "y": 1.18,
+      "halfWidth": 0.17,
+      "halfDepth": 0.09,
+      "front": 0.0
+    },
+    {
+      "y": 1.205,
+      "halfWidth": 0.14,
+      "halfDepth": 0.082,
+      "front": 0.0
+    },
+    {
+      "y": 1.228,
+      "halfWidth": 0.104,
+      "halfDepth": 0.07,
+      "front": 0.0
+    },
+    {
+      "y": 1.248,
+      "halfWidth": 0.068,
+      "halfDepth": 0.056,
+      "front": 0.0
+    },
+    {
+      "y": 1.262,
+      "halfWidth": 0.054,
+      "halfDepth": 0.05,
+      "front": 0.0
+    }
+  ],
+  "hairRoles": [
+    "Hair",
+    "Hair",
+    "HairChestnut",
+    "HairChestnut",
+    "HairGold",
+    "Hair",
+    "HairChestnut",
+    "Hair",
+    "HairSilver",
+    "HairSilver",
+    "HairChestnut",
+    "Hair"
+  ],
+  "trouserRoles": [
+    "Denim",
+    "Ink",
+    "Clay",
+    "Denim",
+    "Slate",
+    "Timber",
+    "Denim",
+    "Ink",
+    "Slate",
+    "Clay",
+    "Denim",
+    "SageDark"
+  ],
+  "headwear": [
+    {
+      "appearances": [
+        1,
+        3,
+        7
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.147,
+            "z": 0.062
+          },
+          "size": {
+            "x": 0.095,
+            "y": 0.085,
+            "z": 0.095
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.16,
+            "z": 0.01
+          },
+          "size": {
+            "x": 0.1,
+            "y": 0.09,
+            "z": 0.1
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": -0.078,
+            "y": 0.122,
+            "z": 0.04
+          },
+          "size": {
+            "x": 0.09,
+            "y": 0.09,
+            "z": 0.09
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.078,
+            "y": 0.122,
+            "z": 0.04
+          },
+          "size": {
+            "x": 0.09,
+            "y": 0.09,
+            "z": 0.09
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": -0.072,
+            "y": 0.104,
+            "z": -0.056
+          },
+          "size": {
+            "x": 0.095,
+            "y": 0.095,
+            "z": 0.095
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.072,
+            "y": 0.104,
+            "z": -0.056
+          },
+          "size": {
+            "x": 0.095,
+            "y": 0.095,
+            "z": 0.095
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.094,
+            "z": -0.09
+          },
+          "size": {
+            "x": 0.1,
+            "y": 0.095,
+            "z": 0.09
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": -0.064,
+            "y": 0.04,
+            "z": -0.09
+          },
+          "size": {
+            "x": 0.085,
+            "y": 0.085,
+            "z": 0.085
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Textured hair curl",
+          "role": "@hair",
+          "position": {
+            "x": 0.064,
+            "y": 0.04,
+            "z": -0.09
+          },
+          "size": {
+            "x": 0.085,
+            "y": 0.085,
+            "z": 0.085
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        2,
+        10
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Swept hair",
+          "role": "@hair",
+          "position": {
+            "x": 0.006,
+            "y": 0.138,
+            "z": 0.006
+          },
+          "size": {
+            "x": 0.236,
+            "y": 0.09,
+            "z": 0.252
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Hair bun",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.118,
+            "z": -0.118
+          },
+          "size": {
+            "x": 0.1,
+            "y": 0.1,
+            "z": 0.1
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        4
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Swept hair",
+          "role": "@hair",
+          "position": {
+            "x": 0.006,
+            "y": 0.138,
+            "z": 0.006
+          },
+          "size": {
+            "x": 0.236,
+            "y": 0.09,
+            "z": 0.252
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Long ponytail",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.01,
+            "z": -0.124
+          },
+          "size": {
+            "x": 0.072,
+            "y": 0.23,
+            "z": 0.072
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Ponytail band",
+          "role": "Rose",
+          "position": {
+            "x": 0.0,
+            "y": 0.112,
+            "z": -0.118
+          },
+          "size": {
+            "x": 0.048,
+            "y": 0.03,
+            "z": 0.048
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        5
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Head scarf",
+          "role": "Rose",
+          "position": {
+            "x": 0.0,
+            "y": 0.08,
+            "z": -0.012
+          },
+          "size": {
+            "x": 0.262,
+            "y": 0.3,
+            "z": 0.252
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Scarf tail",
+          "role": "Rose",
+          "position": {
+            "x": 0.06,
+            "y": -0.1,
+            "z": -0.095
+          },
+          "size": {
+            "x": 0.1,
+            "y": 0.18,
+            "z": 0.06
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        11
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Head scarf",
+          "role": "Mustard",
+          "position": {
+            "x": 0.0,
+            "y": 0.08,
+            "z": -0.012
+          },
+          "size": {
+            "x": 0.262,
+            "y": 0.3,
+            "z": 0.252
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Scarf tail",
+          "role": "Mustard",
+          "position": {
+            "x": 0.06,
+            "y": -0.1,
+            "z": -0.095
+          },
+          "size": {
+            "x": 0.1,
+            "y": 0.18,
+            "z": 0.06
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        6
+      ],
+      "patientsOnly": true,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Visitor cap",
+          "role": "Blue",
+          "position": {
+            "x": 0.0,
+            "y": 0.142,
+            "z": 0.018
+          },
+          "size": {
+            "x": 0.238,
+            "y": 0.104,
+            "z": 0.248
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Visitor cap brim",
+          "role": "Blue",
+          "position": {
+            "x": 0.0,
+            "y": 0.112,
+            "z": 0.138
+          },
+          "size": {
+            "x": 0.18,
+            "y": 0.018,
+            "z": 0.1
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        8
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Silver hair",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.136,
+            "z": 0.004
+          },
+          "size": {
+            "x": 0.228,
+            "y": 0.074,
+            "z": 0.244
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Silver beard",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": -0.066,
+            "z": 0.062
+          },
+          "size": {
+            "x": 0.15,
+            "y": 0.09,
+            "z": 0.112
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        9
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Orb",
+          "name": "Silver hair",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.136,
+            "z": 0.004
+          },
+          "size": {
+            "x": 0.228,
+            "y": 0.074,
+            "z": 0.244
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Silver hair bun",
+          "role": "@hair",
+          "position": {
+            "x": 0.0,
+            "y": 0.114,
+            "z": -0.116
+          },
+          "size": {
+            "x": 0.092,
+            "y": 0.092,
+            "z": 0.092
+          }
+        }
+      ]
+    },
+    {
+      "appearances": [
+        1,
+        8,
+        9,
+        10
+      ],
+      "patientsOnly": false,
+      "shapes": [
+        {
+          "shape": "Box",
+          "name": "Spectacle top",
+          "role": "Ink",
+          "position": {
+            "x": -0.037,
+            "y": 0.051,
+            "z": 0.129
+          },
+          "size": {
+            "x": 0.044,
+            "y": 0.0055,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle top",
+          "role": "Ink",
+          "position": {
+            "x": 0.037,
+            "y": 0.051,
+            "z": 0.129
+          },
+          "size": {
+            "x": 0.044,
+            "y": 0.0055,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle bottom",
+          "role": "Ink",
+          "position": {
+            "x": -0.037,
+            "y": 0.025,
+            "z": 0.128
+          },
+          "size": {
+            "x": 0.044,
+            "y": 0.005,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle bottom",
+          "role": "Ink",
+          "position": {
+            "x": 0.037,
+            "y": 0.025,
+            "z": 0.128
+          },
+          "size": {
+            "x": 0.044,
+            "y": 0.005,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle edge",
+          "role": "Ink",
+          "position": {
+            "x": -0.059,
+            "y": 0.038,
+            "z": 0.122
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.031,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle edge",
+          "role": "Ink",
+          "position": {
+            "x": -0.015,
+            "y": 0.038,
+            "z": 0.131
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.031,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle edge",
+          "role": "Ink",
+          "position": {
+            "x": 0.015,
+            "y": 0.038,
+            "z": 0.131
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.031,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle edge",
+          "role": "Ink",
+          "position": {
+            "x": 0.059,
+            "y": 0.038,
+            "z": 0.122
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.031,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle bridge",
+          "role": "Gold",
+          "position": {
+            "x": 0.0,
+            "y": 0.043,
+            "z": 0.133
+          },
+          "size": {
+            "x": 0.022,
+            "y": 0.005,
+            "z": 0.006
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle arm",
+          "role": "Ink",
+          "position": {
+            "x": -0.075,
+            "y": 0.046,
+            "z": 0.07
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.006,
+            "z": 0.11
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Spectacle arm",
+          "role": "Ink",
+          "position": {
+            "x": 0.075,
+            "y": 0.046,
+            "z": 0.07
+          },
+          "size": {
+            "x": 0.005,
+            "y": 0.006,
+            "z": 0.11
+          }
+        }
+      ]
+    }
+  ],
+  "bodywear": [
+    {
+      "who": "Patient",
+      "appearances": [
+        6,
+        7
+      ],
+      "shapes": [
+        {
+          "shape": "Box",
+          "name": "Visitor backpack",
+          "role": "Wood",
+          "position": {
+            "x": 0,
+            "y": 0.98,
+            "z": -0.166
+          },
+          "size": {
+            "x": 0.27,
+            "y": 0.34,
+            "z": 0.14
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack pocket",
+          "role": "Gold",
+          "position": {
+            "x": 0,
+            "y": 0.91,
+            "z": -0.244
+          },
+          "size": {
+            "x": 0.2,
+            "y": 0.13,
+            "z": 0.035
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": -0.085,
+            "y": 0.975,
+            "z": 0.102
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.1,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": 0.085,
+            "y": 0.975,
+            "z": 0.102
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.1,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": -0.085,
+            "y": 1.07,
+            "z": 0.102
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.1,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": 0.085,
+            "y": 1.07,
+            "z": 0.102
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.1,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": -0.085,
+            "y": 1.16,
+            "z": 0.09
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.09,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Backpack strap",
+          "role": "Wood",
+          "position": {
+            "x": 0.085,
+            "y": 1.16,
+            "z": 0.09
+          },
+          "size": {
+            "x": 0.028,
+            "y": 0.09,
+            "z": 0.012
+          }
+        }
+      ]
+    },
+    {
+      "who": "Doctor",
+      "appearances": [],
+      "shapes": [
+        {
+          "shape": "Box",
+          "name": "Doctor coat lapel",
+          "role": "Linen",
+          "position": {
+            "x": -0.06,
+            "y": 1.07,
+            "z": 0.111
+          },
+          "size": {
+            "x": 0.05,
+            "y": 0.16,
+            "z": 0.014
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Doctor coat lapel",
+          "role": "Linen",
+          "position": {
+            "x": 0.06,
+            "y": 1.07,
+            "z": 0.111
+          },
+          "size": {
+            "x": 0.05,
+            "y": 0.16,
+            "z": 0.014
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Doctor coat hem",
+          "role": "Linen",
+          "position": {
+            "x": 0,
+            "y": 0.76,
+            "z": 0.005
+          },
+          "size": {
+            "x": 0.33,
+            "y": 0.16,
+            "z": 0.215
+          }
+        },
+        {
+          "shape": "Orb",
+          "name": "Doctor stethoscope diaphragm",
+          "role": "Gold",
+          "position": {
+            "x": 0.07,
+            "y": 0.97,
+            "z": 0.102
+          },
+          "size": {
+            "x": 0.045,
+            "y": 0.045,
+            "z": 0.02
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Doctor stethoscope tube",
+          "role": "Ink",
+          "position": {
+            "x": -0.045,
+            "y": 1.06,
+            "z": 0.108
+          },
+          "size": {
+            "x": 0.014,
+            "y": 0.16,
+            "z": 0.014
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Doctor stethoscope tube",
+          "role": "Ink",
+          "position": {
+            "x": 0.045,
+            "y": 1.06,
+            "z": 0.108
+          },
+          "size": {
+            "x": 0.014,
+            "y": 0.16,
+            "z": 0.014
+          }
+        }
+      ]
+    },
+    {
+      "who": "Pharmacist",
+      "appearances": [],
+      "shapes": [
+        {
+          "shape": "Box",
+          "name": "Pharmacist name badge",
+          "role": "Linen",
+          "position": {
+            "x": 0.09,
+            "y": 1.1,
+            "z": 0.1
+          },
+          "size": {
+            "x": 0.08,
+            "y": 0.07,
+            "z": 0.012
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Pharmacist badge cross",
+          "role": "Sage",
+          "position": {
+            "x": 0.09,
+            "y": 1.1,
+            "z": 0.109
+          },
+          "size": {
+            "x": 0.05,
+            "y": 0.016,
+            "z": 0.008
+          }
+        },
+        {
+          "shape": "Box",
+          "name": "Pharmacist badge cross",
+          "role": "Sage",
+          "position": {
+            "x": 0.09,
+            "y": 1.1,
+            "z": 0.11
+          },
+          "size": {
+            "x": 0.016,
+            "y": 0.05,
+            "z": 0.008
+          }
+        }
+      ]
+    }
+  ],
+  "relief": {
+    "note": "Departing patients: a forehead dressing and a relieved smile, relative to the head bone.",
+    "shapes": [
+      {
+        "shape": "Box",
+        "name": "Forehead dressing",
+        "role": "Linen",
+        "position": {
+          "x": 0,
+          "y": 0.085,
+          "z": 0.1335
+        },
+        "size": {
+          "x": 0.135,
+          "y": 0.065,
+          "z": 0.027
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Dressing pad",
+        "role": "Apricot",
+        "position": {
+          "x": 0.018,
+          "y": 0.085,
+          "z": 0.1505
+        },
+        "size": {
+          "x": 0.05,
+          "y": 0.042,
+          "z": 0.014
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Relieved smile",
+        "role": "Ink",
+        "position": {
+          "x": -0.024,
+          "y": -0.023999999999999997,
+          "z": 0.1175
+        },
+        "size": {
+          "x": 0.016,
+          "y": 0.009,
+          "z": 0.008
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Relieved smile",
+        "role": "Ink",
+        "position": {
+          "x": -0.012,
+          "y": -0.032999999999999995,
+          "z": 0.1175
+        },
+        "size": {
+          "x": 0.016,
+          "y": 0.009,
+          "z": 0.008
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Relieved smile",
+        "role": "Ink",
+        "position": {
+          "x": 0.0,
+          "y": -0.036,
+          "z": 0.1175
+        },
+        "size": {
+          "x": 0.016,
+          "y": 0.009,
+          "z": 0.008
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Relieved smile",
+        "role": "Ink",
+        "position": {
+          "x": 0.012,
+          "y": -0.032999999999999995,
+          "z": 0.1175
+        },
+        "size": {
+          "x": 0.016,
+          "y": 0.009,
+          "z": 0.008
+        }
+      },
+      {
+        "shape": "Box",
+        "name": "Relieved smile",
+        "role": "Ink",
+        "position": {
+          "x": 0.024,
+          "y": -0.023999999999999997,
+          "z": 0.1175
+        },
+        "size": {
+          "x": 0.016,
+          "y": 0.009,
+          "z": 0.008
+        }
+      }
+    ]
+  }
+}

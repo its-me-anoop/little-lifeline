@@ -63,6 +63,10 @@ namespace IdleClinic.Presentation
             if(role=="Glow"||role=="Aqua")return .6f;
             if(role.StartsWith("Car",StringComparison.Ordinal))return .58f;
             if(role=="LampLight"||role=="TailLight")return .6f;
+            // Characters: a soft sheen on skin, lips and hair; cloth stays matte.
+            if(role=="Skin"||role.StartsWith("Skin",StringComparison.Ordinal))return .30f;
+            if(role=="Hair"||role.StartsWith("Hair",StringComparison.Ordinal))return .34f;
+            if(role=="Lip")return .38f;
             return role=="Gold"?.40f:.19f;
         }
         internal static Color Color(string role)
@@ -124,6 +128,10 @@ namespace IdleClinic.Presentation
                 case "Rose":return new Color(.68f,.37f,.38f);
                 case "Mustard":return new Color(.71f,.55f,.24f);
                 case "Denim":return new Color(.30f,.42f,.51f);
+                // Characters: base hair, lips and the default trousers (the game tints hair and trousers per person).
+                case "Hair":return new Color(.16f,.12f,.10f);
+                case "Lip":return new Color(.62f,.33f,.30f);
+                case "Trousers":return new Color(.20f,.24f,.27f);
                 case "HairSilver":return new Color(.69f,.70f,.64f);
                 case "HairChestnut":return new Color(.34f,.22f,.17f);
                 case "HairGold":return new Color(.66f,.48f,.25f);

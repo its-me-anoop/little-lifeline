@@ -12,9 +12,17 @@ from mathutils import Vector, Matrix
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "Unity/OrbitOrchard/Assets/IdleClinic/Art/Resources/Clinic/Models"
+# Review exports can go elsewhere: CLINIC_MODELS_OUT=/some/folder (the project's models are then untouched).
+if os.environ.get("CLINIC_MODELS_OUT"):OUT=Path(os.environ["CLINIC_MODELS_OUT"])
 SOURCE = ROOT / "assets/idle-clinic-game.blend"
 ICON_ONLY="--icon-only" in sys.argv
 SIGN_ONLY="--sign-only" in sys.argv
+# --characters-only exports Patient, Receptionist and Nurse and nothing else (furniture FBXs and the .blend stay as they are).
+# --classic-characters builds the characters with the original rigid-part human() below instead of clinic_characters.
+CHARACTERS_ONLY="--characters-only" in sys.argv
+CLASSIC_CHARACTERS="--classic-characters" in sys.argv
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import clinic_characters
 if ICON_ONLY or SIGN_ONLY:bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 else:bpy.ops.wm.read_factory_settings(use_empty=True)
 OUT.mkdir(parents=True, exist_ok=True)
@@ -24,6 +32,8 @@ COLORS = {
     "Ink": (.20,.27,.26), "Blue": (.41,.62,.64), "Skin": (.78,.56,.39),
     "Wood": (.59,.40,.27), "Clay": (.74,.55,.41), "Leaf": (.31,.49,.30),
     "Rose": (.68,.37,.38),
+    # Character roles the game tints per person (ClinicAppearance): hair, trousers, lips.
+    "Hair": (.16,.12,.10), "Trousers": (.20,.27,.26), "Lip": (.62,.33,.30),
 }
 MATS = {}
 for role, rgb in COLORS.items():
@@ -332,15 +342,19 @@ if SIGN_ONLY:
     bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE),compress=True)
 elif not ICON_ONLY:
     roots=[]
-    for name,make in (("ReceptionDesk",desk),("TreatmentBay",treatment),("Seat",seat),("WaitingBench",bench),("Cupboard",cupboard),("Plant",lambda:plant((0,0,0))),("ClinicSign",clinic_sign)):
-        roots.append(export(name,make))
+    if not CHARACTERS_ONLY:
+        for name,make in (("ReceptionDesk",desk),("TreatmentBay",treatment),("Seat",seat),("WaitingBench",bench),("Cupboard",cupboard),("Plant",lambda:plant((0,0,0))),("ClinicSign",clinic_sign)):
+            roots.append(export(name,make))
     for name,uniform in (("Patient","Apricot"),("Receptionist","Sage"),("Nurse","Blue")):
-        roots.append(export(name,lambda n=name,c=uniform:human(n,c),True))
-    for i,root in enumerate(roots):root.location=u(((i%3)*3.3,0,(i//3)*3.4))
-    bpy.context.scene.frame_set(1)
-    SOURCE.parent.mkdir(parents=True,exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE),compress=True)
-    print("CLINIC_COMPLETE",SOURCE,flush=True)
+        make=(lambda n=name,c=uniform:human(n,c)) if CLASSIC_CHARACTERS else (lambda n=name:clinic_characters.build(n,MATS))
+        rig=export(name,make,True);roots.append(rig)
+        if not CLASSIC_CHARACTERS:print("CLINIC_CHARACTER",name,clinic_characters.statistics(rig),flush=True)
+    if not CHARACTERS_ONLY:
+        for i,root in enumerate(roots):root.location=u(((i%3)*3.3,0,(i//3)*3.4))
+        bpy.context.scene.frame_set(1)
+        SOURCE.parent.mkdir(parents=True,exist_ok=True)
+        bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE),compress=True)
+        print("CLINIC_COMPLETE",SOURCE,flush=True)
 
 def render_icon():
     """A real geometry render: the clinic nurse waving outside a little clinic with a bold care cross,
