@@ -23,7 +23,7 @@
       "replies": [ "You’re hired, Maya.", "Welcome aboard, Maya." ] },
     { "id": "step.queue", "step": "QueueArrivals", "text": "Word travels fast. That’s… a queue." },
     { "id": "step.receptionist", "step": "HireReceptionist", "text": "I can’t treat them and check them in. We need someone on the desk!",
-      "replies": [ "Hire a receptionist" ] }
+      "replies": [ "Hire a receptionist" ], "said": [ "Let’s hire a receptionist." ] }
   ],
   "reactions": [
     { "id": "reaction.bell", "step": "FirstCheckIn", "text": "Ding! Sorry. Had to." },

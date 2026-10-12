@@ -14,15 +14,18 @@ namespace IdleClinic.Presentation
         public ClinicHit(ClinicHitKind kind,int id=0) { Kind=kind;Id=id; }
     }
 
-    /// <summary>Who the opening story puts in the starter clinic: Maya walks up to the door, steps inside once the prologue is
-    /// over and becomes the first nurse (<see cref="StaffId"/>) with her own look.</summary>
+    /// <summary>Who the opening story puts in the starter clinic and where: Maya walks up to the door and meets the boss just
+    /// inside, keeps a step behind the boss through the opening, and becomes the first nurse (<see cref="StaffId"/>) with her
+    /// own look.</summary>
     public struct ClinicStoryCast
     {
         public bool Enabled;
-        /// <summary>She is already at the door (the first line has been read), so a relaunch does not replay her arrival.</summary>
+        /// <summary>She is already inside (the first line has been read), so a relaunch does not replay her arrival.</summary>
         public bool Arrived;
-        /// <summary>The prologue is over: she waits just inside the entrance until she is hired.</summary>
-        public bool Inside;
+        /// <summary>The prologue is being told: the boss waits just inside the door, talking with her.</summary>
+        public bool Greeting;
+        /// <summary>After her hire the boss stays with her in the nursing room until the clinic opens.</summary>
+        public bool KeepTogether;
         public int StaffId;
         public int Appearance;
     }
@@ -102,8 +105,55 @@ namespace IdleClinic.Presentation
         private ClinicStoryCast storyCast;
         /// <summary>The opening story's cast for the starter clinic; applied on the next render.</summary>
         public void SetStoryCast(ClinicStoryCast cast) => storyCast = cast;
-        /// <summary>Just above Maya's head, wherever she is (at the door, inside, or at her station once hired).</summary>
+        /// <summary>Just above Maya's head, wherever she is (at the door, with the boss, or at her station once hired).</summary>
         public bool TryGetStoryNursePoint(out Vector3 point) { point = default; return doctors == null && actors != null && actors.TryGetStoryNursePoint(out point); }
+        /// <summary>Just above the boss's head during the opening.</summary>
+        public bool TryGetBossPoint(out Vector3 point) { point = default; return doctors == null && actors != null && actors.TryGetBossPoint(out point); }
+
+        // ---- The conversation camera: while Maya and the boss talk, a close view of the two of them -------------------------
+        private bool storyFollow,storyTrack,storyQueue;
+        private float storyTightest=2.2f,storyFocusY=.62f,storyBand=.45f;
+        public bool FollowingStory=>storyFollow;
+        /// <summary>Frame the boss and Maya together, as close as fits them both (never wider than needed, never closer than
+        /// <paramref name="tightest"/>), with the pair centred at <paramref name="focusY"/> of the screen height inside a band of
+        /// <paramref name="band"/> of it (clear of the header and the guide card or panel). <paramref name="track"/> keeps
+        /// following them as they walk; otherwise the view is set when the follow starts or resumes. A pan, pinch or zoom by the
+        /// player pauses it until <see cref="ResumeStoryFollow"/>. <paramref name="withQueue"/> widens the view to the check-in
+        /// queue as well, while the first patients line up.</summary>
+        public void FollowStory(float tightest,float focusY,float band,bool track,bool withQueue=false)
+        {
+            if(doctors!=null||actors==null||!actors.TryGetStoryPair(out _,out _)){StopStoryFollow();return;}
+            bool starting=!storyFollow;
+            storyTightest=tightest;storyFocusY=focusY;storyBand=band;storyTrack=track;storyQueue=withQueue;
+            if(starting){storyFollow=true;userCamera=false;AimStory();}
+        }
+        /// <summary>Back to the conversation after the player looked around (a new line, or the home button).</summary>
+        public void ResumeStoryFollow(){if(!storyFollow)return;userCamera=false;AimStory();}
+        /// <summary>The conversation is over: ease back to the whole clinic unless the player has moved the camera.</summary>
+        public void StopStoryFollow(){if(!storyFollow)return;storyFollow=false;if(!userCamera)Home();}
+        private void AimStory()
+        {
+            if(actors==null||!actors.TryGetStoryPair(out var a,out var b))return;
+            StoryFrame(a,b,out homeTarget,out homeSize);homing=true;velocity=Vector3.zero;sizeVelocity=0;
+        }
+        private void StoryFrame(Vector3 a,Vector3 b,out Vector3 target,out float fitted)
+        {
+            var right=SceneCamera.transform.right;var up=SceneCamera.transform.up;
+            float minX=float.MaxValue,maxX=float.MinValue,minY=float.MaxValue,maxY=float.MinValue;
+            // Each of them from the feet to just above the head, where the speech bubble sits (and the queue's first places).
+            var front=storyQueue?GetAnchorPoint("reception.queue.0"):a;var back=storyQueue?GetAnchorPoint("reception.queue.2"):b;
+            for(int corner=0;corner<8;corner++)
+            {
+                var point=((corner&4)==0?(corner&1)==0?a:b:(corner&1)==0?front:back)+((corner&2)==0?Vector3.zero:Vector3.up*2.2f);
+                float x=Vector3.Dot(right,point),y=Vector3.Dot(up,point);
+                minX=Mathf.Min(minX,x);maxX=Mathf.Max(maxX,x);minY=Mathf.Min(minY,y);maxY=Mathf.Max(maxY,y);
+            }
+            float width=maxX-minX+1.0f,height=maxY-minY+.3f,aspect=Mathf.Max(.1f,SceneCamera.aspect);
+            fitted=Mathf.Clamp(Mathf.Max(storyTightest,width/(2*aspect*.86f),height/(2*Mathf.Max(.2f,storyBand))),1.6f,9f);
+            float desiredRight=(minX+maxX)*.5f,desiredUp=(minY+maxY)*.5f-(storyFocusY-.5f)*2*fitted;
+            float determinant=right.x*up.z-right.z*up.x;
+            target=new Vector3((desiredRight*up.z-right.z*desiredUp)/determinant,0,(right.x*desiredUp-desiredRight*up.x)/determinant);
+        }
         public void ConfigureLocation(ClinicLocation location)
         {
             Initialize();if(Location==location)return;
@@ -197,6 +247,7 @@ namespace IdleClinic.Presentation
         public void CelebrateUpgrade(Vector3 point,float radius)=>effects?.Celebrate(new Vector3(point.x,Floor,point.z),radius);
         private void UpdateHome(float deltaTime,bool reducedMotion)
         {
+            if(storyFollow&&storyTrack&&!userCamera&&actors!=null&&actors.TryGetStoryPair(out var a,out var b)){StoryFrame(a,b,out homeTarget,out homeSize);homing=true;}
             if(homing)
             {
                 if(reducedMotion) { center=homeTarget;size=homeSize; }
@@ -208,7 +259,10 @@ namespace IdleClinic.Presentation
 
         public void Home(bool immediate=false)
         {
-            Initialize();FitHome(out homeTarget,out homeSize);userCamera=false;homing=!immediate;velocity=Vector3.zero;sizeVelocity=0;
+            Initialize();
+            // During the opening story "home" is the conversation.
+            if(storyFollow&&actors!=null&&actors.TryGetStoryPair(out _,out _)){userCamera=false;AimStory();if(immediate){center=homeTarget;size=homeSize;ApplyCamera();}return;}
+            FitHome(out homeTarget,out homeSize);userCamera=false;homing=!immediate;velocity=Vector3.zero;sizeVelocity=0;
             var previousCenter=center;float previousSize=size;
             center=homeTarget;size=BoundedSize(homeSize);ClampCenter();homeTarget=center;homeSize=size;
             if(!immediate){center=previousCenter;size=previousSize;}ApplyCamera();

@@ -127,8 +127,8 @@ namespace IdleClinic.Tests
 
         [Test] public void TheBossWalksEveryRouteAtOnePaceAndTheWalkFitsInsideTheTask()
         {
-            for (var from = 0; from <= 3; from++)
-                for (var to = 0; to <= 3; to++)
+            for (var from = 0; from <= ClinicBossRoute.Entrance; from++)
+                for (var to = 0; to <= ClinicBossRoute.Entrance; to++)
                 {
                     var ticks = ClinicBossRoute.TravelTicks(from, to);
                     if (from == to) { Assert.That(ticks, Is.Zero); continue; }
@@ -148,6 +148,26 @@ namespace IdleClinic.Tests
                 Assert.That(sim.State.OpeningTaskEndsTick - sim.State.OpeningTaskStartedTick, Is.GreaterThan(walk), step + ": the boss arrives, then works.");
                 Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True, step.ToString());
             }
+        }
+
+        [Test] public void InTheStoryTheFirstTaskStartsWithTheWalkFromTheDoor()
+        {
+            var sim = ClinicSimulation.CreateOpening();
+            Assert.That(sim.StartOpeningAtEntrance().Success, Is.True);
+            var walk = ClinicSimulation.OpeningWalkTicks(sim.State);
+            Assert.That(sim.State.BossFromZone, Is.EqualTo(ClinicBossRoute.Entrance));
+            Assert.That(sim.State.BossZone, Is.EqualTo(3), "Then cleaning the office, as without the story.");
+            Assert.That(walk, Is.EqualTo(ClinicBossRoute.TravelTicks(ClinicBossRoute.Entrance, 3)));
+            Assert.That(walk, Is.InRange(60, 80), "About seven seconds through the clinic.");
+            Assert.That(sim.State.OpeningTaskEndsTick - sim.State.OpeningTaskStartedTick, Is.EqualTo(walk + ClinicSimulation.OpeningWorkTicks(ClinicOpeningStep.CleanOffice)));
+            Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True);
+            Assert.That(sim.StartOpeningAtEntrance().Success, Is.False, "Only once, before any task.");
+            for (var guard = 0; guard < 400 && sim.State.OpeningStep == ClinicOpeningStep.CleanOffice; guard++) sim.Advance(.1, false);
+            Assert.That(sim.State.OpeningStep, Is.EqualTo(ClinicOpeningStep.SetUpOffice));
+            Assert.That(sim.State.OfficeCleaned, Is.True);
+            Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True, "A save between tasks keeps the door as where the boss came from.");
+            Assert.That(ClinicSimulation.CreateOpening().ContinueOpening(ClinicOpeningStep.CleanOffice).Success, Is.True, "Without the story nothing changes.");
+            Assert.That(ClinicBossRoute.Points(ClinicBossRoute.Entrance, 3).Skip(1).First(), Is.EqualTo((.675, -3.95)), "Out through the corridor, clear of the entry mat.");
         }
 
         [Test] public void HelpingNeverShortensTheWalkSoTheBossCannotJumpAhead()

@@ -4,16 +4,21 @@ using System.Collections.Generic;
 namespace IdleClinic.Core
 {
     /// <summary>Where the boss walks during the opening, on the starter clinic floor in metres (x, z). Zones: 0 reception,
-    /// 1 nursing room, 2 waiting room, 3 office. The opening's task timers and the animation share these routes, so the boss
+    /// 1 nursing room, 2 waiting room, 3 office, 4 just inside the entrance (where the boss meets Maya in the story). The opening's task timers and the animation share these routes, so the boss
     /// always walks at one pace, arrives before the work starts, and helping can never make the boss jump ahead.</summary>
     public static class ClinicBossRoute
     {
         /// <summary>A brisk walk: quicker than visitors (1.35 m/s) and staff (1.7 m/s), because the boss is hurrying to open.</summary>
         public const double MetresPerSecond = 2.4;
 
+        /// <summary>Just inside the front door, beside the entry mat: where the boss greets Maya in the opening story.</summary>
+        public const int Entrance = 4;
+        /// <summary>The corridor point the entrance joins, clear of the entry mat where Maya stands.</summary>
+        private static readonly (double X, double Z) EntranceCorridor = (.675, -3.95);
+
         /// <summary>Where the boss stands to work in a zone.</summary>
         public static (double X, double Z) Point(int zone)
-            => zone == 3 ? (-4.08, 7.15) : zone == 2 ? (3.15, .4) : zone == 1 ? (-4.20, 2.05) : (-3.85, .15);
+            => zone == Entrance ? (-.10, -4.30) : zone == 3 ? (-4.08, 7.15) : zone == 2 ? (3.15, .4) : zone == 1 ? (-4.20, 2.05) : (-3.85, .15);
 
         /// <summary>The corridor route between two zones: out of the office or nursing room, through the hub by the care
         /// doorway, and in again. Starts and ends at the zones' work points.</summary>
@@ -23,9 +28,11 @@ namespace IdleClinic.Core
             if (from == to) { route.Add(Point(to)); return route; }
             if (from == 3) { route.Add((-4.08, 5.55)); route.Add((.675, 5.55)); }
             if (from == 1) { route.Add((-4.20, 1.50)); route.Add((-4.20, .4)); }
+            if (from == Entrance) route.Add(EntranceCorridor);
             route.Add((.675, .4));
             if (to == 3) { route.Add((.675, 5.55)); route.Add((-4.08, 5.55)); }
             if (to == 1) { route.Add((-4.20, .4)); route.Add((-4.20, 1.50)); }
+            if (to == Entrance) route.Add(EntranceCorridor);
             route.Add(Point(to));
             return route;
         }
@@ -51,7 +58,7 @@ namespace IdleClinic.Core
             get
             {
                 var most = 0;
-                for (var from = 0; from <= 3; from++) for (var to = 0; to <= 3; to++) most = Math.Max(most, TravelTicks(from, to));
+                for (var from = 0; from <= Entrance; from++) for (var to = 0; to <= Entrance; to++) most = Math.Max(most, TravelTicks(from, to));
                 return most;
             }
         }

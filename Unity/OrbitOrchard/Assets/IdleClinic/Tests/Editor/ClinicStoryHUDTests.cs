@@ -58,6 +58,8 @@ namespace IdleClinic.Tests
 
                 ui.Activate(start);
                 Assert.That(ui.Simulation.State.OpeningTaskEndsTick, Is.GreaterThanOrEqualTo(0), "The answer starts cleaning the office.");
+                Assert.That(ui.Simulation.State.BossFromZone, Is.EqualTo(ClinicBossRoute.Entrance), "Walking there together from the door.");
+                Assert.That(ui.Reactions, Does.Contain("I\u2019m Sam.").And.Contain("Biscuits first. Then my office."), "The boss answers aloud.");
                 Assert.That(ui.Profile.story.Choice("prologue.start"), Is.EqualTo(1));
                 Assert.That(ui.Dock.style.display.value, Is.EqualTo(DisplayStyle.None), "The panel closes so the walk can be watched.");
                 Assert.That(ui.Title, Is.EqualTo("“Is that a box of… more boxes?”"));
@@ -104,7 +106,8 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Get<Button>("storySkip").style.display.value, Is.EqualTo(DisplayStyle.None));
                 var cast = (ClinicStoryCast)ui.Invoke("StoryCast");
                 Assert.That(cast.Enabled, Is.True, "Maya is still the first nurse.");
-                Assert.That(cast.Inside, Is.True);
+                Assert.That(cast.Greeting, Is.False, "The boss leaves the door; she goes along.");
+                Assert.That(cast.KeepTogether, Is.False);
                 ui.Invoke("OnGuideTap");
                 Assert.That(ui.Dock.Q<Button>("opening-action"), Is.Not.Null);
                 Assert.That(ui.Dock.Q(className: "story-quote"), Is.Null);
@@ -126,6 +129,7 @@ namespace IdleClinic.Tests
                 Assert.That(ui.Dock.Q<Button>("story-reply-1").Q<Label>(className: "story-reply-label").text, Is.EqualTo("Welcome aboard, Maya."));
                 ui.Activate(hire);
                 Assert.That(ui.Simulation.State.Staff.Any(s => s.Id == ClinicStory.FirstNurseStaffId), Is.True);
+                Assert.That(ui.Reactions.IndexOf("You\u2019re hired, Maya."), Is.LessThan(ui.Reactions.IndexOf("Thanks, boss. Let\u2019s get to work.")), "The boss speaks, then Maya answers.");
                 Assert.That(ui.Profile.story.Choice("step.hire-maya"), Is.Zero);
                 Assert.That(ui.Reactions, Does.Contain("Thanks, boss. Let’s get to work."));
 
@@ -229,7 +233,7 @@ namespace IdleClinic.Tests
             public string Title => Get<Label>("guideTitle").text;
             public string Eyebrow => Get<Label>("guideEyebrow").text;
             public string Why => Get<Label>("guideWhy").text;
-            public List<string> Reactions => Get<Queue<string>>("storyReactions").ToList();
+            public List<string> Reactions => (List<string>)Invoke("QueuedStoryRemarks");
 
             public T Get<T>(string name) => (T)typeof(ClinicApp).GetField(name, Private).GetValue(app);
             public void Set(string name, object value) => typeof(ClinicApp).GetField(name, Private).SetValue(app, value);

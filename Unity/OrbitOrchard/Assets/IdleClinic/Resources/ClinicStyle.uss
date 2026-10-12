@@ -541,3 +541,5 @@ Button:active { scale: .96 .96; }
 .story-entry-boss .story-entry-speaker { color: rgb(48,74,61); -unity-text-align: upper-right; }
 .story-entry-text { font-size: 15px; color: rgb(31,52,42); white-space: normal; }
 .story-log-note { margin: 0 2px 8px 2px; }
+.story-bubble-boss { background-color: rgb(253,243,214); border-bottom-color: rgb(226,206,150); }
+.story-bubble-boss .story-bubble-tail { background-color: rgb(253,243,214); }

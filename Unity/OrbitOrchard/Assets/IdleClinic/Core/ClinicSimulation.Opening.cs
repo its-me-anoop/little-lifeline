@@ -38,6 +38,19 @@ namespace IdleClinic.Core
             return Yes(OpeningCleaning(expected) ? "The boss is cleaning." : "The boss is setting up the room.");
         }
 
+        /// <summary>The opening story's first task: the boss met Maya at the front door, so cleaning the office starts with the
+        /// walk there. Only before any task has begun; everything else about the task is unchanged.</summary>
+        public ClinicCommandResult StartOpeningAtEntrance()
+        {
+            if (!State.OpeningEnabled || State.OpeningStep != ClinicOpeningStep.CleanOffice || State.OpeningTaskEndsTick >= 0
+                || State.OfficeCleaned) return No("Follow the current opening task.");
+            var zone = State.BossZone;
+            State.BossZone = ClinicBossRoute.Entrance;
+            var result = ContinueOpening(ClinicOpeningStep.CleanOffice);
+            if (!result.Success) State.BossZone = zone;
+            return result;
+        }
+
         /// <summary>Ticks of work once the boss is in the room. The office's clean and set-up show the rhythm; later rooms repeat it
         /// more briskly. Cleaning a later room lasts as long as the cleaning after the walk did in 4.3 (22), about 2.5s.</summary>
         public static int OpeningWorkTicks(ClinicOpeningStep step)
@@ -138,7 +151,7 @@ namespace IdleClinic.Core
         private static bool ValidOpening(ClinicState state)
         {
             if (!Enum.IsDefined(typeof(ClinicOpeningStep),state.OpeningStep) || state.OfficeLevel < 0 || state.OfficeLevel > ClinicRules.MaximumTier(state)
-                || state.BossZone < 0 || state.BossZone > 3 || state.BossFromZone < 0 || state.BossFromZone > 3
+                || state.BossZone < 0 || state.BossZone > 3 || state.BossFromZone < 0 || state.BossFromZone > ClinicBossRoute.Entrance
                 || state.OpeningTaskStartedTick < 0 || state.OpeningTaskStartedTick > state.Tick
                 || state.OpeningTaskEndsTick != -1 && (state.OpeningTaskEndsTick <= state.Tick || !OpeningManual(state.OpeningStep)
                     || state.OpeningTaskEndsTick-state.OpeningTaskStartedTick < 1

@@ -18,11 +18,14 @@ namespace IdleClinic.App
         private ClinicStoryBeat storyBeat;
         private Button storySkip;
         private ClinicIcon storyGlyph;
-        private VisualElement storyBubble;
-        private Label storyBubbleText;
-        private readonly Queue<string> storyReactions = new Queue<string>();
-        private string storyReactionShowing;
+        private VisualElement storyBubble, bossBubble;
+        private Label storyBubbleText, bossBubbleText;
+        /// <summary>Something said aloud in a speech bubble: Maya's remarks, and the boss's answers.</summary>
+        private struct StoryRemark { public bool Boss; public string Text; }
+        private readonly Queue<StoryRemark> storyRemarks = new Queue<StoryRemark>();
+        private StoryRemark? storyRemarkShowing;
         private double storyReactionUntil;
+        private string storyCameraKey;
         private int storyObservedStep = -1;
         private bool storyPageOpen;
         private string storyNameDraft;
@@ -43,10 +46,18 @@ namespace IdleClinic.App
             var icon = storySkip.Q<ClinicIcon>(); icon.style.width = 16; icon.style.height = 16;
             Text(storySkip, "Skip story", "guide-skip-label", true);
             storySkip.style.display = DisplayStyle.None;
-            storyBubble = Box(overlay, "story-bubble"); storyBubble.name = "story-bubble"; storyBubble.pickingMode = PickingMode.Ignore;
-            storyBubbleText = Text(storyBubble, "", "story-bubble-text", true);
-            Box(storyBubble, "story-bubble-tail").pickingMode = PickingMode.Ignore;
-            storyBubble.style.display = DisplayStyle.None;
+            storyBubble = Bubble("story-bubble", out storyBubbleText);
+            bossBubble = Bubble("boss-bubble", out bossBubbleText);
+            bossBubble.AddToClassList("story-bubble-boss");
+        }
+
+        private VisualElement Bubble(string name, out Label text)
+        {
+            var bubble = Box(overlay, "story-bubble"); bubble.name = name; bubble.pickingMode = PickingMode.Ignore;
+            text = Text(bubble, "", "story-bubble-text", true);
+            Box(bubble, "story-bubble-tail").pickingMode = PickingMode.Ignore;
+            bubble.style.display = DisplayStyle.None;
+            return bubble;
         }
 
         /// <summary>Every readout tick: the current line, Maya's remarks on what just happened, and her place in the world.</summary>
@@ -62,11 +73,13 @@ namespace IdleClinic.App
             var story = Story;
             if (story == null || !story.enabled || State.Location != ClinicLocation.StarterClinic) return default;
             var script = StoryScript;
+            var told = ClinicStory.Telling(story, State);
             return new ClinicStoryCast
             {
                 Enabled = true, StaffId = ClinicStory.FirstNurseStaffId, Appearance = ClinicStory.FirstNurseAppearance,
                 Arrived = story.line > 0 || story.skipped || ClinicStory.PrologueDone(script, story, State),
-                Inside = story.skipped || ClinicStory.PrologueDone(script, story, State),
+                Greeting = told && !ClinicStory.PrologueDone(script, story, State),
+                KeepTogether = told,
             };
         }
 
@@ -76,34 +89,74 @@ namespace IdleClinic.App
             if (profile == null || simulation == null || State.Location != ClinicLocation.StarterClinic) { storyObservedStep = -1; return; }
             var step = State.OpeningEnabled ? State.OpeningStep : ClinicOpeningStep.Complete;
             if (storyObservedStep >= 0 && (int)step > storyObservedStep)
-                foreach (var line in ClinicStory.Reactions(StoryScript, Story, (ClinicOpeningStep)storyObservedStep, step)) storyReactions.Enqueue(line);
+                foreach (var line in ClinicStory.Reactions(StoryScript, Story, (ClinicOpeningStep)storyObservedStep, step)) Say(false, line);
             storyObservedStep = (int)step;
         }
 
-        private void ForgetStoryMoment() { storyObservedStep = -1; storyReactions.Clear(); storyReactionShowing = null; }
+        private void ForgetStoryMoment() { storyObservedStep = -1; storyRemarks.Clear(); storyRemarkShowing = null; }
 
-        /// <summary>Per frame: a bubble over Maya. Her latest remark for a few seconds, otherwise "…" while she has a line.</summary>
+        /// <summary>Queue something said aloud: shown in turn, Maya's over her head and the boss's over theirs.</summary>
+        private void Say(bool boss, string text)
+        {
+            if (!string.IsNullOrEmpty(text)) storyRemarks.Enqueue(new StoryRemark { Boss = boss, Text = text });
+        }
+        /// <summary>The remarks still to be shown, oldest first (for tests and accessibility).</summary>
+        private List<string> QueuedStoryRemarks()
+        {
+            var texts = new List<string>();
+            foreach (var remark in storyRemarks) texts.Add(remark.Text);
+            return texts;
+        }
+
+        /// <summary>Per frame: speech bubbles. The latest remark for a few seconds over whoever said it; otherwise "…" over
+        /// Maya while she has a line.</summary>
         private void UpdateStoryBubble()
         {
             if (storyBubble == null || world == null) return;
             var now = Time.unscaledTimeAsDouble;
-            if (storyReactionShowing != null && now >= storyReactionUntil) storyReactionShowing = null;
-            if (storyReactionShowing == null && storyReactions.Count > 0)
+            if (storyRemarkShowing != null && now >= storyReactionUntil) storyRemarkShowing = null;
+            if (storyRemarkShowing == null && storyRemarks.Count > 0)
             {
-                storyReactionShowing = storyReactions.Dequeue();
-                storyReactionUntil = now + Math.Max(3.2, ClinicStory.ReadingSeconds(storyReactionShowing, 180) + 1.5);
+                var next = storyRemarks.Dequeue();
+                storyRemarkShowing = next;
+                storyReactionUntil = now + Math.Max(next.Boss ? 2.4 : 3.2, ClinicStory.ReadingSeconds(next.Text, 180) + 1.5);
             }
-            var text = storyReactionShowing ?? (storyBeat != null ? "…" : null);
+            var showing = storyRemarkShowing;
             var sheet = settingsOpen || gemsOpen || locationsOpen || GemConfirmOpen;
-            if (text == null || sheet || !world.TryGetStoryNursePoint(out var head)) { storyBubble.style.display = DisplayStyle.None; return; }
-            if (storyBubbleText.text != text) { storyBubbleText.text = text; storyBubble.EnableInClassList("story-bubble-waiting", storyReactionShowing == null); }
+            var maya = showing.HasValue ? (showing.Value.Boss ? null : showing.Value.Text) : storyBeat != null ? "…" : null;
+            var boss = showing.HasValue && showing.Value.Boss ? showing.Value.Text : null;
+            PlaceBubble(storyBubble, storyBubbleText, sheet ? null : maya, !showing.HasValue, world.TryGetStoryNursePoint(out var mayaHead), mayaHead);
+            PlaceBubble(bossBubble, bossBubbleText, sheet ? null : boss, false, world.TryGetBossPoint(out var bossHead), bossHead);
+        }
+
+        private void PlaceBubble(VisualElement bubble, Label label, string text, bool waiting, bool found, Vector3 head)
+        {
+            if (text == null || !found) { bubble.style.display = DisplayStyle.None; return; }
+            if (label.text != text) { label.text = text; bubble.EnableInClassList("story-bubble-waiting", waiting); }
             var uv = world.WorldToViewport(head);
-            if (uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.y > 1) { storyBubble.style.display = DisplayStyle.None; return; }
-            storyBubble.style.display = DisplayStyle.Flex;
+            if (uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.y > 1) { bubble.style.display = DisplayStyle.None; return; }
+            bubble.style.display = DisplayStyle.Flex;
             var p = OverlayPoint(uv);
-            var width = float.IsNaN(storyBubble.resolvedStyle.width) ? 60 : storyBubble.resolvedStyle.width;
-            var height = float.IsNaN(storyBubble.resolvedStyle.height) ? 36 : storyBubble.resolvedStyle.height;
-            storyBubble.style.left = p.x - width / 2; storyBubble.style.top = p.y - height - 6;
+            var width = float.IsNaN(bubble.resolvedStyle.width) ? 60 : bubble.resolvedStyle.width;
+            var height = float.IsNaN(bubble.resolvedStyle.height) ? 36 : bubble.resolvedStyle.height;
+            bubble.style.left = p.x - width / 2; bubble.style.top = p.y - height - 6;
+        }
+
+        /// <summary>Per frame: while the story is told, the camera holds a close view of the boss and Maya together, above the
+        /// card or panel. Each new line brings it back if the player has looked around; once the clinic is open (or the story is
+        /// skipped) it eases back to the whole clinic.</summary>
+        private void UpdateStoryCamera()
+        {
+            if (world == null) return;
+            var beat = storyBeat;
+            if (beat == null || State.Location != ClinicLocation.StarterClinic) { storyCameraKey = null; world.StopStoryFollow(); return; }
+            var panel = dock.style.display == DisplayStyle.Flex;
+            var prologue = beat.Kind == ClinicStoryBeatKind.Prologue;
+            var queue = State.OpeningStep == ClinicOpeningStep.QueueArrivals || State.OpeningStep == ClinicOpeningStep.HireReceptionist;
+            // While the first patients line up, a wider view that takes in the queue too.
+            world.FollowStory(prologue ? 1.9f : 2.4f, panel ? .70f : queue ? .60f : .63f, panel ? .36f : queue ? .56f : .46f, !ReducedMotion, queue);
+            var key = beat.Kind + ":" + beat.Index + ":" + beat.Line.id + ":" + panel;
+            if (key != storyCameraKey) { storyCameraKey = key; world.ResumeStoryFollow(); }
         }
 
         /// <summary>The guide card while Maya is talking. False when the plain opening card should show.</summary>
@@ -221,7 +274,10 @@ namespace IdleClinic.App
             }
             if (beat.AsksName) storyNameDraft = null;
             Feedback(0);
-            if (beat.EndsPrologue || beat.Kind == ClinicStoryBeatKind.Step) { Run(() => simulation.ContinueOpening(step), true); UpdateStory(); return; }
+            Say(true, ClinicStory.Said(beat.Line, reply, Story.bossName));
+            // "Where do we start?" The boss and Maya walk from the door to the office together, so the first task starts there.
+            if (beat.EndsPrologue) { Run(() => simulation.StartOpeningAtEntrance(), true); UpdateStory(); return; }
+            if (beat.Kind == ClinicStoryBeatKind.Step) { Run(() => simulation.ContinueOpening(step), true); UpdateStory(); return; }
             SaveNow(); UpdateStory(); dockKey = ""; UpdateReadouts();
         }
 
@@ -254,8 +310,7 @@ namespace IdleClinic.App
         private void StoryPitchedIn()
         {
             if (!ClinicStory.PitchIn(Story, State)) return;
-            var line = ClinicStory.Reaction(StoryScript, Story, ClinicStory.PitchInReaction);
-            if (line != null) storyReactions.Enqueue(line);
+            Say(false, ClinicStory.Reaction(StoryScript, Story, ClinicStory.PitchInReaction));
         }
 
         /// <summary>The name as the game can show it: rules from <see cref="ClinicStory.SanitizeName"/>, and only characters

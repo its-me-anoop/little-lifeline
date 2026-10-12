@@ -168,7 +168,7 @@ namespace IdleClinic.App
             saveClock+=delta;readoutClock+=delta;
             if(saveClock>=5){saveClock=0;if(saves.HasPendingOfflineProgress)ResumeClinic();else{SaveNow();ProcessGemTransactions();}}
             if(readoutClock>=.15){readoutClock=0;UpdateReadouts();}
-            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateStoryBubble();UpdateGemConfirm();UpdateAccessibilityFrames();
+            UpdateWorld(delta);UpdateFlights(delta);UpdateJuice(delta);UpdateGuidePointer();UpdateStoryCamera();UpdateStoryBubble();UpdateGemConfirm();UpdateAccessibilityFrames();
             if(toast.style.display==DisplayStyle.Flex && Time.unscaledTimeAsDouble>toastUntil)toast.style.display=DisplayStyle.None;
         }
 

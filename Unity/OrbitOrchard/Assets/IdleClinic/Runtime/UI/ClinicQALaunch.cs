@@ -184,6 +184,7 @@ namespace IdleClinic.App
         {
             var script = StoryScript; var told = Story;
             if (told == null || !told.enabled) return;
+            var started = false;
             for (var guard = 0; guard < 16; guard++)
             {
                 var beat = ClinicStory.Current(script, told, State);
@@ -191,7 +192,10 @@ namespace IdleClinic.App
                 var moved = beat.AsksName ? ClinicStory.Answer(script, told, State, told.bossName.Length > 0 ? 0 : 1, told.bossName)
                     : beat.Replies.Count > 0 ? ClinicStory.Answer(script, told, State, 0) : ClinicStory.Continue(script, told, State);
                 if (!moved) break;
+                started |= beat.EndsPrologue;
             }
+            // As the answer would: the boss and Maya set off from the door to the office.
+            if (started) simulation.StartOpeningAtEntrance();
             UpdateStory();
         }
 

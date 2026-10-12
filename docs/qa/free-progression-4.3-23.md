@@ -30,19 +30,20 @@ are left as they are, because they are the opening's "watch it work" moments.
 
 ### With the opening story (new games)
 
-The story changes no timer: the Core numbers above are unchanged and the scripted players skip the story. What it adds
-is reading before the first task. Maya's prologue is 54 words in five lines: about 16 s at an unhurried 200 words a
+The Core numbers above are unchanged and the scripted players skip the story. What the story adds is reading before the
+first task, and one walk: the boss meets Maya at the front door, so cleaning the office starts with the walk there
+(7.0 s at the same 2.4 m/s; `StartOpeningAtEntrance`, measured in `ClinicOpeningPacingTests`). Maya's prologue is 54 words in five lines: about 16 s at an unhurried 200 words a
 minute, 13 s at 250, plus typing a name (or one tap on *Just call me boss*). The first two lines (25 words, 7.5 s at 200)
 show while she walks to the door (3.4 s) and knocks (2.4 s). After that each step's line shares the card with its task,
 answers are the actions and remarks are bubbles, so there is no extra tap.
 
 | | 4.3 (22) | 4.3 (23), story skipped | 4.3 (23), story read (estimate) |
 |---|---|---|---|
-| First patient arrives | 42.0 s | about 35 s | about 49 to 52 s |
-| Clinic open | 115.0 s | about 94 s | about 108 to 111 s |
+| First patient arrives | 42.0 s | about 35 s | about 56 to 59 s |
+| Clinic open | 115.0 s | about 94 s | about 115 to 118 s |
 
 The estimate is the measured 34.2 s and 93.0 s minus the scripted player's first 1.5 s answer, plus 13 to 16 s of
-reading and about 3 s for the name. It is arithmetic on word counts, not a play-test; the reading speeds are
+reading, about 3 s for the name and the 7 s walk from the door. It is arithmetic on word counts, not a play-test; the reading speeds are
 assumptions. A reader who enjoys the lines sees the first patient later than in 4.3 (22); a player in a hurry can skip
 from the first line.
 

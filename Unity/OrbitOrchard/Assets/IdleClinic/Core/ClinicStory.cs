@@ -329,13 +329,19 @@ namespace IdleClinic.Core
             return null;
         }
 
+        /// <summary>What the boss says aloud for an answer: the line's "said" text when it has one, else the button.</summary>
+        public static string Said(ClinicStoryLine line, int reply, string name)
+        {
+            if (line == null || line.replies == null || reply < 0 || reply >= line.replies.Length) return null;
+            var said = line.said != null && reply < line.said.Length && !string.IsNullOrEmpty(line.said[reply]) ? line.said[reply] : line.replies[reply];
+            return Format(said, name);
+        }
+
         private static void Add(List<ClinicStoryEntry> log, ClinicStoryScript script, ClinicStoryState story, ClinicStoryLine line)
         {
             log.Add(new ClinicStoryEntry(false, script.speaker, Format(line.text, story.bossName)));
-            var reply = story.Choice(line.id);
-            if (reply < 0 || reply >= line.replies.Length) return;
-            var said = reply < line.said.Length && !string.IsNullOrEmpty(line.said[reply]) ? line.said[reply] : line.replies[reply];
-            log.Add(new ClinicStoryEntry(true, "You", Format(said, story.bossName)));
+            var said = Said(line, story.Choice(line.id), story.bossName);
+            if (said != null) log.Add(new ClinicStoryEntry(true, "You", said));
         }
 
         private static bool TryStep(string name, out ClinicOpeningStep step)

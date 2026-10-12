@@ -108,6 +108,7 @@ shot() {
 shot 01-opening-fresh 14
 shot 01a-story-name 10 CLINIC_QA_STORY=name
 shot 01b-story-where-to-start 10 CLINIC_QA_STORY_NAME=Sam CLINIC_QA_STORY=reply
+shot 01c-story-office-together 10 CLINIC_QA_OPENING=SetUpOffice
 shot 02-opening-first-check-in 10 CLINIC_QA_OPENING=FirstCheckIn
 shot 03-opening-hire-nurse 10 CLINIC_QA_OPENING=HireNurse
 shot 03a-story-hire-maya 10 CLINIC_QA_OPEN=opening

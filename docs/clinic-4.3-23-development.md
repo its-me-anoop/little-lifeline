@@ -44,10 +44,19 @@ chestnut hair in a bun (and a tin of biscuits), knocks on the door, asks for the
 the clinic and becomes the first nurse. The script is data, `Resources/ClinicStory.json`, read by the engine-free rules
 in `Core/ClinicStory.cs`; the approved lines are used word for word.
 
-- **Prologue at the door.** Maya walks up the pavement (3.4 s) and taps on the glass while her first two lines show.
-  Tap the card to continue. *Sorry, I didn't catch your name?* opens the panel with a name field, **That's me** and
-  **Just call me boss**. *Nice to meet you, {name}! Where do we start?* has two answers; either one starts cleaning the
-  office, so an answer is also the action. Maya then steps inside and waits by the entrance, clear of both corridor lanes.
+- **Prologue at the door.** The boss waits just inside the front door. Maya walks up the pavement (3.4 s), taps on the
+  glass (2.4 s) and comes in to the boss while her first two lines show; they turn to face each other. Tap the card to
+  continue. *Sorry, I didn't catch your name?* opens the panel with a name field, **That's me** and **Just call me boss**.
+  *Nice to meet you, {name}! Where do we start?* has two answers; either one sends them off together to clean the office,
+  so an answer is also the action.
+- **Together, in close-up (after the first review).** While Maya and the boss talk, the camera holds a close view of the
+  two of them (about three times closer than the usual view), framed above the card or panel, and follows them as they
+  walk. Maya keeps a step behind the boss from room to room until she is hired, is hired beside the boss in the nursing
+  room, and the boss stays with her there while the first patients queue (the view widens to take in the queue). The boss
+  says each answer aloud in a speech bubble and Maya replies in hers. Panning or zooming pauses the close view until the
+  next line; the home button returns to it; once the clinic is open the camera eases back to the whole clinic. With Less
+  motion the view is set for each line instead of following. The first task now starts with the walk from the door to the
+  office (7 s, the same steady pace), so the story adds that walk; skipping keeps the old start in the office.
 - **One line per step.** The guide card shows Maya (eyebrow *MAYA · 3 OF 12*, her line, then the task: *Clean reception ·
   tap to start*, or *You're cleaning · ready in 4s · tap to pitch in*). The opening panel repeats her line above the task,
   so the conversation stays visible with the card hidden. Hiring Maya is answered **You're hired, Maya.** or **Welcome
@@ -55,7 +64,8 @@ in `Core/ClinicStory.cs`; the approved lines are used word for word.
   (*Clean your office*, *Check in your first patient*, *Recruit a receptionist*) in every game.
 - **Remarks.** A speech bubble over Maya shows "…" while she has a line and her remarks for a few seconds as things
   happen: the reception bell, the first coins, being hired, the first **Pitch in** (once), the receptionist and the
-  opening. They never need a tap and are not replayed for steps that finished while the app was closed.
+  opening. The boss's answers appear over the boss first. They never need a tap and are not replayed for steps that
+  finished while the app was closed.
 - **Maya is the first nurse.** She is hired where she stands and walks to nursing station 1 as the same figure, keeping
   her look. Her station panel says *Maya · 4s per patient* and her training *Maya's training*. The first guide lesson
   after the opening is introduced by her: *Better kit means quicker care. Let's upgrade my equipment.*
@@ -68,7 +78,10 @@ in `Core/ClinicStory.cs`; the approved lines are used word for word.
 - **Relaunch mid-story** resumes at the same line: the prologue position, name and answers are saved; step lines follow
   the saved opening step.
 - **Only new games.** Saves from before the story have no story data and keep the plain opening and their first nurse's
-  look. No timer, price, reward or economy rule changed.
+  look. No price, reward or economy rule changed; the only timing change is the first task's walk from the door in
+  games that tell the story.
+- **No jumping.** Whenever the boss changes place between tasks (after hiring Maya in any game, or leaving the door) the
+  boss now walks there at the opening's steady pace instead of appearing there.
 
 ### Feedback and progression
 
@@ -150,7 +163,7 @@ opening story). Audio code is unchanged.
 - `Tools/qa/run_editmode_tests.sh`: official Unity EditMode run with result XML, log, command, source commit, duration and
   exit code kept together.
 - `Tools/qa/simulator_preview.sh`: fresh export, unsigned Debug simulator build under the QA identity
-  `com.flutterly.gravitile.qa`, install on an owned QA simulator only, 24 runtime screenshots (including the story's name question, where to start,
+  `com.flutterly.gravitile.qa`, install on an owned QA simulator only, 25 runtime screenshots (including the story's name question, where to start, the office together,
   hiring Maya and the story so far), console output, crash
   reports, the simulator performance report with a summary (median, p95 and maximum frame time and memory per 30-second
   window; simulator only) and the QA saves.
@@ -175,9 +188,10 @@ opening story). Audio code is unchanged.
 | Unity EditMode | `0ad88d8`, reviewer run | 678 total: 671 passed, **7 failed** (6 HUD accessibility fixtures: null gem-confirmation node; boss nursing door), exit 2 |
 | Unity EditMode | `6da17d3` (7 fixes), reviewer run | 681 passed, 0 failed; native Xcode build succeeded |
 | Unity EditMode | the character checkpoint `cfabfb6` | **pending** |
-| Unity EditMode | the story checkpoint | **pending** (new: `ClinicStoryHUDTests`, `ClinicStoryWorldTests`; not run here) |
-| Core and profile harness (.NET 8, NUnit shim; Linux) | the story checkpoint | 264 passed, 0 failed (subset; not a substitute for Unity) |
-| Story UI compile check | the story checkpoint | the story presentation and opening panel compile against minimal API stand-ins (Linux; not a Unity build) |
+| Unity EditMode | the story checkpoint `656ec5b`, reviewer run | 735 passed, 0 failed, 0 skipped (416 s); simulator export and native Xcode build succeeded; 10 staged runtime screenshots |
+| Unity EditMode | the staging pass (together, close-up) | **pending** (updated `ClinicStoryWorldTests`, `ClinicStoryHUDTests`, new Core entrance test; not run here) |
+| Core and profile harness (.NET 8, NUnit shim; Linux) | the staging pass | 265 passed, 0 failed (subset; not a substitute for Unity) |
+| Story UI checks | the staging pass | story presentation and opening panel compile against minimal API stand-ins; every changed C# file parses (Roslyn, Linux); not a Unity build |
 | Simulator performance (not device evidence) | game `0ad88d8`, reviewer | 90 s sample: median 16.67 ms, p95 17.25 ms, max 48.66 ms; Unity 128 MB, managed 10 MB; startup 1532.73 ms |
 | Simulator performance (not device evidence) | game `6da17d3` (run `d7e9727`), reviewer | median 16.67 ms, p95 17.25 ms, max 49.19 ms; first 30 s max 213.38 ms; Unity 127 MB, managed 10 MB |
 | Release tooling `Tools/tests` | unchanged by this work | host baseline 105 passed (Blender Python 3.11); Linux Python 3.13: 92 passed, 1 skipped, 1 macOS-only `xcrun` error |
@@ -227,7 +241,9 @@ Store status line instead).
    not device evidence.
 6. Free progression is measured with scripted players, not people. Late starter play is dominated by 2-hour builds with
    one builder; this is reported, not changed.
-7. **The opening story is not runtime-verified.** Not yet seen on the simulator: the name field with the iOS keyboard
+7. **The opening story is only partly runtime-verified.** `656ec5b` was seen in staged simulator screenshots (Maya's
+   first line, the name question, where to start, the first lesson). The staging pass (the boss and Maya together, the
+   close-up camera, the boss's speech bubble, walking instead of jumping) is not yet seen running. Also not yet seen: the name field with the iOS keyboard
    (Unity shows its own input line above the keyboard), the card and panel with long lines on a compact phone, the
    speech bubble, Maya's walk through the entrance and her waiting spot (chosen clear of the corridor lanes and the
    queue, not checked against every prop), and VoiceOver on the name field. Names in scripts the bundled fonts lack
