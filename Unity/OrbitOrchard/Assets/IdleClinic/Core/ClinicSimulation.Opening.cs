@@ -33,27 +33,43 @@ namespace IdleClinic.Core
             State.BossFromZone = State.BossZone;
             State.BossZone = OpeningZone(expected);
             State.OpeningTaskStartedTick = State.Tick;
-            State.OpeningTaskEndsTick = State.Tick + OpeningTaskTicks(expected);
+            State.OpeningTaskEndsTick = State.Tick + OpeningTaskTicks(expected, State.BossFromZone);
             Emit(ClinicEventKind.TutorialAdvanced, OpeningRoom(expected));
             return Yes(OpeningCleaning(expected) ? "The boss is cleaning." : "The boss is setting up the room.");
         }
 
-        /// <summary>Ticks of boss work for a task. The office's clean and set-up show the rhythm; later rooms repeat it more briskly
-        /// (4.3 build 22 used 8s and 10s for every room). Saves started under the longer timers finish them unchanged.</summary>
-        public static int OpeningTaskTicks(ClinicOpeningStep step)
-            => step == ClinicOpeningStep.CleanOffice ? 60 : step == ClinicOpeningStep.SetUpOffice ? 80 : OpeningCleaning(step) ? 40 : 50;
+        /// <summary>Ticks of work once the boss is in the room. The office's clean and set-up show the rhythm; later rooms repeat it
+        /// more briskly. Cleaning a later room lasts as long as the cleaning after the walk did in 4.3 (22), about 2.5s.</summary>
+        public static int OpeningWorkTicks(ClinicOpeningStep step)
+            => step == ClinicOpeningStep.CleanOffice ? 60 : step == ClinicOpeningStep.SetUpOffice ? 80 : OpeningCleaning(step) ? 25 : 50;
+
+        /// <summary>A whole task: the walk from <paramref name="fromZone"/> at the boss's steady pace, then the work. 4.3 (22) squeezed
+        /// the walk into 70% of a fixed 8s, so the boss's speed changed from room to room; shorter fixed timers would have made the
+        /// boss sprint past the nursing door.</summary>
+        public static int OpeningTaskTicks(ClinicOpeningStep step, int fromZone)
+            => ClinicBossRoute.TravelTicks(fromZone, OpeningZone(step)) + OpeningWorkTicks(step);
+
+        /// <summary>How long the current task's walk lasts, never longer than the task itself (saves made with older timers).</summary>
+        public static long OpeningWalkTicks(ClinicState state)
+            => state.OpeningTaskEndsTick < 0 ? 0 : Math.Min(ClinicBossRoute.TravelTicks(state.BossFromZone, state.BossZone),
+                state.OpeningTaskEndsTick - state.OpeningTaskStartedTick);
+
         /// <summary>The longest a task can have been given by any version, for saves made mid-task.</summary>
-        private static int LongestOpeningTaskTicks(ClinicOpeningStep step) => OpeningCleaning(step) ? 80 : 100;
+        private static int LongestOpeningTaskTicks(ClinicOpeningStep step)
+            => Math.Max(OpeningCleaning(step) ? 80 : 100, ClinicBossRoute.MaximumTravelTicks + OpeningWorkTicks(step));
         /// <summary>Each tap on Help takes this much off the boss's current task.</summary>
         public const int OpeningHelpTicks = 15;
 
-        /// <summary>The player lends a hand: the boss's current task finishes a little sooner. Optional; waiting works too.</summary>
+        /// <summary>The player lends a hand: the boss's work finishes a little sooner. The walk is never shortened, so the boss
+        /// always arrives before the work ends. Optional; waiting works too.</summary>
         public ClinicCommandResult HelpOpeningTask()
         {
             if (!State.OpeningEnabled || State.OpeningStep == ClinicOpeningStep.Complete || State.OpeningTaskEndsTick < 0)
                 return No("The boss is not working on anything right now.");
-            if (State.OpeningTaskEndsTick - State.Tick <= 1) return No("Nearly done.");
-            State.OpeningTaskEndsTick = Math.Max(State.Tick + 1, State.OpeningTaskEndsTick - OpeningHelpTicks);
+            var arrives = State.OpeningTaskStartedTick + OpeningWalkTicks(State);
+            var earliest = Math.Max(State.Tick + 1, arrives + 1);
+            if (State.OpeningTaskEndsTick <= earliest) return No(State.Tick < arrives ? "The boss is still on the way." : "Nearly done.");
+            State.OpeningTaskEndsTick = Math.Max(earliest, State.OpeningTaskEndsTick - OpeningHelpTicks);
             return Yes(OpeningCleaning(State.OpeningStep) ? "You help clear up." : "You help set up.");
         }
 

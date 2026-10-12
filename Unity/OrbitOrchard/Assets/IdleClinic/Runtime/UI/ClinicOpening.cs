@@ -69,7 +69,8 @@ namespace IdleClinic.App
                 return;
             }
             if(step==ClinicOpeningStep.FirstCheckIn || step==ClinicOpeningStep.QueueArrivals) return;
-            var seconds=ClinicSimulation.OpeningTaskTicks(step)/ClinicRules.TicksPerSecond;
+            // The whole task as the player will see it: the boss's walk from where they stand, then the work.
+            var seconds=(int)System.Math.Ceiling(ClinicSimulation.OpeningTaskTicks(step,State.BossZone)/(double)ClinicRules.TicksPerSecond);
             var label=ClinicSimulation.OpeningCleaning(step)?"Clean · "+seconds+"s":ClinicSimulation.OpeningManual(step)?"Set up · "+seconds+"s"
                 :step==ClinicOpeningStep.HireNurse?"Hire first nurse":"Recruit first receptionist";
             var captured=step;

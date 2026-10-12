@@ -193,7 +193,8 @@ namespace IdleClinic.App
             if(accessibility==null)return;
             UpdateAccessibilityNode(walletNode,wallet);
             UpdateAccessibilityNode(hintNode,hint);
-            UpdateAccessibilityNode(gemConfirmNode,GemConfirmReadable());
+            // The confirmation node exists once the full hierarchy is built; partial hierarchies (tests, early frames) have none.
+            if(gemConfirmNode!=null)UpdateAccessibilityNode(gemConfirmNode,GemConfirmReadable());
             for(var i=accessible.Count-1;i>=0;i--)
             {
                 var binding=accessible[i];
@@ -209,8 +210,8 @@ namespace IdleClinic.App
             if(screenChangePending&&AssistiveSupport.activeHierarchy==accessibility)
             {
                 // A modal change is a new screen: focus the quote summary, or let the reader choose its place on return.
-                gemConfirmNode.value=GemConfirmSummary();
-                AssistiveSupport.notificationDispatcher.SendScreenChanged(screenChangeToSheet&&gemConfirmNode.isActive?gemConfirmNode:null);
+                if(gemConfirmNode!=null)gemConfirmNode.value=GemConfirmSummary();
+                AssistiveSupport.notificationDispatcher.SendScreenChanged(screenChangeToSheet&&gemConfirmNode!=null&&gemConfirmNode.isActive?gemConfirmNode:null);
                 screenChangePending=false;accessibilityLayoutDirty=false;
                 nextAccessibilityNotification=Time.unscaledTimeAsDouble+.2;
             }
@@ -241,7 +242,7 @@ namespace IdleClinic.App
             if(accessibility==null)return;
             walletNode.value=State.Wallet.ToString("N0",System.Globalization.CultureInfo.InvariantCulture)+" coins";
             hintNode.value=hintLabel.text;
-            gemConfirmNode.value=GemConfirmSummary();
+            if(gemConfirmNode!=null)gemConfirmNode.value=GemConfirmSummary();
             foreach(var binding in accessible)
             {
                 binding.Node.state=IsAccessible(binding.Element)&&binding.Element.enabledInHierarchy?AccessibilityState.None:AccessibilityState.Disabled;

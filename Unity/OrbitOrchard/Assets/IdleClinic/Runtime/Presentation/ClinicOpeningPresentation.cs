@@ -72,21 +72,13 @@ namespace IdleClinic.Presentation
                 entry.item.SetActive(!state.OpeningEnabled||built);
             }
         }
-        internal static Vector3 BossPoint(int zone)=>zone==3?new Vector3(-4.08f,.14f,7.15f):zone==2?new Vector3(3.15f,.14f,.4f):zone==1?new Vector3(-4.20f,.14f,2.05f):new Vector3(-3.85f,.14f,.15f);
+        // The routes live in Core (ClinicBossRoute) so the opening's timers and this animation always agree.
+        internal static Vector3 BossPoint(int zone){var p=ClinicBossRoute.Point(zone);return new Vector3((float)p.X,.14f,(float)p.Z);}
         internal static List<Vector3> BossRoute(int from,int to)
         {
-            var route=new List<Vector3>{BossPoint(from)};
-            if(from==to){route.Add(BossPoint(to));return route;}
-            void Out(int zone)
-            {
-                if(zone==3){route.Add(new Vector3(-4.08f,.14f,5.55f));route.Add(new Vector3(.675f,.14f,5.55f));}
-                if(zone==1){route.Add(new Vector3(-4.20f,.14f,1.50f));route.Add(new Vector3(-4.20f,.14f,.4f));}
-                route.Add(new Vector3(.675f,.14f,.4f));
-            }
-            Out(from);
-            if(to==3){route.Add(new Vector3(.675f,.14f,5.55f));route.Add(new Vector3(-4.08f,.14f,5.55f));}
-            if(to==1){route.Add(new Vector3(-4.20f,.14f,.4f));route.Add(new Vector3(-4.20f,.14f,1.50f));}
-            route.Add(BossPoint(to));return route;
+            var route=new List<Vector3>();
+            foreach(var p in ClinicBossRoute.Points(from,to))route.Add(new Vector3((float)p.X,.14f,(float)p.Z));
+            return route;
         }
     }
 }

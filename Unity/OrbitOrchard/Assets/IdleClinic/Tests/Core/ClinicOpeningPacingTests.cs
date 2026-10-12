@@ -98,7 +98,7 @@ namespace IdleClinic.Tests
             Assert.That(sim.HelpOpeningTask().Success, Is.False, "Nothing to help with before a task starts.");
             Assert.That(sim.ContinueOpening(ClinicOpeningStep.CleanOffice).Success, Is.True);
             var ends = sim.State.OpeningTaskEndsTick;
-            Assert.That(ends - sim.State.Tick, Is.EqualTo(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.CleanOffice)));
+            Assert.That(ends - sim.State.Tick, Is.EqualTo(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.CleanOffice, 3)), "The boss starts in the office: no walk.");
             Assert.That(sim.HelpOpeningTask().Success, Is.True);
             Assert.That(sim.State.OpeningTaskEndsTick, Is.EqualTo(ends - ClinicSimulation.OpeningHelpTicks));
             for (var tap = 0; tap < 20; tap++) sim.HelpOpeningTask();
@@ -113,10 +113,60 @@ namespace IdleClinic.Tests
 
         [Test] public void LaterRoomsRepeatTheRhythmMoreBrieflyThanTheOffice()
         {
-            Assert.That(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.CleanOffice), Is.GreaterThan(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.CleanReception)));
-            Assert.That(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.SetUpOffice), Is.GreaterThan(ClinicSimulation.OpeningTaskTicks(ClinicOpeningStep.SetUpNursing)));
+            Assert.That(ClinicSimulation.OpeningWorkTicks(ClinicOpeningStep.CleanOffice), Is.GreaterThan(ClinicSimulation.OpeningWorkTicks(ClinicOpeningStep.CleanReception)));
+            Assert.That(ClinicSimulation.OpeningWorkTicks(ClinicOpeningStep.SetUpOffice), Is.GreaterThan(ClinicSimulation.OpeningWorkTicks(ClinicOpeningStep.SetUpNursing)));
+            // Each task as a player meets it, walking from where the previous one left the boss.
+            var zone = 3;
             foreach (ClinicOpeningStep step in Enum.GetValues(typeof(ClinicOpeningStep)))
-                if (ClinicSimulation.OpeningManual(step)) Assert.That(ClinicSimulation.OpeningTaskTicks(step), Is.InRange(30, 100), step.ToString());
+            {
+                if (!ClinicSimulation.OpeningManual(step)) continue;
+                Assert.That(ClinicSimulation.OpeningTaskTicks(step, zone), Is.InRange(30, 100), step.ToString());
+                zone = ClinicSimulation.OpeningZone(step);
+            }
+        }
+
+        [Test] public void TheBossWalksEveryRouteAtOnePaceAndTheWalkFitsInsideTheTask()
+        {
+            for (var from = 0; from <= 3; from++)
+                for (var to = 0; to <= 3; to++)
+                {
+                    var ticks = ClinicBossRoute.TravelTicks(from, to);
+                    if (from == to) { Assert.That(ticks, Is.Zero); continue; }
+                    var pace = ClinicBossRoute.Length(from, to) / (ticks / (double)ClinicRules.TicksPerSecond);
+                    Assert.That(pace, Is.InRange(ClinicBossRoute.MetresPerSecond * .9, ClinicBossRoute.MetresPerSecond), from + " to " + to);
+                }
+            // The routes past the nursing doorway: the waiting room to nursing crosses it.
+            Assert.That(ClinicBossRoute.Points(2, 1).Any(p => Math.Abs(p.X + 4.20) < .01 && Math.Abs(p.Z - 1.50) < .01), Is.True);
+
+            var sim = ClinicSimulation.CreateOpening();
+            foreach (ClinicOpeningStep step in Enum.GetValues(typeof(ClinicOpeningStep)))
+            {
+                if (!ClinicSimulation.OpeningManual(step)) continue;
+                for (var guard = 0; guard < 2000 && sim.State.OpeningStep != step; guard++) sim.Advance(.1, false);
+                Assert.That(sim.ContinueOpening(step).Success, Is.True, step.ToString());
+                var walk = ClinicSimulation.OpeningWalkTicks(sim.State);
+                Assert.That(sim.State.OpeningTaskEndsTick - sim.State.OpeningTaskStartedTick, Is.GreaterThan(walk), step + ": the boss arrives, then works.");
+                Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True, step.ToString());
+            }
+        }
+
+        [Test] public void HelpingNeverShortensTheWalkSoTheBossCannotJumpAhead()
+        {
+            var sim = ClinicSimulation.CreateOpening();
+            foreach (var step in new[] { ClinicOpeningStep.CleanOffice, ClinicOpeningStep.SetUpOffice })
+            { sim.ContinueOpening(step); for (var guard = 0; guard < 200 && sim.State.OpeningStep == step; guard++) sim.Advance(.1, false); }
+            Assert.That(sim.ContinueOpening(ClinicOpeningStep.CleanReception).Success, Is.True);
+            var walk = ClinicSimulation.OpeningWalkTicks(sim.State);
+            Assert.That(walk, Is.EqualTo(ClinicBossRoute.TravelTicks(3, 0)).And.GreaterThan(0), "The office to reception is a real walk.");
+            var arrives = sim.State.OpeningTaskStartedTick + walk;
+            for (var tap = 0; tap < 30; tap++) sim.HelpOpeningTask();
+            Assert.That(sim.State.OpeningTaskEndsTick, Is.EqualTo(arrives + 1), "Help takes time off the cleaning, never off the walk.");
+            Assert.That(sim.HelpOpeningTask().Success, Is.False);
+            sim.Advance((walk - 1) / 10d, false);
+            Assert.That(sim.State.OpeningStep, Is.EqualTo(ClinicOpeningStep.CleanReception), "Still on the way.");
+            Assert.That(ClinicSimulation.IsValidState(sim.State), Is.True);
+            sim.Advance(.3, false);
+            Assert.That(sim.State.OpeningStep, Is.EqualTo(ClinicOpeningStep.SetUpReception));
         }
 
         [Test] public void TheOpeningReachesItsFirstPatientRewardAndChoiceQuickly()
@@ -126,10 +176,12 @@ namespace IdleClinic.Tests
             var helping = ClinicOpeningPacing.Measure(helpEvery: .6);
             TestContext.WriteLine("Opening, player helps the boss: " + helping);
             // 4.3 (22), measured the same way: first patient 42s, first coins 62s, clinic open 115s, 100s of passive waiting.
-            Assert.That(passive.FirstPatientSeconds, Is.LessThanOrEqualTo(32), "The first patient arrives within about half a minute.");
-            Assert.That(passive.FirstCoinsSeconds, Is.LessThanOrEqualTo(52), "The first coins are in hand in under a minute.");
-            Assert.That(passive.OpenSeconds, Is.LessThanOrEqualTo(90), "The whole opening, including recruiting, takes about a minute and a half.");
-            Assert.That(passive.PassiveSeconds, Is.LessThanOrEqualTo(72), "At least a quarter less time watching timers.");
+            // The boss walks between rooms at one steady pace (see ClinicBossRoute), which costs a few seconds over fixed short timers
+            // but keeps the walk believable and the doors opening.
+            Assert.That(passive.FirstPatientSeconds, Is.LessThanOrEqualTo(36), "The first patient arrives sooner than 4.3 (22)'s 42s.");
+            Assert.That(passive.FirstCoinsSeconds, Is.LessThanOrEqualTo(56), "The first coins are in hand in under a minute.");
+            Assert.That(passive.OpenSeconds, Is.LessThanOrEqualTo(96), "The whole opening, including recruiting, takes about a minute and a half.");
+            Assert.That(passive.PassiveSeconds, Is.LessThanOrEqualTo(80), "At least a fifth less time watching timers.");
             Assert.That(passive.FirstDecisionSeconds, Is.LessThanOrEqualTo(passive.OpenSeconds + 60), "A real choice follows the opening within a minute.");
             Assert.That(helping.OpenSeconds, Is.LessThan(passive.OpenSeconds), "Helping the boss is faster than waiting.");
             Assert.That(helping.FirstPatientSeconds, Is.GreaterThan(12), "Helping speeds the boss up; it does not skip the opening.");

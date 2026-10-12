@@ -342,6 +342,29 @@ namespace IdleClinic.Tests
             }
         }
         [Test]
+        public void AnOpenGemConfirmationMasksAVisibleCashNodeAndClosingItRestoresTheSameNode()
+        {
+            using(var ui=new CapturedTouchPanel())
+            using(var ax=new CashAccessibilityFixture(ui.Root))
+            {
+                ax.PlaceInClippedViewport(new Rect(40,200,200,100),new Rect(10,20,56,44));
+                ax.UpdateNode();
+                Assert.That(ax.Node.isActive,Is.True,"Visible cash is reachable before any sheet opens.");
+
+                var sheet=new VisualElement{name="gem-confirm"};ui.Root.Add(sheet);ax.UseGemConfirm(sheet);
+                sheet.style.display=DisplayStyle.Flex;
+                ax.UpdateNode();ax.UpdateValues();
+                Assert.That(ax.Node.isActive,Is.False,"Nothing behind an open gem confirmation is exposed.");
+                Assert.That(ax.Node.state,Is.EqualTo(AccessibilityState.Disabled));
+                Assert.That(ax.Node.frameGetter(),Is.EqualTo(Rect.zero),"No stale hit point can sit under the Spend button.");
+
+                sheet.style.display=DisplayStyle.None;
+                ax.UpdateNode();
+                Assert.That(ax.Node.isActive,Is.True,"Closing the sheet restores the background node.");
+                Assert.That(ax.Hierarchy.rootNodes.Contains(ax.Node),Is.True);
+            }
+        }
+        [Test]
         public void ExplicitlyClippedContainerDoesNotExposeItsHiddenAction()
         {
             using(var ui=new CapturedTouchPanel())
@@ -438,6 +461,8 @@ namespace IdleClinic.Tests
                 Invoke("RebuildDock");return dock;
             }
             public void UpdateValues()=>Invoke("UpdateAccessibilityValues");
+            /// <summary>Bind a gem confirmation sheet without building the rest of the interface.</summary>
+            public void UseGemConfirm(VisualElement sheet)=>Set("gemConfirm",sheet);
             public void UpdateNode()=>Invoke("UpdateAccessibilityNode",Node,Marker);
             public void PlaceInClippedViewport(Rect viewportBounds,Rect markerBounds,bool useScrollView=true)
             {

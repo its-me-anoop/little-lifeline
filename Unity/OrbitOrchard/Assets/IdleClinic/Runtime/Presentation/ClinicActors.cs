@@ -131,13 +131,16 @@ namespace IdleClinic.Presentation
             bool task=state.OpeningTaskEndsTick>=0;
             int zone=state.OpeningStep==ClinicOpeningStep.FirstCheckIn?0:state.BossZone;
             Vector3 position=ClinicOpeningPresentation.BossPoint(zone),direction=Vector3.back;
-            float progress=task?Mathf.Clamp01((float)((tick-state.OpeningTaskStartedTick)/(state.OpeningTaskEndsTick-state.OpeningTaskStartedTick))):1;
-            bool walking=task&&progress<.7f&&state.BossFromZone!=zone;
+            // One steady pace (ClinicBossRoute.MetresPerSecond) from the start of the task, then the work. Helping shortens only
+            // the work, so the walk never speeds up or jumps, and the boss passes through every doorway on the way.
+            long walkTicks=task&&state.BossFromZone!=zone?ClinicSimulation.OpeningWalkTicks(state):0;
+            double walked=tick-state.OpeningTaskStartedTick;
+            bool walking=walkTicks>0&&walked<walkTicks;
             if(walking)
             {
                 var route=ClinicOpeningPresentation.BossRoute(state.BossFromZone,zone);float total=0;
                 for(int i=1;i<route.Count;i++)total+=Vector3.Distance(route[i-1],route[i]);
-                float distance=total*progress/.7f;boss.WalkCycles=distance/WalkCycleLength;
+                float distance=total*Mathf.Clamp01((float)(walked/walkTicks));boss.WalkCycles=distance/WalkCycleLength;
                 for(int i=1;i<route.Count;i++)
                 {
                     float segment=Vector3.Distance(route[i-1],route[i]);direction=route[i]-route[i-1];

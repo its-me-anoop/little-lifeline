@@ -30,10 +30,12 @@ build, raise the build number before any upload.
   what to work towards: BUILDING (what the builder finishes and when), NEXT IMPROVEMENT (price, ready to buy or when the
   builder is free) or SAVING FOR (coins held against the price, an estimate from the measured earning rate, and a
   reminder to collect counters). Tapping it opens that room, amenity or the office.
-- **Quicker opening.** The office's clean and set-up take 6 s and 8 s, later rooms' 4 s and 5 s (all were 8 s and 10 s),
-  so the first room still teaches the rhythm. An optional **Help clear up / Help set up** button takes 1.5 s off the current task per tap and never skips
-  it. A save made mid-task keeps its old timer. Measured with a scripted player: first patient 42.0 s → 29.0 s (15.6 s
-  when helping), clinic open 115.0 s → 84.0 s (60.5 s). Details in [free progression](qa/free-progression-4.3-23.md).
+- **Quicker opening, with the boss walking at a steady pace.** The office's clean and set-up take 6 s and 8 s. Each later
+  room starts with the boss's walk there at one brisk pace (2.4 m/s; 4.3 (22) varied from 1.3 to 2.9 m/s), then 2.5 s of
+  cleaning or 5 s of setting up (were 10 s). An optional **Help clear up / Help set up** button takes 1.5 s off the work per
+  tap, never off the walk, and never skips the task. A save made mid-task keeps its old timer. Measured with a scripted
+  player: first patient 42.0 s → 34.2 s (21.0 s when helping), clinic open 115.0 s → 93.0 s (70.1 s). Details in
+  [free progression](qa/free-progression-4.3-23.md).
 
 ### Feedback and progression
 
@@ -109,8 +111,9 @@ five-patient check-in queue, chairs facing the nursing rooms, the glass front wa
 | Unity EditMode, inherited baseline | `b9fc04e`, reviewer run | 613 passed, 0 failed, 0 skipped, exit 0 |
 | Unity EditMode | `d84ac3e`, reviewer run | 638 passed, 0 failed, 0 skipped, exit 0 (276 s) |
 | Unity EditMode | `8c9d3fa`, reviewer run with `run_editmode_tests.sh` | 657 passed, 0 failed, exit 0 (399.8 s) |
-| Unity EditMode | `757d56b` and later | **pending** |
-| Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 226 passed, 0 failed (subset; not a substitute for Unity) |
+| Unity EditMode | `0ad88d8`, reviewer run | 678 total: 671 passed, **7 failed** (6 HUD accessibility fixtures: null gem-confirmation node; boss nursing door), exit 2 |
+| Unity EditMode | the correction after `0ad88d8` | **pending** |
+| Core and profile harness (.NET 8, NUnit shim; Linux) | this checkpoint | 228 passed, 0 failed (subset; not a substitute for Unity) |
 | Release tooling `Tools/tests` | unchanged by this work | host baseline 105 passed (Blender Python 3.11); Linux Python 3.13: 92 passed, 1 skipped, 1 macOS-only `xcrun` error |
 | Simulator export and Xcode build | `d84ac3e`, reviewer | succeeded; launch on the QA review simulator logged no FMOD or CoreAudio errors |
 | Runtime screenshots, play-test, performance | current checkpoint | **pending** (`simulator_preview.sh`, reviewer) |
@@ -145,7 +148,7 @@ Store status line instead).
 1. **No runtime verification by me yet.** The confirmation sheet on compact and short viewports, safe areas, the skip,
    help and next-goal controls, VoiceOver isolation and the welcome-back flow are tested only in code. The reviewer's
    simulator runs and screenshots are the evidence still needed.
-2. Official Unity results for `757d56b` and later are pending.
+2. Official Unity results for the correction after `0ad88d8` are pending; `0ad88d8` itself failed 7 Editor tests (fixed in code, not yet re-run in Unity).
 3. Cash purchase flow not exercised: needs the Xcode run with the local StoreKit configuration (see above).
 4. The earlier simulator CoreAudio/FMOD startup crash was not reproduced in the reviewer's `d84ac3e` launch and was not
    changed or fixed; it remains open until a run shows otherwise.

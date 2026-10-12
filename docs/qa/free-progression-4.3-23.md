@@ -11,15 +11,19 @@ A scripted player answers each prompt after 1.5 seconds and taps nothing else. "
 
 | | 4.3 (22) | 4.3 (23), waits | 4.3 (23), helps |
 |---|---|---|---|
-| First patient arrives | 42.0 s | 29.0 s | 15.6 s |
-| First coins in the wallet | 62.0 s | 49.0 s | 35.1 s |
-| Clinic open (receptionist hired) | 115.0 s | 84.0 s | 60.5 s |
-| Time with nothing to tap | 100.0 s | 69.0 s | 45.5 s |
-| First choice of two affordable improvements | 115.0 s | 84.0 s | 60.5 s |
+| First patient arrives | 42.0 s | 34.2 s | 21.0 s |
+| First coins in the wallet | 62.0 s | 54.2 s | 40.5 s |
+| Clinic open (receptionist hired) | 115.0 s | 93.0 s | 70.1 s |
+| Time with nothing to tap | 100.0 s | 78.0 s | 55.1 s |
+| First choice of two affordable improvements | 115.0 s | 93.0 s | 70.1 s |
 
-Change: the office's clean and set-up still show the rhythm (6 s and 8 s); later rooms repeat it in 4 s and 5 s (all
-were 8 s and 10 s). *Help the boss* is optional: each tap takes 1.5 s off the current task and never skips it. Order,
-boss, rooms and the check-in moment are unchanged. A save made mid-task with the old timers loads and finishes as saved.
+Change: the office's clean and set-up still show the rhythm (6 s and 8 s). In later rooms the boss first walks there at one
+steady brisk pace (2.4 m/s), then cleans for 2.5 s (about what 4.3 (22) left after its walk) or sets up for 5 s (was 10 s).
+4.3 (22) fitted every walk into 70% of a fixed 8 s, so the boss's speed changed from room to room (1.3 to 2.9 m/s).
+Checkpoints up to `0ad88d8` used fixed 4 s cleans, which made the boss sprint (up to 5.7 m/s) and miss the nursing
+doorway in the official world test; the steady pace costs about 5 to 9 seconds against those numbers and fixes both.
+*Help the boss* is optional: each tap takes 1.5 s off the work, never off the walk, and never skips the task. Order, boss,
+rooms and the check-in moment are unchanged. A save made mid-task with the old timers loads and finishes as saved.
 
 Remaining passive time is mostly the boss's first check-in (about 17 s) and the first queue forming (about 11 s); both
 are left as they are, because they are the opening's "watch it work" moments.
