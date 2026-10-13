@@ -38,6 +38,9 @@ namespace IdleClinic.Presentation
         internal int MovingCount { get {int count=0;foreach(var a in patients.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;foreach(var a in staff.Values)if(a.Moving&&a.Root.gameObject.activeSelf)count++;if(maya!=null&&maya.Moving&&maya.Root.gameObject.activeSelf)count++;return count;} }
         private Actor boss;
         private Transform bossBroom;
+        // The boss's arms, so both hands can close round the broom handle while cleaning (see ApplyBossGrip).
+        private Transform[] bossArm;
+        private bool bossGripping;
         internal ClinicStoryCast Cast;
         // Where the boss stands, or is heading when no task walk is under way (presentation only), so a change of place
         // between tasks is walked rather than jumped.
@@ -141,6 +144,9 @@ namespace IdleClinic.Presentation
                     renderer.sharedMaterials=materials;
                 }
                 art.Box("Boss gold tie",boss.Root,new Vector3(0,1.06f,.17f),new Vector3(.045f,.22f,.018f),"Gold");
+                var skin=boss.Root.GetComponentInChildren<SkinnedMeshRenderer>();
+                bossArm=new Transform[6];string[] arm={"upper_arm.L","forearm.L","hand.L","upper_arm.R","forearm.R","hand.R"};
+                for(int i=0;i<arm.Length;i++)bossArm[i]=skin==null?null:Array.Find(skin.bones,b=>b.name==arm[i]);
                 bossBroom=art.Group("Boss cleaning broom",boss.Root,new Vector3(.29f,0,.30f));
                 art.Cylinder("Broom handle",bossBroom,new Vector3(0,.72f,0),new Vector3(.035f,1.2f,.035f),"Timber");
                 art.Box("Broom bristles",bossBroom,new Vector3(0,.05f,0),new Vector3(.38f,.09f,.13f),"Gold");
@@ -196,11 +202,41 @@ namespace IdleClinic.Presentation
             var moved=position-boss.Root.position;moved.y=0;
             if(walking&&walkTicks==0)boss.WalkCycles+=moved.magnitude/WalkCycleLength;
             else if(walking){float total=PathLength(BossRoute(state.BossFromZone,zone));boss.WalkCycles=total*Mathf.Clamp01((float)(walked/walkTicks))/WalkCycleLength;}
-            boss.Moving=walking;boss.Root.position=position;if(direction.sqrMagnitude>.001f)boss.Root.rotation=Quaternion.LookRotation(direction);
+            boss.Moving=walking;boss.Root.position=position;boss.Root.rotation=ClinicTurn.Step(boss.Root.rotation,direction,elapsed,elapsed>1||!boss.HasPosition);boss.HasPosition=true;
             bool cleaning=task&&!walking&&ClinicSimulation.OpeningCleaning(state.OpeningStep);
-            bossBroom.gameObject.SetActive(cleaning);
-            if(cleaning)bossBroom.localRotation=Quaternion.Euler(0,0,reducedMotion?0:Mathf.Sin((float)tick*.5f)*15);
+            bossBroom.gameObject.SetActive(cleaning);bossGripping=cleaning;
+            if(cleaning)
+            {
+                // Sweeping: the head pushes out and draws back in front of the boss while the hands stay close to the body.
+                float stroke=reducedMotion?0:Mathf.Sin((float)tick*.35f);
+                var head=new Vector3(0,0,BroomHeadReach+BroomStroke*stroke);
+                bossBroom.localPosition=head;
+                bossBroom.localRotation=Quaternion.FromToRotation(Vector3.up,BroomGrip(stroke)-head);
+            }
             boss.Sample(walking?1:task||state.OpeningStep==ClinicOpeningStep.FirstCheckIn?2:0,tick*.1,reducedMotion);
+        }
+        private const float BroomHeadReach=.52f,BroomStroke=.2f;
+        // Where the upper hand holds the handle (boss space), a little in front of the chest and swaying with the stroke.
+        private static Vector3 BroomGrip(float stroke)=>new Vector3(0,.92f,.22f+.05f*stroke);
+        /// <summary>After the pose is sampled and before the frame is drawn: both hands close round the broom handle.</summary>
+        internal void ApplyBossGrip()
+        {
+            if(!bossGripping||boss==null||!boss.Root.gameObject.activeSelf||bossArm==null||bossBroom==null)return;
+            var top=bossBroom.TransformPoint(new Vector3(0,.90f,0));
+            var low=bossBroom.TransformPoint(new Vector3(0,.74f,0));
+            for(int side=0;side<2;side++)
+            {
+                var upper=bossArm[side*3];var fore=bossArm[side*3+1];var hand=bossArm[side*3+2];
+                if(upper==null||fore==null||hand==null)continue;
+                // The hand on the same side as the handle's lower grip reaches lower; both elbows bend out and back.
+                var target=side==0?top:low;
+                float outward=Mathf.Sign(boss.Root.InverseTransformPoint(upper.position).x);
+                var pole=boss.Root.TransformDirection(new Vector3(outward,-.6f,-.35f));
+                var shoulder=upper.position;float upperLength=Vector3.Distance(shoulder,fore.position),foreLength=Vector3.Distance(fore.position,hand.position);
+                var elbow=ClinicTwoBone.Elbow(shoulder,upperLength,foreLength,target,pole,out var reached);
+                upper.rotation=Quaternion.FromToRotation(fore.position-shoulder,elbow-shoulder)*upper.rotation;
+                fore.rotation=Quaternion.FromToRotation(hand.position-fore.position,reached-fore.position)*fore.rotation;
+            }
         }
         private List<Vector3> BossRoute(int from,int to)
         {
@@ -281,7 +317,7 @@ namespace IdleClinic.Presentation
             if(walking){maya.WalkCycles+=moved.magnitude/WalkCycleLength;if(mayaStage==MayaStage.Following)facing=moved;}
             else if(mayaStage==MayaStage.Greeting||mayaStage==MayaStage.Following)
             { var toward=boss!=null&&boss.Root.gameObject.activeSelf?boss.Root.position-maya.Root.position:Vector3.back;toward.y=0;facing=toward.sqrMagnitude>.01f?toward:Vector3.back; }
-            if(facing.sqrMagnitude>.0001f)maya.Root.rotation=Quaternion.LookRotation(facing);
+            maya.Root.rotation=ClinicTurn.Step(maya.Root.rotation,facing,elapsed,elapsed>1||!maya.HasPosition);maya.HasPosition=true;
             maya.Moving=walking;
             maya.Sample(walking?1:pose,tick*.1+.31,reducedMotion);maya.Appearance.AfterPose(false);
         }
@@ -393,7 +429,7 @@ namespace IdleClinic.Presentation
                 if(departure.Distance>=departure.Length){FinishDeparture(i);continue;}
                 var actor=departure.Actor;
                 actor.Root.position=departure.Sample(departure.Distance,out var direction);
-                if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
+                actor.Root.rotation=ClinicTurn.Step(actor.Root.rotation,direction,elapsed,false);
                 actor.WalkCycles+=elapsed*DepartureSpeed/WalkCycleLength;actor.Moving=true;
                 actor.Sample(1,tick*.1+departure.Seed*.17,reducedMotion,!departure.Rejected,!departure.Rejected);actor.Appearance.AfterPose(false);
                 if(departure.Rejected)
@@ -443,12 +479,12 @@ namespace IdleClinic.Presentation
                     { actor.Route.Build(world,actor.To,to,false,before);actor.QueueDistance=0; }
                     actor.QueueDistance=Mathf.Min(actor.Route.Length,actor.QueueDistance+seconds*1.35f);
                     actor.Root.position=actor.Route.Sample(actor.Route.Length<=.001f?1:actor.QueueDistance/actor.Route.Length,out var direction);
-                    if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
+                    actor.Root.rotation=ClinicTurn.Step(actor.Root.rotation,direction,seconds,!placed||seconds>1);
                     actor.QueueMoving=actor.QueueDistance<actor.Route.Length;
                     actor.Moving=actor.QueueMoving||(actor.Root.position-before).sqrMagnitude>.000001f;
                 }
                 else
-                { actor.Root.position=destination;actor.Root.rotation=Quaternion.LookRotation(world.Facing(to));actor.QueueMoving=false;actor.Moving=false; }
+                { actor.Root.position=destination;actor.Root.rotation=ClinicTurn.Step(actor.Root.rotation,world.Facing(to),seconds,!placed||seconds>1);actor.QueueMoving=false;actor.Moving=false; }
             }
             else if(arrivalPath!=null&&arrivalPath.Count>=2)
             {
@@ -457,7 +493,7 @@ namespace IdleClinic.Presentation
                     actor.Route.BuildSavedPath(arrivalPath,world.GetAnchorPoint(to).y);actor.SavedArrivalPath=arrivalPath;actor.SavedPhaseStartedTick=phaseStartedTick;actor.RouteStartProgress=0;actor.QueueMoving=false;
                 }
                 actor.Root.position=actor.Route.Sample(progress,out var direction);
-                if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
+                actor.Root.rotation=ClinicTurn.Step(actor.Root.rotation,direction,seconds,!placed||seconds>1);
                 actor.Moving=progress<1&&actor.Route.Length>.001f;
             }
             else
@@ -469,7 +505,7 @@ namespace IdleClinic.Presentation
                 }
                 float routeProgress=progress>=1?1:Mathf.InverseLerp(actor.RouteStartProgress,1,progress);
                 actor.Root.position=actor.Route.Sample(routeProgress,out var direction);
-                if(direction.sqrMagnitude>.0001f)actor.Root.rotation=Quaternion.LookRotation(direction);
+                actor.Root.rotation=ClinicTurn.Step(actor.Root.rotation,direction,seconds,!placed||seconds>1);
                 actor.Moving=progress<1&&actor.Route.Length>.001f;
             }
             if(arrivalPath==null)actor.SavedArrivalPath=null;

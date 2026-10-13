@@ -45,6 +45,41 @@ namespace IdleClinic.Tests
             finally{Object.DestroyImmediate(host);}
         }
 
+        [Test]
+        public void BossHoldsTheBroomWithBothHandsAndSweepsWithIt()
+        {
+            var host=new GameObject("Boss sweeping test");
+            try
+            {
+                var sim=ClinicSimulation.CreateOpening();var world=host.AddComponent<ClinicWorld>();
+                Assert.That(sim.ContinueOpening(ClinicOpeningStep.CleanOffice).Success,Is.True);
+                var nodes=host.GetComponentsInChildren<Transform>(true);
+                world.Render(sim.State,0,false);nodes=host.GetComponentsInChildren<Transform>(true);
+                var boss=nodes.Single(t=>t.name=="Clinic boss");var broom=nodes.Single(t=>t.name=="Boss cleaning broom");
+                var bones=boss.GetComponentInChildren<SkinnedMeshRenderer>(true).bones;
+                var hands=new[]{System.Array.Find(bones,b=>b.name=="hand.L"),System.Array.Find(bones,b=>b.name=="hand.R")};
+                var lateUpdate=typeof(ClinicWorld).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                float nearest=0,minimum=float.MaxValue,maximum=float.MinValue;int sweeping=0;
+                for(int frame=0;frame<400&&sim.State.OpeningTaskEndsTick>=0;frame++)
+                {
+                    sim.Advance(.1);world.Render(sim.State,.1f,false);
+                    if(!broom.gameObject.activeSelf)continue;
+                    lateUpdate.Invoke(world,null);sweeping++;
+                    var line=broom.up;
+                    foreach(var hand in hands)
+                    {
+                        var along=Vector3.Project(hand.position-broom.position,line);
+                        nearest=Mathf.Max(nearest,Vector3.Distance(hand.position,broom.position+along));
+                    }
+                    minimum=Mathf.Min(minimum,broom.localPosition.z);maximum=Mathf.Max(maximum,broom.localPosition.z);
+                }
+                Assert.That(sweeping,Is.GreaterThan(10),"The boss is seen cleaning.");
+                Assert.That(nearest,Is.LessThan(.10f),"Both hands are on the handle, not hanging at his sides.");
+                Assert.That(maximum-minimum,Is.GreaterThan(.2f),"The broom sweeps to and fro.");
+            }
+            finally{Object.DestroyImmediate(host);}
+        }
+
         private static Vector3 BossPoint(int zone){var p=ClinicBossRoute.Point(zone);return new Vector3((float)p.X,.14f,(float)p.Z);}
 
         [Test]

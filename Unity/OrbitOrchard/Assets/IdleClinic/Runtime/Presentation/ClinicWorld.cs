@@ -607,6 +607,7 @@ namespace IdleClinic.Presentation
             light.transform.rotation=Quaternion.Euler(48,-35,0);light.intensity=1.02f;light.color=new Color(.98f,.96f,.90f);
             light.shadows=LightShadows.Soft;light.shadowStrength=.28f;light.shadowBias=.025f;light.shadowNormalBias=.12f;light.cullingMask=1<<ClinicArt.Layer;
         }
+        private void LateUpdate() { actors?.ApplyBossGrip(); }
         private void ReleaseTexture() { if(Texture==null)return;SceneCamera.targetTexture=null;Texture.Release();ClinicArt.Destroy(Texture);Texture=null; }
         private void OnDestroy() { gearPreview?.Dispose();ReleaseTexture();art?.Dispose(); }
     }
