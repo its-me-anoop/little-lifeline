@@ -16,16 +16,16 @@ namespace IdleClinic.Presentation
             {
                 art.Cylinder("Wayfinding care dot",root,new Vector3(.68f,.16f,-3.3f+i*1.55f),new Vector3(.14f,.008f,.14f),"Gold");
             }
-            NoticeBoard(art,root,"Reception notice board",new Vector3(-5.53f,1.40f,-1.45f),90,1.1f);
+            NoticeBoard(art,root,"Reception notice board",new Vector3(-5.53f,1.40f,-1.45f),-90,1.1f);
             NoticeBoard(art,root,"Waiting notice board",new Vector3(2.45f,1.75f,4.75f),0,1.05f);
             var storage=art.Group("Reception record storage",root,new Vector3(-5.23f,.14f,-2.30f));
-            Cabinet(art,storage,Vector3.zero,new Vector3(.52f,.90f,.60f),"Sage");
+            Cabinet(art,storage,Vector3.zero,new Vector3(.52f,.90f,.60f),"Sage",Vector3.right);
             for(int i=0;i<4;i++)art.Box("Appointment folders",storage,new Vector3(-.18f+i*.11f,1.00f,0),new Vector3(.075f,.21f,.28f),i%2==0?"Apricot":"Blue");
             var care=art.Group("Care supplies cabinet",root,new Vector3(-5.18f,.14f,4.15f));
-            Cabinet(art,care,Vector3.zero,new Vector3(.58f,.80f,.80f),"Sage");
+            Cabinet(art,care,Vector3.zero,new Vector3(.58f,.80f,.80f),"Sage",Vector3.right);
             for(int i=0;i<3;i++)art.Box("Folded care towels",care,new Vector3(0,.83f+i*.045f,0),new Vector3(.42f,.04f,.38f),"Linen");
             var sink=art.Group("Treatment handwash sink",root,new Vector3(-5.17f,.14f,1.05f));
-            Cabinet(art,sink,Vector3.zero,new Vector3(.55f,.73f,.62f),"TileBlue");
+            Cabinet(art,sink,Vector3.zero,new Vector3(.55f,.73f,.62f),"TileBlue",Vector3.right);
             art.Box("Handwash basin",sink,new Vector3(0,.77f,0),new Vector3(.61f,.12f,.68f),"Linen");
             art.Box("Basin hollow",sink,new Vector3(0,.837f,0),new Vector3(.42f,.007f,.42f),"Blue");
             art.Cylinder("Wash tap",sink,new Vector3(-.20f,.94f,0),new Vector3(.06f,.25f,.06f),"Gold");
@@ -53,11 +53,24 @@ namespace IdleClinic.Presentation
             var rug=art.Group(name,parent,position);art.Box("Woven border",rug,Vector3.zero,size,"Wood");
             art.Box("Woven inset",rug,new Vector3(0,.005f,0),new Vector3(size.x-.12f,size.y,size.z-.12f),role);
         }
+        /// <summary>A cabinet whose doors face -Z (towards the camera side of the room).</summary>
         internal static void Cabinet(ClinicArt art,Transform parent,Vector3 position,Vector3 size,string role)
+            =>Cabinet(art,parent,position,size,role,Vector3.back);
+        /// <summary>A cabinet whose doors face along <paramref name="front"/>, one of the four floor axes: the way the person using
+        /// it stands, which is away from the wall it is built against.</summary>
+        internal static void Cabinet(ClinicArt art,Transform parent,Vector3 position,Vector3 size,string role,Vector3 front)
         {
             art.Box("Cabinet body",parent,position+Vector3.up*size.y*.5f,size,role);
-            art.Box("Cabinet split",parent,position+new Vector3(0,size.y*.5f,-size.z*.505f),new Vector3(.012f,size.y*.83f,.015f),"SageDark");
-            for(int side=-1;side<=1;side+=2)art.Box("Cabinet brass handle",parent,position+new Vector3(side*.055f,size.y*.62f,-size.z*.53f),new Vector3(.025f,.12f,.035f),"Gold");
+            var across=Vector3.Cross(Vector3.up,front);
+            float half=Mathf.Abs(front.x)>.5f?size.x*.5f:size.z*.5f;
+            bool alongX=Mathf.Abs(front.x)>.5f;
+            var split=position+Vector3.up*size.y*.5f+front*(half*1.01f);
+            art.Box("Cabinet split",parent,split,alongX?new Vector3(.015f,size.y*.83f,.012f):new Vector3(.012f,size.y*.83f,.015f),"SageDark");
+            for(int side=-1;side<=1;side+=2)
+            {
+                var handle=position+Vector3.up*size.y*.62f+front*(half*1.06f)+across*(side*.055f);
+                art.Box("Cabinet brass handle",parent,handle,alongX?new Vector3(.035f,.12f,.025f):new Vector3(.025f,.12f,.035f),"Gold");
+            }
         }
         internal static void NoticeBoard(ClinicArt art,Transform parent,string name,Vector3 position,float rotation,float scale=1)
         {

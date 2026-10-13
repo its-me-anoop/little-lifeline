@@ -37,5 +37,40 @@ namespace IdleClinic.Tests
             Assert.That(Look(member,patient),Is.GreaterThan(.5f),"The staff member looks at the visitor.");
             if(visitorFacesStaff)Assert.That(Look(patient,member),Is.GreaterThan(.5f),"The visitor looks at the staff member.");
         }
+
+        private Transform Named(string name,Transform within=null)
+        {
+            var found=Array.Find((within==null?host.transform:within).GetComponentsInChildren<Transform>(true),t=>t.name==name);
+            Assert.That(found,Is.Not.Null,name);return found;
+        }
+
+        [Test] public void TheOfficeComputerFacesTheBossNotTheVisitors()
+        {
+            var monitor=Named("Computer monitor");var screen=Named("Computer screen");var keyboard=Named("Keyboard");var chair=Named("Boss swivel chair");
+            Assert.That(Mathf.Sign(screen.position.z-monitor.position.z),Is.EqualTo(Mathf.Sign(chair.position.z-monitor.position.z)),"The screen is on the boss's side of the monitor.");
+            Assert.That(Mathf.Sign(keyboard.position.z-monitor.position.z),Is.EqualTo(Mathf.Sign(chair.position.z-monitor.position.z)),"The keyboard is in front of the boss.");
+        }
+
+        [Test] public void TheBossDeskDrawersFaceTheBoss()
+        {
+            var desk=Named("Boss desk");var chair=Named("Boss swivel chair");
+            var body=Named("Cabinet body",desk);var handle=Named("Cabinet brass handle",desk);
+            Assert.That(Mathf.Sign(handle.position.z-body.position.z),Is.EqualTo(Mathf.Sign(chair.position.z-body.position.z)));
+        }
+
+        [Test] public void CabinetsAgainstTheWestWallOpenIntoTheRoom()
+        {
+            foreach(var unit in new[]{"Reception record storage","Care supplies cabinet","Treatment handwash sink"})
+            {
+                var root=Named(unit);var body=Named("Cabinet body",root);var handle=Named("Cabinet brass handle",root);
+                Assert.That(handle.position.x,Is.GreaterThan(body.position.x+.2f),unit+" has its doors towards the room, not the wall.");
+            }
+        }
+
+        [Test] public void TheReceptionNoticeBoardShowsItsPostersToTheRoom()
+        {
+            var board=Named("Reception notice board");var cork=Named("Notice cork",board);
+            Assert.That(cork.position.x,Is.GreaterThan(board.position.x),"The cork faces east, into the room, not into the west wall.");
+        }
     }
 }

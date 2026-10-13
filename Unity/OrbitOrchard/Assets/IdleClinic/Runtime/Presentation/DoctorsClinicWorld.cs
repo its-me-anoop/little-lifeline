@@ -123,7 +123,7 @@ namespace IdleClinic.Presentation
                 ClinicFurnishings.Cabinet(art,consult,new Vector3(.40f,0,0),new Vector3(1.45f,.8f,.76f),"Sage");
                 art.Box("Consultation desk top",consult,new Vector3(.40f,.84f,0),new Vector3(1.64f,.08f,.89f),"Wood");
                 art.Box("Doctor monitor",consult,new Vector3(.75f,1.09f,0),new Vector3(.43f,.36f,.08f),"Ink");
-                art.Box("Monitor display",consult,new Vector3(.75f,1.10f,-.048f),new Vector3(.36f,.27f,.012f),"Blue");
+                art.Box("Monitor display",consult,new Vector3(.75f,1.10f,.048f),new Vector3(.36f,.27f,.012f),"Blue");
                 art.Model("Seat",consult,new Vector3(-.12f,0,-1.0f));
                 anchor("consultation.station."+i+".patient",consult.position+new Vector3(-.12f,0,-1.0f),Vector3.forward);
                 anchor("consultation.station."+i+".staff",consult.position+new Vector3(.28f,0,.95f),Vector3.back);
@@ -187,7 +187,7 @@ namespace IdleClinic.Presentation
             Opening("Toilet "+index+" privacy doorway",x-.875f,x+.875f,-5.2f,x,1.25f,false,1.6f);
             art.Orb("Toilet bowl",root,new Vector3(x,.56f,-3.70f),new Vector3(.64f,.24f,.75f),"Linen");art.Cylinder("Toilet pedestal",root,new Vector3(x,.33f,-3.67f),new Vector3(.4f,.40f,.5f),"Linen");art.Box("Toilet cistern",root,new Vector3(x,.82f,-3.25f),new Vector3(.62f,.70f,.22f),"Linen");
             art.Orb("Toilet seat",root,new Vector3(x,.685f,-3.75f),new Vector3(.42f,.015f,.48f),"Blue");
-            ClinicFurnishings.Cabinet(art,root,new Vector3(x,.14f,-7.42f),new Vector3(1.2f,.67f,.50f),"Sage");art.Box("Toilet wash basin",root,new Vector3(x,.88f,-7.40f),new Vector3(1.2f,.12f,.50f),"Linen");
+            ClinicFurnishings.Cabinet(art,root,new Vector3(x,.14f,-7.42f),new Vector3(1.2f,.67f,.50f),"Sage",Vector3.forward);art.Box("Toilet wash basin",root,new Vector3(x,.88f,-7.40f),new Vector3(1.2f,.12f,.50f),"Linen");
             for(int level=1;level<=6;level++)
             {var detail=art.Group("Toilet tier "+level,root);art.Box(level%2==0?"Toilet folded towel":"Toilet care dispenser",detail,new Vector3(x-.49f+(level-1)*.19f,1.02f,-7.40f),new Vector3(.13f,.15f,.16f),level%2==0?"Linen":"Apricot");details.Add(Detail.Amenity(detail.gameObject,ClinicAmenity.Toilet,level));}
             return root.gameObject;

@@ -59,15 +59,16 @@ namespace IdleClinic.Presentation
             root=art.Group("Office level one furniture",root);
             var desk=art.Group("Boss desk",root,new Vector3(-3.50f,.17f,8.2f));
             art.Box("Desk oak top",desk,new Vector3(0,.77f,0),new Vector3(1.85f,.11f,.80f),"Wood");
-            ClinicFurnishings.Cabinet(art,desk,new Vector3(-.62f,0,.04f),new Vector3(.48f,.72f,.64f),"Sage");
+            // The boss sits on the +Z side, so the drawers, the screen and the keyboard face +Z.
+            ClinicFurnishings.Cabinet(art,desk,new Vector3(-.62f,0,.04f),new Vector3(.48f,.72f,.64f),"Sage",Vector3.forward);
             for(int side=-1;side<=1;side+=2)
                 art.Box("Desk brass leg",desk,new Vector3(.72f,.37f,side*.29f),new Vector3(.06f,.74f,.06f),"Gold");
             art.Box("Computer monitor",desk,new Vector3(0,1.17f,.13f),new Vector3(.65f,.43f,.065f),"Ink");
-            art.Box("Computer screen",desk,new Vector3(0,1.17f,-.037f+.13f),new Vector3(.56f,.34f,.012f),"Blue");
+            art.Box("Computer screen",desk,new Vector3(0,1.17f,.037f+.13f),new Vector3(.56f,.34f,.012f),"Blue");
             art.Box("Monitor stand",desk,new Vector3(0,.91f,.13f),new Vector3(.055f,.18f,.055f),"Chrome");
             art.Box("Monitor foot",desk,new Vector3(0,.83f,.13f),new Vector3(.30f,.03f,.18f),"Ink");
-            art.Box("Keyboard",desk,new Vector3(0,.84f,-.20f),new Vector3(.50f,.035f,.16f),"Linen");
-            art.Box("Desk paperwork",desk,new Vector3(-.60f,.84f,-.12f),new Vector3(.32f,.045f,.26f),"Paper");
+            art.Box("Keyboard",desk,new Vector3(0,.84f,.27f),new Vector3(.50f,.035f,.16f),"Linen");
+            art.Box("Desk paperwork",desk,new Vector3(-.60f,.84f,.12f),new Vector3(.32f,.045f,.26f),"Paper");
             art.Cylinder("Desk coffee cup",desk,new Vector3(.59f,.90f,-.18f),new Vector3(.12f,.15f,.12f),"Linen");
             art.Box("Office rug border",root,new Vector3(-3.5f,.17f,7.45f),new Vector3(2.30f,.012f,1.1f),"Gold");
             art.Box("Office woven rug",root,new Vector3(-3.5f,.18f,7.45f),new Vector3(2.18f,.012f,.98f),"SageDark");

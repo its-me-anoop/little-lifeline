@@ -87,7 +87,7 @@ namespace IdleClinic.Presentation
                 else
                 {
                     art.Box("Appointment screen",root,new Vector3(x,1.44f,-.68f),new Vector3(.18f,.13f,.02f),"Ink");
-                    art.Box("Appointment screen glow",root,new Vector3(x,1.44f,-.69f),new Vector3(.15f,.10f,.01f),"Blue");
+                    art.Box("Appointment screen glow",root,new Vector3(x,1.44f,-.67f),new Vector3(.15f,.10f,.01f),"Blue");
                 }
             }
             else
