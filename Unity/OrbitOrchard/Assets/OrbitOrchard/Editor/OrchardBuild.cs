@@ -41,11 +41,11 @@ namespace OrbitOrchard.Editor
             }
             PlayerSettings.companyName = "Flutterly";
             PlayerSettings.productName = "Little Lifeline";
-            // 4.3 (22) went to internal TestFlight on 4 October 2026 and 4.3 has not shipped, so build 23 was never confirmed uploaded, so this line continues as 4.3 (24).
+            // 4.3 (22) went to internal TestFlight on 4 October 2026 and 4.3 has not shipped, so development continues as 4.3 (23).
             PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.3";
             // Every build starts from the App Store identity. Only BuildIOSSimulator may swap in a QA identity, after this.
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, IdleClinic.Services.ClinicQaIdentity.Production);
-            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "24";
+            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "23";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;
