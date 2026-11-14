@@ -23,6 +23,10 @@ Button:active { scale: .96 .96; }
 .header { position: absolute; left: 16px; right: 16px; flex-direction: row; justify-content: space-between; align-items: center; }
 .balances { flex-direction: row; align-items: center; height: 52px; padding: 0 6px 0 8px; background-color: rgb(251,248,234); border-radius: 26px; border-bottom-width: 3px; border-bottom-color: rgb(217,207,168); }
 .wallet { flex-direction: row; align-items: center; padding-right: 12px; }
+.wallet-words { flex-direction: row; align-items: center; }
+.wallet-income { font-size: 13px; margin-left: 6px; margin-top: 3px; color: rgb(141,116,60); -unity-text-align: middle-left; }
+.ready-banner.goal-banner { background-color: rgb(158,52,90); border-bottom-color: rgb(110,33,64); }
+.goal-banner .ready-badge { background-color: rgb(250,233,238); }
 .wallet-value { font-size: 24px; margin-left: 8px; color: rgb(91,60,18); -unity-text-align: middle-left; }
 .balance-divider { width: 1px; height: 26px; background-color: rgb(227,218,184); }
 .gem-balance { flex-direction: row; align-items: center; height: 44px; min-width: 44px; padding: 0 8px 0 10px; border-radius: 22px; }

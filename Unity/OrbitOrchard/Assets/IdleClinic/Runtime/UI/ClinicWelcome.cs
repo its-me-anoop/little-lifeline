@@ -15,6 +15,14 @@ namespace IdleClinic.App
     {
         private VisualElement welcomeCard, banner;
         private Label bannerTitle, bannerDetail;
+        private ClinicIcon bannerCheck, bannerGem;
+
+        private void StyleBanner(bool goal)
+        {
+            banner.EnableInClassList("goal-banner", goal);
+            bannerCheck.style.display = goal ? DisplayStyle.None : DisplayStyle.Flex;
+            bannerGem.style.display = goal ? DisplayStyle.Flex : DisplayStyle.None;
+        }
         private double bannerUntil;
         private Button boostChip;
         private Label boostTime;
@@ -26,7 +34,8 @@ namespace IdleClinic.App
         {
             banner = Box(root, "ready-banner"); banner.pickingMode = PickingMode.Ignore; banner.name = "clinic-room-ready";
             var badge = Box(banner, "ready-badge"); badge.pickingMode = PickingMode.Ignore;
-            badge.Add(new ClinicIcon(ClinicGlyph.Check, 24, new Color(.18f, .42f, .31f)));
+            bannerCheck = new ClinicIcon(ClinicGlyph.Check, 24, new Color(.18f, .42f, .31f)); badge.Add(bannerCheck);
+            bannerGem = new ClinicIcon(ClinicGlyph.Gem, 24, new Color(.62f, .20f, .35f)); bannerGem.style.display = DisplayStyle.None; badge.Add(bannerGem);
             var words = Box(banner, "ready-words"); words.pickingMode = PickingMode.Ignore;
             bannerTitle = Display(Text(words, "", "ready-title", true));
             bannerDetail = Text(words, "", "ready-detail");
@@ -115,6 +124,7 @@ namespace IdleClinic.App
         {
             if (banner == null) { Notify(RoomName(kind) + " is ready"); return; }
             var room = State.Room(kind);
+            StyleBanner(false);
             bannerTitle.text = "Room ready!";
             bannerDetail.text = room == null ? RoomName(kind) + " is ready"
                 : room.Tier <= 1 ? RoomName(kind) + " is open"
@@ -146,6 +156,7 @@ namespace IdleClinic.App
         private void ShowDailyGoalDone()
         {
             if (banner == null) { Notify("Daily goal done! Collect it in Gems & goals", 4); return; }
+            StyleBanner(true);
             bannerTitle.text = "Daily goal done!";
             bannerDetail.text = "Tap the gem counter to collect your reward";
             banner.style.display = DisplayStyle.Flex;
@@ -159,6 +170,7 @@ namespace IdleClinic.App
         {
             var gems = found.Sum(m => m.GemReward);
             if (banner == null) { Notify("Goal reached! +" + gems + " gems waiting", 4); return; }
+            StyleBanner(true);
             bannerTitle.text = "Goal reached!";
             bannerDetail.text = found[0].Title + (found.Count > 1 ? " and " + (found.Count - 1) + " more" : "") + " · +" + gems + " gems to collect";
             banner.style.display = DisplayStyle.Flex;

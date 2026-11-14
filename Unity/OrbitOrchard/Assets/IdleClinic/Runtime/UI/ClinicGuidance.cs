@@ -118,8 +118,8 @@ namespace IdleClinic.App
         private bool ShowsNextGoal(ClinicGuideStep step)
             => State.Tutorial == ClinicTutorialStep.Complete && (step == null || step.Id == "guide.doctors" && !saves.IsGuideStepDone(step));
 
-        /// <summary>Refresh the goal twice a second and the earning rate every ten seconds (smoothed). False when nothing is left.</summary>
-        private bool UpdateNextGoal()
+        /// <summary>How fast the clinic is earning, under the coin count, once the opening is over and a rate has been measured.</summary>
+        private void SampleEarningRate()
         {
             var now = Time.unscaledTimeAsDouble;
             if (earnSampleTotal < 0 || State.TotalEarned < earnSampleTotal) { earnSampleTotal = State.TotalEarned; earnSampleAt = now; coinsPerSecond = 0; }
@@ -129,6 +129,22 @@ namespace IdleClinic.App
                 coinsPerSecond = coinsPerSecond <= 0 ? rate : coinsPerSecond * .6 + rate * .4;
                 earnSampleTotal = State.TotalEarned; earnSampleAt = now;
             }
+        }
+
+        private void UpdateIncomeReadout()
+        {
+            if (incomeLabel == null) return;
+            SampleEarningRate();
+            var text = State.Tutorial == ClinicTutorialStep.Complete ? ClinicIncomeLabel.Format(coinsPerSecond) : "";
+            incomeLabel.text = text;
+            incomeLabel.style.display = text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        /// <summary>Refresh the goal twice a second and the earning rate every ten seconds (smoothed). False when nothing is left.</summary>
+        private bool UpdateNextGoal()
+        {
+            SampleEarningRate();
+            var now = Time.unscaledTimeAsDouble;
             if (now >= nextGoalAt || nextGoal == null) { nextGoal = ClinicPurchases.NextGoal(simulation); nextGoalAt = now + .5; }
             return nextGoal != null;
         }

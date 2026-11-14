@@ -104,6 +104,9 @@ namespace IdleClinic.App
             // A confirmation sheet, for example "Boost:boost.1h", "CoinPack:coins.bag", "Decoration:Reception" or "FinishWork:first".
             var confirm = Value("CLINIC_QA_CONFIRM", "-qaConfirm");
             if (confirm != null) StartCoroutine(OpenConfirmationAfterFirstFrames(confirm));
+            // A celebration banner after the opening has settled: goal, daily or room.
+            var bannerKind = Value("CLINIC_QA_BANNER", "-qaBanner");
+            if (bannerKind != null) StartCoroutine(ShowBannerAfterDelay(bannerKind));
             if (!claimAll && renovate == null && open == null && !skip && !guide && zoom == null) return;
             if (zoom != null)
             {
@@ -245,6 +248,14 @@ namespace IdleClinic.App
         {
             yield return new WaitForSeconds(1.5f);
             SelectObject(new IdleClinic.Presentation.ClinicHit(office?IdleClinic.Presentation.ClinicHitKind.BossOffice:IdleClinic.Presentation.ClinicHitKind.CleaningUtilities));
+        }
+
+        private System.Collections.IEnumerator ShowBannerAfterDelay(string kind)
+        {
+            yield return new WaitForSecondsRealtime(7);
+            if (kind == "daily") ShowDailyGoalDone();
+            else if (kind == "room") ShowRoomReady(ClinicRoom.FirstAid);
+            else ShowGoalReached(new System.Collections.Generic.List<ClinicMilestone> { ClinicMilestones.Find("care.100") });
         }
 
         private System.Collections.IEnumerator HideInterface()

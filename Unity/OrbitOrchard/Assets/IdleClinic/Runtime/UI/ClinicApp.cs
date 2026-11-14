@@ -24,7 +24,7 @@ namespace IdleClinic.App
         private static readonly Color LeafInk = new Color(.18f, .37f, .28f);
         private VisualElement root, overlay, header, dock, cameraTools, hint, wallet, particles, hudChips, scrim;
         private Image board;
-        private Label walletLabel, hintLabel, toast;
+        private Label walletLabel, incomeLabel, hintLabel, toast;
         private Font bodyFont, boldFont, displayFont;
         private PanelSettings runtimePanel;
         private Camera backdrop;
@@ -124,7 +124,9 @@ namespace IdleClinic.App
             var balances=Box(header,"balances");balances.name="clinic-balances";balances.pickingMode=PickingMode.Ignore;
             wallet=Box(balances,"wallet");wallet.pickingMode=PickingMode.Ignore;
             wallet.Add(new ClinicIcon(ClinicGlyph.Coin,30,CoinInk));
-            walletLabel=Text(wallet,"0","wallet-value",true);walletLabel.name="clinic-wallet";Display(walletLabel);
+            var walletWords=Box(wallet,"wallet-words");walletWords.pickingMode=PickingMode.Ignore;
+            walletLabel=Text(walletWords,"0","wallet-value",true);walletLabel.name="clinic-wallet";Display(walletLabel);
+            incomeLabel=Text(walletWords,"","wallet-income");incomeLabel.name="clinic-income";incomeLabel.pickingMode=PickingMode.Ignore;incomeLabel.style.display=DisplayStyle.None;
             Box(balances,"balance-divider").pickingMode=PickingMode.Ignore;
             BuildGemControl(balances);
             var settings=IconButton(header,ClinicGlyph.Settings,"Settings",ToggleSettings,"round-control");settings.name="clinic-settings";
@@ -178,6 +180,7 @@ namespace IdleClinic.App
             WatchGoals();
             UpdateLocationReadouts();
             walletLabel.text=WalletText();
+            UpdateIncomeReadout();
             UpdateGemReadout();
             if(parkingControl!=null)parkingControl.style.display=State.Tutorial==ClinicTutorialStep.Complete?DisplayStyle.Flex:DisplayStyle.None;
             if(lastTutorial!=State.Tutorial)
