@@ -81,8 +81,8 @@ namespace IdleClinic.App
             else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.OfficeAnchored&&room.Tier>=State.OfficeLevel)
             {
                 Text(body,"Upgrade the office to unlock room level "+(room.Tier+1)+".","room-detail");
-                var office=IconButton(body,ClinicGlyph.Room,"View office",()=>SelectObject(new ClinicHit(ClinicHitKind.BossOffice)),"track-action");
-                Text(office,"View office · Clinic level "+State.OfficeLevel,"action-label");
+                var office=IconButton(body,ClinicGlyph.Room,"View office",()=>SelectObject(new ClinicHit(ClinicHitKind.BossOffice)),"room-shortcut");
+                Text(office,"View office · Clinic level "+State.OfficeLevel,"purchase-detail");
             }
             else if(room.Tier<ClinicRules.MaximumTier(State)&&simulation.BuildersBusy)BuildBuilderBusy(body);
             else if(room.Tier<ClinicRules.MaximumTier(State))BuildRenovation(body,room);

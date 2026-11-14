@@ -45,7 +45,7 @@ namespace OrbitOrchard.Editor
             PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("ORCHARD_MARKETING_VERSION") ?? "4.3";
             // Every build starts from the App Store identity. Only BuildIOSSimulator may swap in a QA identity, after this.
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, IdleClinic.Services.ClinicQaIdentity.Production);
-            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "23";
+            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ORCHARD_BUILD_NUMBER") ?? "25";
             PlayerSettings.iOS.targetOSVersionString = "18.0";
             PlayerSettings.iOS.appleDeveloperTeamID = "K6623R3GP5";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;

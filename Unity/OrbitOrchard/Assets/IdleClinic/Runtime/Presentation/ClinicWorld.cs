@@ -383,7 +383,7 @@ namespace IdleClinic.Presentation
         {
             var coverage=GroundCoverage();float reference=Mathf.Max(.001f,SceneCamera.orthographicSize);
             float width=doctors!=null?80:50,depth=doctors!=null?66:42;
-            float limit=Mathf.Min(doctors!=null?24:16,width*reference/Mathf.Max(.001f,coverage.size.x),depth*reference/Mathf.Max(.001f,coverage.size.z));
+            float limit=Mathf.Min(doctors!=null?42:16,width*reference/Mathf.Max(.001f,coverage.size.x),depth*reference/Mathf.Max(.001f,coverage.size.z));
             return Mathf.Clamp(requested,2.4f,Mathf.Max(2.4f,limit));
         }
         private Bounds GroundCoverage()
