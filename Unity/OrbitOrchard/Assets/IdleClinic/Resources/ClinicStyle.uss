@@ -633,3 +633,10 @@ Button:active { scale: .96 .96; }
 /* 4.3 (23): the second builder's own badge in the gem confirmation (was an upward arrow). */
 .gem-confirm-builder { width: 56px; height: 56px; min-width: 56px; padding: 0; overflow: hidden; background-color: rgb(246,227,176); border-bottom-width: 2px; border-bottom-color: rgb(226,206,150); }
 .gem-confirm-builder-art { width: 100%; height: 100%; }
+
+/* 4.3 (25): on small phones the next-step card must not cover the clinic floor, queue and zoom buttons. */
+.narrow .guide-tile { display: none; }
+.narrow .guide-card { padding: 10px; min-height: 60px; }
+.narrow .guide-words { margin-left: 2px; margin-right: 8px; }
+.compact .guide-title { font-size: 16px; }
+.compact .guide-why { font-size: 13px; }
