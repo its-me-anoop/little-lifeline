@@ -14,6 +14,17 @@ namespace IdleClinic.Tests
         [SetUp] public void SetUp()
         {host=new GameObject("Doctors world verification");world=host.AddComponent<ClinicWorld>();world.Initialize(ClinicLocation.DoctorsClinic);state=ClinicSimulation.CreateForLocation(ClinicLocation.DoctorsClinic).State;}
         [TearDown] public void TearDown()=>UnityEngine.Object.DestroyImmediate(host);
+        [TestCase(402,874)][TestCase(393,852)][TestCase(320,568)]
+        public void HomeShowsTheWholeDoctorsClinicInPortrait(int width,int height)
+        {
+            world.SetRenderSize(width,height);world.Home(true);
+            foreach(float x in new[]{-12.35f,10.35f})foreach(float z in new[]{-10.9f,9.2f})
+            {
+                var uv=world.WorldToViewport(new Vector3(x,0,z));
+                Assert.That(uv.x,Is.InRange(0f,1f),"corner "+x+","+z+" is cut off horizontally");
+                Assert.That(uv.y,Is.InRange(0f,1f),"corner "+x+","+z+" is cut off vertically");
+            }
+        }
         [TestCase(ClinicRoom.Reception,5.35f*4.70f)]
         [TestCase(ClinicRoom.FirstAid,5.35f*4.70f)]
         [TestCase(ClinicRoom.Waiting,4.35f*6.55f)]
