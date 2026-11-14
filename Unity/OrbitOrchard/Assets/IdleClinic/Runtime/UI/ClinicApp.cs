@@ -400,6 +400,8 @@ namespace IdleClinic.App
         {
             new ClinicSimulation(profile.state).EnsureOfficeAnchor();
             simulation = new ClinicSimulation(profile.ActiveState);
+            // Earnings from time away or another clinic are not this clinic's current pace: measure again from here.
+            earnSampleTotal = -1; coinsPerSecond = 0;
             var other = profile.activeLocation == ClinicLocation.StarterClinic ? profile.doctorsState : profile.state;
             otherSimulation = other == null ? null : new ClinicSimulation(other);
             var builders = saves?.ConstructionSlots ?? 1;
