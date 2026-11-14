@@ -175,6 +175,7 @@ namespace IdleClinic.App
         private void UpdateReadouts()
         {
             UpdateStory();
+            WatchGoals();
             UpdateLocationReadouts();
             walletLabel.text=WalletText();
             UpdateGemReadout();

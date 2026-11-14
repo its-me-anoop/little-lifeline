@@ -124,6 +124,50 @@ namespace IdleClinic.App
             HideWelcome();
         }
 
+        private ClinicMilestoneWatcher goalWatcher;
+
+        /// <summary>Celebrates goals as they are reached; goals already met when the game opened stay quiet.</summary>
+        private void WatchGoals()
+        {
+            if (saves == null || saves.Profile == null || State.Tutorial != ClinicTutorialStep.Complete) return;
+            if (State.OpeningEnabled && State.OpeningStep != ClinicOpeningStep.Complete) return;
+            if (goalWatcher == null) { goalWatcher = new ClinicMilestoneWatcher(saves.ClaimableMilestones()); return; }
+            var found = goalWatcher.Poll(saves.ClaimableMilestones());
+            var utcNow = DateTimeOffset.UtcNow;
+            var daily = saves.DailyReady(utcNow) - (saves.LoginRewardReady(utcNow) ? 1 : 0);
+            var dailyRose = lastDailyReady >= 0 && daily > lastDailyReady;
+            lastDailyReady = daily;
+            if (found.Count > 0) ShowGoalReached(found);
+            else if (dailyRose) ShowDailyGoalDone();
+        }
+
+        private int lastDailyReady = -1;
+
+        private void ShowDailyGoalDone()
+        {
+            if (banner == null) { Notify("Daily goal done! Collect it in Gems & goals", 4); return; }
+            bannerTitle.text = "Daily goal done!";
+            bannerDetail.text = "Tap the gem counter to collect your reward";
+            banner.style.display = DisplayStyle.Flex;
+            bannerUntil = Time.unscaledTimeAsDouble + 5;
+            HideWelcome();
+            Feedback(1);
+            if (clinicAudio != null) clinicAudio.PlayReward();
+        }
+
+        private void ShowGoalReached(List<ClinicMilestone> found)
+        {
+            var gems = found.Sum(m => m.GemReward);
+            if (banner == null) { Notify("Goal reached! +" + gems + " gems waiting", 4); return; }
+            bannerTitle.text = "Goal reached!";
+            bannerDetail.text = found[0].Title + (found.Count > 1 ? " and " + (found.Count - 1) + " more" : "") + " · +" + gems + " gems to collect";
+            banner.style.display = DisplayStyle.Flex;
+            bannerUntil = Time.unscaledTimeAsDouble + 5;
+            HideWelcome();
+            Feedback(1);
+            if (clinicAudio != null) clinicAudio.PlayReward();
+        }
+
         // A running speed-up stays visible, with its time left; tapping it opens the shop to extend it.
         private void BuildBoostChip(VisualElement parent)
         {

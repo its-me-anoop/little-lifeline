@@ -97,3 +97,26 @@ namespace IdleClinic.Core
         private static string Name(ClinicAmenity amenity) => amenity == ClinicAmenity.Vending ? "vending machine" : amenity.ToString().ToLowerInvariant();
     }
 }
+
+namespace IdleClinic.Core
+{
+    /// <summary>Notices goals as they are reached during play, so the game can celebrate the moment instead of
+    /// leaving it as a badge count. Goals that were already met when watching began are never announced.</summary>
+    public sealed class ClinicMilestoneWatcher
+    {
+        private readonly System.Collections.Generic.HashSet<string> seen = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+
+        public ClinicMilestoneWatcher(System.Collections.Generic.IEnumerable<ClinicMilestone> alreadyMet)
+        {
+            foreach (var m in alreadyMet) seen.Add(m.Id);
+        }
+
+        /// <summary>The goals in <paramref name="metNow"/> not reported before, in the order given.</summary>
+        public System.Collections.Generic.List<ClinicMilestone> Poll(System.Collections.Generic.IEnumerable<ClinicMilestone> metNow)
+        {
+            var found = new System.Collections.Generic.List<ClinicMilestone>();
+            foreach (var m in metNow) if (seen.Add(m.Id)) found.Add(m);
+            return found;
+        }
+    }
+}
