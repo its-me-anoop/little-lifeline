@@ -134,6 +134,7 @@ namespace IdleClinic.App
             hudChips=Box(root,"hud-chips");hudChips.pickingMode=PickingMode.Ignore;
             BuildLocationControl(hudChips);
             BuildBoostChip(hudChips);
+            BuildCollectAllChip(hudChips);
             hint=Box(root,"tutorial-hint");hint.pickingMode=PickingMode.Ignore;
             hintLabel=Text(hint,"","hint-label");
             // Camera and car park live on the thumb side, grouped, above the guide.

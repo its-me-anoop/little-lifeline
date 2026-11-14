@@ -644,3 +644,7 @@ Button:active { scale: .96 .96; }
 .narrow .guide-words { margin-left: 2px; margin-right: 8px; }
 .compact .guide-title { font-size: 16px; }
 .compact .guide-why { font-size: 13px; }
+
+.collect-chip { background-color: rgb(250,238,196); border-bottom-color: rgb(226,205,134); }
+.collect-chip .chip-label { color: rgb(91,60,18); }
+.collect-amount { font-size: 15px; margin-left: 8px; color: rgb(141,96,22); }

@@ -79,7 +79,7 @@ namespace IdleClinic.Services
                     var job = int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ? active.Construction.Find(c => c.Id == id) : null;
                     if (job == null) return Unavailable(q, "That work has already finished.");
                     var room = active.Room(job.Room);
-                    q.Title = "Finish " + (room.Built ? RoomLabel(job.Room) + " renovation" : "the " + RoomLabel(job.Room).ToLowerInvariant()) + " now";
+                    q.Title = "Finish " + (room.Built ? RoomLabel(job.Room) : "the " + RoomLabel(job.Room).ToLowerInvariant()) + " now";
                     q.Gems = ClinicPremiumRules.SkipCost(active, job);
                     q.Benefit = room.Built ? "Room " + job.TargetTier + " is ready now, exactly as if you waited" : "Ready now, exactly as if you waited";
                     q.Duration = "Saves " + Clock(ClinicPremiumRules.RemainingSeconds(active, job));

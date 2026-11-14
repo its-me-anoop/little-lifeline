@@ -62,7 +62,9 @@ namespace IdleClinic.App
         {
             if(State.OpeningEnabled && State.OpeningStep!=ClinicOpeningStep.Complete){Notify(OpeningTitles[(int)State.OpeningStep],4);return;}
             // A short gap only needs a line; the card is for real time away.
-            if (welcomeCard == null || report.elapsedSeconds < 120) { Notify(OfflineMessage(report), 6); return; }
+            var away = ClinicAwayPolicy.For(report.elapsedSeconds);
+            if (away == ClinicAwayReport.None) return;
+            if (welcomeCard == null || away == ClinicAwayReport.Line) { Notify(OfflineMessage(report), 6); return; }
             welcomeCard.Clear(); welcomeReadouts.Clear();
             var heading = Box(welcomeCard, "welcome-heading");
             var titles = Box(heading, "welcome-titles"); titles.pickingMode = PickingMode.Ignore;
@@ -117,6 +119,7 @@ namespace IdleClinic.App
             if (banner != null && banner.style.display == DisplayStyle.Flex && Time.unscaledTimeAsDouble > bannerUntil)
                 banner.style.display = DisplayStyle.None;
             UpdateBoostChip();
+            UpdateCollectAllChip();
         }
 
         /// <summary>A finished room names what changed: its new size and the upgrade limit it opens.</summary>
@@ -190,6 +193,30 @@ namespace IdleClinic.App
             Text(boostChip, "2× collections", "chip-label", true);
             boostTime = Display(Text(boostChip, "", "boost-time", true));
             boostChip.style.display = DisplayStyle.None;
+        }
+
+        private Button collectAllChip;
+        private Label collectAllAmount;
+
+        // Offered when two or more tills hold coins, so one tap replaces several.
+        private void BuildCollectAllChip(VisualElement parent)
+        {
+            collectAllChip = IconButton(parent, ClinicGlyph.Coin, "Collect all", CollectEverything, "hud-chip collect-chip",
+                () => collectAllAmount == null ? "" : collectAllAmount.text + " coins waiting");
+            collectAllChip.name = "clinic-collect-all";
+            Text(collectAllChip, "Collect all", "chip-label", true);
+            collectAllAmount = Display(Text(collectAllChip, "", "collect-amount", true));
+            collectAllChip.style.display = DisplayStyle.None;
+        }
+
+        private void CollectEverything() => Run(() => simulation.CollectAll());
+
+        private void UpdateCollectAllChip()
+        {
+            if (collectAllChip == null || simulation == null) return;
+            var show = State.Tutorial == ClinicTutorialStep.Complete && simulation.CollectableSources() >= 2;
+            collectAllChip.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (show) collectAllAmount.text = "+" + Money(simulation.CollectableTotal());
         }
 
         private void UpdateBoostChip()
